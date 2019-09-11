@@ -414,7 +414,7 @@ dir4 = parser.parse_args(['cloneDisk', '--type', 'dir', '--poolname', 'pooldir',
 dir5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--poolname', 'pooldir', '--name', 'diskdir'])
 dir6 = parser.parse_args(['deletePool', '--type', 'dir', '--poolname', 'pooldir'])
 #
-uus1 = parser.parse_args(['createPool', '--type', 'uus', '--poolname', 'pooldev', '--url', 'uus-iscsi://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/'])
+uus1 = parser.parse_args(['createPool', '--type', 'uus', '--poolname', 'pooldev', '--url', 'uus-iscsi://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/3'])
 uus2 = parser.parse_args(['createDisk', '--type', 'uus', '--poolname', 'pooldev', '--name', 'diskdev', '--capacity', '1073741824'])
 uus3 = parser.parse_args(['resizeDisk', '--type', 'uus', '--poolname', 'pooldev', '--name', 'diskdev', '--capacity', '2147483648'])
 uus4 = parser.parse_args(['cloneDisk', '--type', 'uus', '--poolname', 'pooldev', '--name', 'diskdev', '--newname', 'diskdevclone'])
@@ -446,8 +446,8 @@ gfs6 = parser.parse_args(['deletePool', '--type', 'glusterfs', '--poolname', 'po
 #
 test_args.append(uus1)
 test_args.append(uus2)
-# test_args.append(uus3)
-# test_args.append(uus4)
+test_args.append(uus3)
+test_args.append(uus4)
 test_args.append(uus5)
 test_args.append(uus6)
 
