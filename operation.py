@@ -162,20 +162,18 @@ def createDisk(type, params):
 
             kv = {'pool': params['poolname'], 'name': params['name'], 'uni': diskinfo['data']['uni']}
             op2 = Operation('cstor-cli vdisk-prepare', kv, with_result=True)
-            result = op2.execute()
+            prepareInfo = op2.execute()
             # delete the disk
-            if result['result']['code'] != 0:
+            if prepareInfo['result']['code'] != 0:
                 op3 = Operation('cstor-cli vdisk-remove', params, with_result=True)
                 rmDiskInfo = op3.execute()
                 if rmDiskInfo['result']['code'] == 0:
-                    print {'code': 0, 'msg': 'create disk success but can not prepare disk' + params['name'] + '.'}
+                    print {'code': 1, 'msg': 'create disk success but can not prepare disk' + params['name'] + '.'}
                 else:
                     print {'code': 1, 'msg': 'can not prepare disk and roll back fail(can not delete the disk)' + params['name'] + '. '}
                 exit(1)
-            if result['result']['code'] == 0:
-                print {'code': 0, 'name': params['poolname'], 'capacity': uus_poolinfo['data']['total'], 'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
             else:
-                print dumps(result)
+                print {'code': 0, 'name': params['name'], 'capacity': diskinfo['data']['size'], 'autostart': 'yes', 'path':prepareInfo['data']['path'], 'uni': diskinfo['data']['uni'], 'state': 'running', 'uuid': randomUUID()}
     except ExecuteException, e:
         print {'code': 1, 'msg': 'error occur while create disk ' + params['name'] + '. '+e.message}
         exit(1)
