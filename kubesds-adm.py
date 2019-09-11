@@ -438,14 +438,13 @@ gfs5 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--poolname', 'po
 gfs6 = parser.parse_args(['deletePool', '--type', 'glusterfs', '--poolname', 'poolglusterfs'])
 
 
-# test_args.append(dir1)
-# test_args.append(dir2)
-# test_args.append(dir3)
-# test_args.append(dir4)
-# test_args.append(dir5)
-# test_args.append(dir6)
+test_args.append(dir1)
+test_args.append(dir2)
+test_args.append(dir3)
+test_args.append(dir4)
+test_args.append(dir5)
+test_args.append(dir6)
 
-#
 test_args.append(uus1)
 test_args.append(uus2)
 test_args.append(uus3)
@@ -453,20 +452,19 @@ test_args.append(uus4)
 test_args.append(uus5)
 test_args.append(uus6)
 
-# test_args.append(nfs1)
-# test_args.append(nfs2)
-# test_args.append(nfs3)
-# test_args.append(nfs4)
-# test_args.append(nfs5)
-# test_args.append(nfs6)
-#
-#
-# test_args.append(gfs1)
-# test_args.append(gfs2)
-# test_args.append(gfs3)
-# test_args.append(gfs4)
-# test_args.append(gfs5)
-# test_args.append(gfs6)
+test_args.append(nfs1)
+test_args.append(nfs2)
+test_args.append(nfs3)
+test_args.append(nfs4)
+test_args.append(nfs5)
+test_args.append(nfs6)
+
+test_args.append(gfs1)
+test_args.append(gfs2)
+test_args.append(gfs3)
+test_args.append(gfs4)
+test_args.append(gfs5)
+test_args.append(gfs6)
 
 
 
