@@ -175,14 +175,15 @@ def deletePoolParser(args):
         check_virsh_pool_not_exist(args.poolname)
 
         deletePool('dir', {'poolname': args.poolname})
-    elif args.type == 'uus' or args.type == 'nfs' or args.type == 'glusterfs':
-        # check cstor pool
-        check_virsh_pool_not_exist(args.poolname)
-        # check virsh pool, only for nfs and glusterfs
-        if args.type == 'nfs' or args.type == 'glusterfs':
-            check_cstor_pool_not_exist(args.poolname)
+    elif args.type == 'uus':
+        check_cstor_pool_not_exist(args.poolname)
         deletePool(args.type, {'poolname': args.poolname})
-
+    elif args.type == 'nfs' or args.type == 'glusterfs':
+        # check virsh pool, only for nfs and glusterfs
+        check_virsh_pool_not_exist(args.poolname)
+        # check cstor pool
+        check_cstor_pool_not_exist(args.poolname)
+        deletePool(args.type, {'poolname': args.poolname})
 
 def createDiskParser(args):
     if args.type is None:
