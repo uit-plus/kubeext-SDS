@@ -300,7 +300,7 @@ def cloneDiskParser(args):
         if args.newname is None:
             cloneDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'clonename': args.newname})
         else:
-            cloneDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'clonename': args.newname, 'vmname': args.vmname})
+            cloneDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'clonename': args.newname, 'newname': args.newname})
 
 
 # --------------------------- cmd line parser ---------------------------------------
