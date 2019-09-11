@@ -204,7 +204,7 @@ def deleteDisk(type, params):
                 print dumps(releaseInfo)
                 exit(1)
 
-            op = Operation('cstor-cli vdisk-remove', params)
+            op = Operation('cstor-cli vdisk-remove', params, with_result=True)
             result = op.execute()
         print dumps(result)
     except ExecuteException, e:
