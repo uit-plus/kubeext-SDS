@@ -197,7 +197,7 @@ def deleteDisk(type, params):
                 print dumps(diskinfo)
                 exit(1)
 
-            kv = {'poolname': params['poolname'], 'name': params['name'], 'uni': diskinfo['uni']}
+            kv = {'poolname': params['poolname'], 'name': params['name'], 'uni': diskinfo['data']['uni']}
             op = Operation('cstor-cli vdisk-release', kv, True)
             releaseInfo = op.execute()
             if releaseInfo['result']['code'] != 0:
