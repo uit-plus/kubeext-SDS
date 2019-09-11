@@ -92,6 +92,7 @@ def check_cstor_disk_exist(poolname, diskname):
             print {'code': 15, 'msg': 'cstor disk ' + poolname + ' has exist in pool '+poolname}
             exit(15)
     except Exception:
+        traceback.print_exc()
         print {'code': 8, 'msg': 'cant get cstor disk info'}
         exit(8)
 
