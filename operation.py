@@ -35,7 +35,6 @@ class Operation(object):
 
     def execute(self):
         cmd = self.get_cmd()
-        print cmd
 
         if self.with_result:
             return runCmdWithResult(cmd)
@@ -80,7 +79,7 @@ def createPool(type, params):
             # {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "used": 1000, "poolname": "pool1", "url": "uus_://192.168.3.10:7000", "proto": "uus", "free": 2000, "disktype": "uus_", "export-mode": "3", "maintain": "normal", "total": 3000}, "obj":"pooladd"}
             op = Operation('cstor-cli pooladd-uus', params, with_result=True)
             uus_poolinfo = op.execute()
-            result = {'code': 0, 'name': params['poolname'], 'pooltype': 'uus', 'capacity': uus_poolinfo['data']['total'], 'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
+            result = {'name': params['poolname'], 'pooltype': 'uus', 'capacity': uus_poolinfo['data']['total'], 'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
         elif type == 'nfs':
             op1 = Operation('cstor-cli pooladd-nfs', params, with_result=True)
             poolinfo = op1.execute()
@@ -108,13 +107,16 @@ def createPool(type, params):
             op2.execute()
 
             result = get_pool_info(params['poolname'])
-        print dumps(result)
+        print dumps({'result': {'code': 0, 'msg': 'create pool '+params['poolname']+' successful.'}, 'data': result})
     except ExecuteException, e:
-        print {'code': 1, 'msg': 'error occur while create pool ' + params['poolname'] + '. '+e.message}
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params['poolname'] + '. '+e.message}})
         exit(1)
     except Exception:
-        traceback.print_exc()
-        print {'code': 1, 'msg': 'error occur while create pool '+params['poolname']}
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params['poolname'] + '.'}})
         exit(1)
 
 
@@ -135,24 +137,26 @@ def deletePool(type, params):
             op = Operation('cstor-cli pool-remove', params, with_result=True)
             result = op.execute()
             # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "poolname"}
-        print dumps(result)
+        print dumps({'result': {'code': 0, 'msg': 'delete pool '+params['poolname']+' successful.'}, 'data': result})
     except ExecuteException, e:
-        print {'code': 1, 'msg': 'error occur while delete pool ' + params['poolname'] + '. '+e.message}
+        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params['poolname'] + '. '+e.message}})
         exit(1)
     except Exception:
-        traceback.print_exc()
-        print {'code': 1, 'msg': 'error occur while delete pool '+params['poolname']}
+        logger.debug('deletePool '+ params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params['poolname'] + '.'}})
         exit(1)
 
 def createDisk(type, params):
-    result = None
     try:
         if type == 'dir' or type == 'nfs' or type == 'glusterfs':
             op = Operation('virsh vol-create-as', {'pool': params['poolname'], 'name': params['name'], 'capacity': params['capacity'], 'format': params['format']})
             op.execute()
             vol_xml = get_volume_xml(params['poolname'], params['name'])
-            result = dumps(loads(xmlToJson(vol_xml)))
-            print result
+            result = loads(xmlToJson(vol_xml))
+            print dumps({'result': {'code': 0, 'msg': 'create disk '+params['name']+' successful.'}, 'data': result})
         elif type == 'uus':
             op1 = Operation('cstor-cli vdisk-create', params, with_result=True)
             diskinfo = op1.execute()
@@ -168,28 +172,40 @@ def createDisk(type, params):
                 op3 = Operation('cstor-cli vdisk-remove', params, with_result=True)
                 rmDiskInfo = op3.execute()
                 if rmDiskInfo['result']['code'] == 0:
-                    print {'code': 1, 'msg': 'create disk success but can not prepare disk' + params['name'] + '.'}
+                    print dumps({'result': {'code': 1, 'msg': 'error: create disk success but can not prepare disk' + params['name'] + '.'}})
                 else:
-                    print {'code': 1, 'msg': 'can not prepare disk and roll back fail(can not delete the disk)' + params['name'] + '. '}
+                    print dumps({'result': {'code': 1, 'msg': 'error: can not prepare disk and roll back fail(can not delete the disk)' + params['name'] + '. '}})
                 exit(1)
             else:
-                print {'code': 0, 'name': params['name'], 'capacity': diskinfo['data']['size'], 'autostart': 'yes', 'path':prepareInfo['data']['path'], 'uni': diskinfo['data']['uni'], 'state': 'running', 'uuid': randomUUID()}
+                result = {
+                    '_type': 'clouddisk',
+                    'name': {'text': params['name']},
+                    'capacity': {'_unit': 'bytes', 'text': params['capacity']},
+                    'target': {'format': {'_type: uus'}, 'path': prepareInfo['data']['path']},
+                     'uni': diskinfo['data']['uni'],
+                    'state': 'running',
+                    'uuid': randomUUID()
+                }
+                print dumps({'result': {'code': 0,
+                                        'msg': 'create disk '+params['poolname']+' success.'}, 'data': result})
     except ExecuteException, e:
-        print {'code': 1, 'msg': 'error occur while create disk ' + params['name'] + '. '+e.message}
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params['name'] + '. '+e.message}})
         exit(1)
     except Exception:
-        traceback.print_exc()
-        print {'code': 1, 'msg': 'error occur while create disk ' + params['name']}
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params['name']}})
         exit(1)
 
 
 def deleteDisk(type, params):
-    result = None
     try:
         if type == 'dir' or type == 'nfs' or type == 'glusterfs':
             op = Operation('virsh vol-delete', {'pool': params['poolname'], 'vol': params['name']})
             op.execute()
-            result = {'code': 0, 'msg': 'delete volume '+params['name']+' success'}
+            print dumps({'result': {'code': 0, 'msg': 'delete volume '+params['name']+' success.'}})
         elif type == 'uus':
             op1 = Operation('cstor-cli vdisk-show', params, with_result=True)
             diskinfo = op1.execute()
@@ -206,13 +222,16 @@ def deleteDisk(type, params):
 
             op = Operation('cstor-cli vdisk-remove', params, with_result=True)
             result = op.execute()
-        print dumps(result)
+            print dumps(result)
     except ExecuteException, e:
-        print {'code': 1, 'msg': 'error occur while delete disk ' + params['name'] + '. '+e.message}
+        print {'result': {'code': 1, 'msg': 'error occur while delete disk ' + params['name'] + '. '+e.message}}
         exit(1)
     except Exception:
-        traceback.print_exc()
-        print {'code': 1, 'msg': 'error occur while delete disk ' + params['name']}
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {'code': 1, 'msg': 'error occur while delete disk ' + params['name'] + '.'}
         exit(1)
 
 def resizeDisk(type, params):
@@ -221,50 +240,64 @@ def resizeDisk(type, params):
         if type == 'dir' or type == 'nfs' or type == 'glusterfs':
             op = Operation('virsh vol-resize', {'pool': params['poolname'], 'vol': params['name'], 'capacity': params['capacity']})
             op.execute()
-            result = {'code': 0, 'msg': 'resize volume '+params['name']+' success'}
-
-            # TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             vol_xml = get_volume_xml(params['poolname'], params['name'])
-            result = dumps(loads(xmlToJson(vol_xml)))
-            print result
+            result = loads(xmlToJson(vol_xml))
+            print dumps({'result': {'code': 0, 'msg': 'resize disk ' + params['name'] + ' successful.'}, 'data': result})
+
         elif type == 'uus':
             kv = {'poolname': params['poolname'], 'name': params['name'], 'size': params['size']}
             op = Operation('cstor-cli vdisk-expand', kv, True)
-            result = op.execute()
-        print dumps(result)
+            diskinfo = op.execute()
+
+            if diskinfo['result']['code'] == 0:
+                result = {
+                    '_type': 'clouddisk',
+                    'name': {'text': params['name']},
+                    'capacity': {'_unit': 'bytes', 'text': params['capacity']},
+                    'target': {'format': {'_type: uus'}, 'path': diskinfo['data']['path']},
+                    'uni': diskinfo['data']['uni'],
+                    'state': 'running',
+                    'uuid': randomUUID()
+                }
+                print dumps({'result': {'code': 0,
+                                        'msg': 'resize disk ' + params['poolname'] + ' success.'}, 'data': result})
+            else:
+                print dumps(diskinfo)
     except ExecuteException, e:
-        print {'code': 1, 'msg': 'error occur while resize disk ' + params['name'] + '. '+e.message}
+        print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params['name'] + '. '+e.message}}
         exit(1)
     except Exception:
-        traceback.print_exc()
-        print {'code': 1, 'msg': 'error occur while resize disk ' + params['name']}
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params['name']}}
         exit(1)
 
-
-
-
 def cloneDisk(type, params):
-    result = None
     try:
         if type == 'dir' or type == 'nfs' or type == 'glusterfs':
             op = Operation('virsh vol-clone', {'pool': params['poolname'], 'vol': params['name'], 'newname': params['newname']})
             op.execute()
-            result = {'code': 0, 'msg': 'delete volume ' + params['name'] + ' success'}
-            # TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            vol_xml = get_volume_xml(params['poolname'], params['newname'])
-            result = dumps(loads(xmlToJson(vol_xml)))
-            print result
+
+            vol_xml = get_volume_xml(params['poolname'], params['name'])
+            result = loads(xmlToJson(vol_xml))
+            print dumps(
+                {'result': {'code': 0, 'msg': 'resize disk ' + params['name'] + ' successful.'}, 'data': result})
         elif type == 'uus':
             kv = {'poolname': params['poolname'], 'name': params['name'], 'clonename': params['newname']}
             op = Operation('cstor-cli vdisk-clone', kv, True)
             result = op.execute()
-        print dumps(result)
+            print dumps(result)
     except ExecuteException, e:
-        print {'code': 1, 'msg': 'error occur while clone disk ' + params['name'] + '. ' + e.message}
+        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params['name'] + '. ' + e.message}}
         exit(1)
     except Exception:
-        traceback.print_exc()
-        print {'code': 1, 'msg': 'error occur while clone disk ' + params['name']}
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params['name']}}
         exit(1)
 
 def xmlToJson(xmlStr):
