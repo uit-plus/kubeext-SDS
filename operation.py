@@ -228,8 +228,8 @@ def resizeDisk(type, params):
             result = dumps(loads(xmlToJson(vol_xml)))
             print result
         elif type == 'uus':
-            # kv = {'poolname': params['poolname'], 'name': params['name'], 'size': params['size']}
-            op = Operation('cstor-cli vdisk-resize', params, True)
+            kv = {'poolname': params['poolname'], 'name': params['name'], 'size': params['size']}
+            op = Operation('cstor-cli vdisk-resize', kv, True)
             result = op.execute()
         print dumps(result)
     except ExecuteException, e:

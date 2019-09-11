@@ -266,7 +266,7 @@ def resizeDiskParser(args):
     elif args.type == 'uus':
         # check cstor disk
         check_cstor_disk_not_exist(args.poolname, args.name)
-        if args.vmname is not None:
+        if args.vmname is None:
             resizeDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'size': args.capacity})
         else:
             resizeDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'size': args.capacity, 'vmname': args.vmname})
