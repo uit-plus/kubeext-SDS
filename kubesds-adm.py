@@ -297,7 +297,7 @@ def cloneDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.poolname, args.name)
         check_cstor_disk_exist(args.poolname, args.newname)
-        if args.vmname is None:
+        if args.newname is None:
             cloneDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'clonename': args.newname})
         else:
             cloneDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'clonename': args.newname, 'vmname': args.vmname})
