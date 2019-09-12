@@ -275,7 +275,7 @@ def resizeDisk(params):
             print dumps({'result': {'code': 0, 'msg': 'resize disk ' + params.vol + ' successful.'}, 'data': result})
 
         elif params.type == 'uus':
-            kv = {'poolname': params.pool, 'name': params.vol, 'size': params.size}
+            kv = {'poolname': params.pool, 'name': params.vol, 'size': params.capacity}
             op = Operation('cstor-cli vdisk-expand', kv, True)
             diskinfo = op.execute()
 
