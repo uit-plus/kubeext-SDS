@@ -164,7 +164,7 @@ def createDisk(type, params):
                 print dumps(diskinfo)
                 exit(1)
 
-            kv = {'pool': params['poolname'], 'name': params['name'], 'uni': diskinfo['data']['uni']}
+            kv = {'poolname': params['poolname'], 'name': params['name'], 'uni': diskinfo['data']['uni']}
             op2 = Operation('cstor-cli vdisk-prepare', kv, with_result=True)
             prepareInfo = op2.execute()
             # delete the disk
