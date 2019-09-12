@@ -170,20 +170,20 @@ def deletePool(params):
 def createDisk(params):
     try:
         if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
-            op = Operation('virsh vol-create-as', {'pool': params.pool, 'name': params.name, 'capacity': params.capacity, 'format': params.format})
+            op = Operation('virsh vol-create-as', {'pool': params.pool, 'name': params.vol, 'capacity': params.capacity, 'format': params.format})
             op.execute()
-            vol_xml = get_volume_xml(params.pool, params.name)
+            vol_xml = get_volume_xml(params.pool, params.vol)
             result = loads(xmlToJson(vol_xml))
-            print dumps({'result': {'code': 0, 'msg': 'create disk '+params.name+' successful.'}, 'data': result})
+            print dumps({'result': {'code': 0, 'msg': 'create disk '+params.vol+' successful.'}, 'data': result})
         elif params.type == 'uus':
-            kv = {'poolname': params.pool, 'name': params.name, 'size': params.capacity}
+            kv = {'poolname': params.pool, 'name': params.vol, 'size': params.capacity}
             op1 = Operation('cstor-cli vdisk-create', kv, with_result=True)
             diskinfo = op1.execute()
             if diskinfo['result']['code'] != 0:
                 print dumps(diskinfo)
                 exit(1)
 
-            kv = {'poolname': params.pool, 'name': params.name, 'uni': diskinfo['data']['uni']}
+            kv = {'poolname': params.pool, 'name': params.vol, 'uni': diskinfo['data']['uni']}
             op2 = Operation('cstor-cli vdisk-prepare', kv, with_result=True)
             prepareInfo = op2.execute()
             # delete the disk
