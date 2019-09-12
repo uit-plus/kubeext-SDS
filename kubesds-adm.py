@@ -428,7 +428,7 @@ nfs1 = parser.parse_args(['createPool', '--type', 'nfs', '--poolname', 'poolnfs'
 nfs2 = parser.parse_args(['createDisk', '--type', 'nfs', '--poolname', 'poolnfs', '--name', 'disknfs', '--capacity', '1073741824', '--format', 'qcow2'])
 nfs3 = parser.parse_args(['resizeDisk', '--type', 'nfs', '--poolname', 'poolnfs', '--name', 'disknfs', '--capacity', '2147483648'])
 nfs4 = parser.parse_args(['cloneDisk', '--type', 'nfs', '--poolname', 'poolnfs', '--name', 'disknfs', '--newname', 'disknfsclone'])
-nfs5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--poolname', 'pooldir', '--name', 'diskdirclone'])
+nfs5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--poolname', 'pooldir', '--name', 'disknfsclone'])
 nfs6 = parser.parse_args(['deleteDisk', '--type', 'nfs', '--poolname', 'poolnfs', '--name', 'disknfs'])
 nfs7 = parser.parse_args(['deletePool', '--type', 'nfs', '--poolname', 'poolnfs'])
 
@@ -436,7 +436,7 @@ gfs1 = parser.parse_args(['createPool', '--type', 'glusterfs', '--poolname', 'po
 gfs2 = parser.parse_args(['createDisk', '--type', 'glusterfs', '--poolname', 'poolglusterfs', '--name', 'diskglusterfs', '--capacity', '1073741824', '--format', 'qcow2'])
 gfs3 = parser.parse_args(['resizeDisk', '--type', 'glusterfs', '--poolname', 'poolglusterfs', '--name', 'diskglusterfs', '--capacity', '2147483648'])
 gfs4 = parser.parse_args(['cloneDisk', '--type', 'glusterfs', '--poolname', 'poolglusterfs', '--name', 'diskglusterfs', '--newname', 'diskglusterfsclone'])
-gfs5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--poolname', 'pooldir', '--name', 'diskdirclone'])
+gfs5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--poolname', 'pooldir', '--name', 'diskglusterfsclone'])
 gfs6 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--poolname', 'poolglusterfs', '--name', 'diskglusterfs'])
 gfs7 = parser.parse_args(['deletePool', '--type', 'glusterfs', '--poolname', 'poolglusterfs'])
 
