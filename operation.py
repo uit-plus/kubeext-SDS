@@ -35,6 +35,7 @@ class Operation(object):
 
     def execute(self):
         cmd = self.get_cmd()
+        print cmd
         logger.debug(cmd)
 
         if self.with_result:
@@ -64,265 +65,277 @@ class Operation(object):
 #             return runCmdAndCheckReturnCode(cmd)
 
 
-def createPool(type, params):
+def createPool(params):
     result = None
     try:
-        if type == 'dir':
-            POOL_PATH = params['target']
+        if params.type == 'dir':
+            POOL_PATH = params.target
             if not os.path.isdir(POOL_PATH):
                 os.makedirs(POOL_PATH)
 
-            op = Operation('virsh pool-create-as', {'name': params['poolname'], 'type': 'dir', 'target': params['target']})
+            op = Operation('virsh pool-create-as', {'name': params.pool, 'type': 'dir', 'target': params.target})
             op.execute()
 
-            result = get_pool_info(params['poolname'])
-        elif type == 'uus':
-            # {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "used": 1000, "poolname": "pool1", "url": "uus_://192.168.3.10:7000", "proto": "uus", "free": 2000, "disktype": "uus_", "export-mode": "3", "maintain": "normal", "total": 3000}, "obj":"pooladd"}
-            op = Operation('cstor-cli pooladd-uus', params, with_result=True)
+            result = get_pool_info(params.pool)
+        elif params.type == 'uus':
+            # {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "used": 1000, "pool": "pool1", "url": "uus_://192.168.3.10:7000", "proto": "uus", "free": 2000, "disktype": "uus_", "export-mode": "3", "maintain": "normal", "total": 3000}, "obj":"pooladd"}
+            kv = {'poolname': params.pool, 'url': params.url}
+            op = Operation('cstor-cli pooladd-uus', kv, with_result=True)
             uus_poolinfo = op.execute()
-            result = {'name': params['poolname'], 'pooltype': 'uus', 'capacity': uus_poolinfo['data']['total'], 'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
-        elif type == 'nfs':
-            op1 = Operation('cstor-cli pooladd-nfs', params, with_result=True)
+            result = {'name': params.pool, 'pooltype': 'uus', 'capacity': uus_poolinfo['data']['total'], 'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
+        elif params.type == 'nfs':
+            kv = {'poolname': params.pool, 'url': params.url, 'target': params.target}
+            if params.opt is not None:
+                kv['opt'] = params.opt
+            op1 = Operation('cstor-cli pooladd-nfs', kv, with_result=True)
             poolinfo = op1.execute()
             if poolinfo['result']['code'] != 0:
                 print poolinfo
                 exit(1)
-            # {"result":{"code":0, "msg":"success"}, "data":{"opt": "nolock", "status": "active", "mountpath": "/mnt/cstor/var/lib/libvirt/nfs/", "proto": "nfs", "url": "192.168.3.99:/nfs/nfs", "poolname": "pool2", "free": 549, "disktype": "file", "maintain": "normal", "used": 0, "total": 549}, "obj":"pooladd"}
+            # {"result":{"code":0, "msg":"success"}, "data":{"opt": "nolock", "status": "active", "mountpath": "/mnt/cstor/var/lib/libvirt/nfs/", "proto": "nfs", "url": "192.168.3.99:/nfs/nfs", "pool": "pool2", "free": 549, "disktype": "file", "maintain": "normal", "used": 0, "total": 549}, "obj":"pooladd"}
 
             # create dir pool in virsh
-            kv = {'type': 'dir', 'target': poolinfo['data']['mountpath']+'/'+params['poolname'], 'name': params['poolname']}
+            kv = {'type': 'dir', 'target': poolinfo['data']['mountpath']+'/'+params.pool, 'name': params.pool}
             op2 = Operation('virsh pool-create-as', kv)
             op2.execute()
 
-            result = get_pool_info(params['poolname'])
-        elif type == 'glusterfs':
-            op1 = Operation('cstor-cli pooladd-glusterfs', params, with_result=True)
+            result = get_pool_info(params.pool)
+        elif params.type == 'glusterfs':
+            kv = {'poolname': params.pool, 'url': params.url, 'target': params.target}
+            op1 = Operation('cstor-cli pooladd-glusterfs', kv, with_result=True)
             poolinfo = op1.execute()
             if poolinfo['result']['code'] != 0:
                 print poolinfo
                 exit(1)
 
             # create dir pool in virsh
-            kv = {'type': 'dir', 'target': poolinfo['data']['mountpath']+'/'+params['poolname'], 'name': params['poolname']}
+            kv = {'type': 'dir', 'target': poolinfo['data']['mountpath']+'/'+params.pool, 'name': params.pool}
             op2 = Operation('virsh pool-create-as', kv)
             op2.execute()
 
-            result = get_pool_info(params['poolname'])
-        print dumps({'result': {'code': 0, 'msg': 'create pool '+params['poolname']+' successful.'}, 'data': result})
+            result = get_pool_info(params.pool)
+        print dumps({'result': {'code': 0, 'msg': 'create pool '+params.pool+' successful.'}, 'data': result})
     except ExecuteException, e:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params['poolname'] + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '. '+e.message}})
         exit(1)
     except Exception:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params['poolname'] + '.'}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '.'}})
         exit(1)
 
 
-def deletePool(type, params):
+def deletePool(params):
     result = None
     try:
-        if type == 'dir':
-            op = Operation('virsh pool-destroy '+params['poolname'], {})
+        if params.type == 'dir':
+            op = Operation('virsh pool-destroy '+params.pool, {})
             op.execute()
-            result = {'code': 0, 'msg': 'delete pool '+params['poolname']+' success'}
-        elif type == 'uus':
-            op = Operation('cstor-cli pool-remove', params, with_result=True)
+            result = {'code': 0, 'msg': 'delete pool '+params.pool+' success'}
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool}
+            op = Operation('cstor-cli pool-remove', kv, with_result=True)
             result = op.execute()
-        elif type == 'nfs' or type == 'glusterfs':
-            op = Operation('virsh pool-destroy '+params['poolname'], {})
+        elif params.type == 'nfs' or type == 'glusterfs':
+            kv = {'pool': params.pool}
+            op = Operation('virsh pool-destroy', kv)
             op.execute()
 
-            op = Operation('cstor-cli pool-remove', params, with_result=True)
+            kv = {'poolname': params.pool}
+            op = Operation('cstor-cli pool-remove', kv, with_result=True)
             result = op.execute()
-            # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "poolname"}
-        print dumps({'result': {'code': 0, 'msg': 'delete pool '+params['poolname']+' successful.'}, 'data': result})
+            # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "pool"}
+        print dumps({'result': {'code': 0, 'msg': 'delete pool '+params.pool+' successful.'}, 'data': result})
     except ExecuteException, e:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params['poolname'] + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '. '+e.message}})
         exit(1)
     except Exception:
-        logger.debug('deletePool '+ params['poolname'])
+        logger.debug('deletePool '+ params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params['poolname'] + '.'}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '.'}})
         exit(1)
 
-def createDisk(type, params):
+def createDisk(params):
     try:
-        if type == 'dir' or type == 'nfs' or type == 'glusterfs':
-            op = Operation('virsh vol-create-as', {'pool': params['poolname'], 'name': params['name'], 'capacity': params['capacity'], 'format': params['format']})
+        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+            op = Operation('virsh vol-create-as', {'pool': params.pool, 'name': params.name, 'capacity': params.capacity, 'format': params.format})
             op.execute()
-            vol_xml = get_volume_xml(params['poolname'], params['name'])
+            vol_xml = get_volume_xml(params.pool, params.name)
             result = loads(xmlToJson(vol_xml))
-            print dumps({'result': {'code': 0, 'msg': 'create disk '+params['name']+' successful.'}, 'data': result})
-        elif type == 'uus':
-            op1 = Operation('cstor-cli vdisk-create', {'poolname': params['poolname'], 'name': params['name'], 'size': params['capacity']}, with_result=True)
+            print dumps({'result': {'code': 0, 'msg': 'create disk '+params.name+' successful.'}, 'data': result})
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool, 'name': params.name, 'size': params.capacity}
+            op1 = Operation('cstor-cli vdisk-create', kv, with_result=True)
             diskinfo = op1.execute()
             if diskinfo['result']['code'] != 0:
                 print dumps(diskinfo)
                 exit(1)
 
-            kv = {'poolname': params['poolname'], 'name': params['name'], 'uni': diskinfo['data']['uni']}
+            kv = {'poolname': params.pool, 'name': params.name, 'uni': diskinfo['data']['uni']}
             op2 = Operation('cstor-cli vdisk-prepare', kv, with_result=True)
             prepareInfo = op2.execute()
             # delete the disk
             if prepareInfo['result']['code'] != 0:
-                op3 = Operation('cstor-cli vdisk-remove', params, with_result=True)
+                kv = {'poolname': params.pool, 'name': params.vol}
+                op3 = Operation('cstor-cli vdisk-remove', kv, with_result=True)
                 rmDiskInfo = op3.execute()
                 if rmDiskInfo['result']['code'] == 0:
-                    print dumps({'result': {'code': 1, 'msg': 'error: create disk success but can not prepare disk' + params['name'] + '.'}})
+                    print dumps({'result': {'code': 1, 'msg': 'error: create disk success but can not prepare disk' + params.vol + '.'}})
                 else:
-                    print dumps({'result': {'code': 1, 'msg': 'error: can not prepare disk and roll back fail(can not delete the disk)' + params['name'] + '. '}})
+                    print dumps({'result': {'code': 1, 'msg': 'error: can not prepare disk and roll back fail(can not delete the disk)' + params.vol + '. '}})
                 exit(1)
             else:
                 result = {
                     'type': 'clouddisk',
-                    'name': {'text': params['name']},
-                    'capacity': {'text': params['capacity']},
+                    'name': {'text': params.vol},
+                    'capacity': {'text': params.capacity},
                     'target': {'path': prepareInfo['data']['path']},
                      'uni': diskinfo['data']['uni'],
                     'state': 'running',
                     'uuid': randomUUID()
                 }
                 print dumps({'result': {'code': 0,
-                                        'msg': 'create disk '+params['poolname']+' success.'}, 'data': result})
+                                        'msg': 'create disk '+params.pool+' success.'}, 'data': result})
     except ExecuteException, e:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params['name'] + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol + '. '+e.message}})
         exit(1)
     except Exception:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params['name']}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol}})
         exit(1)
 
 
-def deleteDisk(type, params):
+def deleteDisk(params):
     try:
-        if type == 'dir' or type == 'nfs' or type == 'glusterfs':
-            op = Operation('virsh vol-delete', {'pool': params['poolname'], 'vol': params['name']})
+        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+            op = Operation('virsh vol-delete', {'pool': params.pool, 'vol': params.vol})
             op.execute()
-            print dumps({'result': {'code': 0, 'msg': 'delete volume '+params['name']+' success.'}})
-        elif type == 'uus':
-            op1 = Operation('cstor-cli vdisk-show', params, with_result=True)
+            print dumps({'result': {'code': 0, 'msg': 'delete volume '+params.vol+' success.'}})
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool, 'name': params.vol}
+            op1 = Operation('cstor-cli vdisk-show', kv, with_result=True)
             diskinfo = op1.execute()
             if diskinfo['result']['code'] != 0:
                 print dumps(diskinfo)
                 exit(1)
 
-            kv = {'poolname': params['poolname'], 'name': params['name'], 'uni': diskinfo['data']['uni']}
+            kv = {'poolname': params.pool, 'name': params.vol, 'uni': diskinfo['data']['uni']}
             op = Operation('cstor-cli vdisk-release', kv, True)
             releaseInfo = op.execute()
             if releaseInfo['result']['code'] != 0:
                 print dumps(releaseInfo)
                 exit(1)
 
-            op = Operation('cstor-cli vdisk-remove', params, with_result=True)
+            kv = {'poolname': params.pool, 'name': params.vol}
+            op = Operation('cstor-cli vdisk-remove', kv, with_result=True)
             result = op.execute()
             print dumps(result)
     except ExecuteException, e:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 1, 'msg': 'error occur while delete disk ' + params['name'] + '. '+e.message}}
+        print {'result': {'code': 1, 'msg': 'error occur while delete disk ' + params.vol + '. '+e.message}}
         exit(1)
     except Exception:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {'code': 1, 'msg': 'error occur while delete disk ' + params['name'] + '.'}
+        print {'code': 1, 'msg': 'error occur while delete disk ' + params.vol + '.'}
         exit(1)
 
-def resizeDisk(type, params):
+def resizeDisk(params):
     result = None
     try:
-        if type == 'dir' or type == 'nfs' or type == 'glusterfs':
-            op = Operation('virsh vol-resize', {'pool': params['poolname'], 'vol': params['name'], 'capacity': params['capacity']})
+        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+            op = Operation('virsh vol-resize', {'pool': params.pool, 'vol': params.vol, 'capacity': params.capacity})
             op.execute()
-            vol_xml = get_volume_xml(params['poolname'], params['name'])
+            vol_xml = get_volume_xml(params.pool, params.vol)
             result = loads(xmlToJson(vol_xml))
-            print dumps({'result': {'code': 0, 'msg': 'resize disk ' + params['name'] + ' successful.'}, 'data': result})
+            print dumps({'result': {'code': 0, 'msg': 'resize disk ' + params.vol + ' successful.'}, 'data': result})
 
-        elif type == 'uus':
-            kv = {'poolname': params['poolname'], 'name': params['name'], 'size': params['size']}
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool, 'name': params.vol, 'size': params.size}
             op = Operation('cstor-cli vdisk-expand', kv, True)
             diskinfo = op.execute()
 
             if diskinfo['result']['code'] == 0:
                 result = {
                     '_type': 'clouddisk',
-                    'name': {'text': params['name']},
-                    'capacity': {'_unit': 'bytes', 'text': params['capacity']},
+                    'name': {'text': params.vol},
+                    'capacity': {'_unit': 'bytes', 'text': params.capacity},
                     'target': {'format': {'_type: uus'}, 'path': diskinfo['data']['path']},
                     'uni': diskinfo['data']['uni'],
                     'state': 'running',
                     'uuid': randomUUID()
                 }
                 print dumps({'result': {'code': 0,
-                                        'msg': 'resize disk ' + params['poolname'] + ' success.'}, 'data': result})
+                                        'msg': 'resize disk ' + params.pool + ' success.'}, 'data': result})
             else:
                 print dumps(diskinfo)
     except ExecuteException, e:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params['name'] + '. '+e.message}}
+        print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params.vol + '. '+e.message}}
         exit(1)
     except Exception:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params['name']}}
+        print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params.vol}}
         exit(1)
 
-def cloneDisk(type, params):
+def cloneDisk(params):
     try:
-        if type == 'dir' or type == 'nfs' or type == 'glusterfs':
-            op = Operation('virsh vol-clone', {'pool': params['poolname'], 'vol': params['name'], 'newname': params['newname']})
+        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+            op = Operation('virsh vol-clone', {'pool': params.pool, 'vol': params.vol, 'newname': params.newname})
             op.execute()
 
-            vol_xml = get_volume_xml(params['poolname'], params['name'])
+            vol_xml = get_volume_xml(params.pool, params.vol)
             result = loads(xmlToJson(vol_xml))
             print dumps(
-                {'result': {'code': 0, 'msg': 'resize disk ' + params['name'] + ' successful.'}, 'data': result})
-        elif type == 'uus':
-            kv = {'poolname': params['poolname'], 'name': params['name'], 'clonename': params['newname']}
+                {'result': {'code': 0, 'msg': 'resize disk ' + params.vol + ' successful.'}, 'data': result})
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool, 'name': params.vol, 'clonename': params.newname}
             op = Operation('cstor-cli vdisk-clone', kv, True)
             result = op.execute()
             print dumps(result)
     except ExecuteException, e:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params['name'] + '. ' + e.message}}
+        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params.vol + '. ' + e.message}}
         exit(1)
     except Exception:
-        logger.debug('deletePool ' + params['poolname'])
+        logger.debug('deletePool ' + params.pool)
         logger.debug(type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params['name']}}
+        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params.vol}}
         exit(1)
 
 def xmlToJson(xmlStr):
