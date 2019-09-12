@@ -117,14 +117,14 @@ def createPool(params):
         print dumps({'result': {'code': 0, 'msg': 'create pool '+params.pool+' successful.'}, 'data': result})
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '. '+e.message}})
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '.'}})
@@ -142,7 +142,7 @@ def deletePool(params):
             kv = {'poolname': params.pool}
             op = Operation('cstor-cli pool-remove', kv, with_result=True)
             result = op.execute()
-        elif params.type == 'nfs' or type == 'glusterfs':
+        elif params.type == 'nfs' or params.type == 'glusterfs':
             kv = {'pool': params.pool}
             op = Operation('virsh pool-destroy', kv)
             op.execute()
@@ -154,14 +154,14 @@ def deletePool(params):
         print dumps({'result': {'code': 0, 'msg': 'delete pool '+params.pool+' successful.'}, 'data': result})
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '. '+e.message}})
         exit(1)
     except Exception:
         logger.debug('deletePool '+ params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '.'}})
@@ -169,7 +169,7 @@ def deletePool(params):
 
 def createDisk(params):
     try:
-        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+        if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
             op = Operation('virsh vol-create-as', {'pool': params.pool, 'name': params.vol, 'capacity': params.capacity, 'format': params.format})
             op.execute()
             vol_xml = get_volume_xml(params.pool, params.vol)
@@ -210,14 +210,14 @@ def createDisk(params):
                                         'msg': 'create disk '+params.pool+' success.'}, 'data': result})
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol + '. '+e.message}})
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol}})
@@ -226,7 +226,7 @@ def createDisk(params):
 
 def deleteDisk(params):
     try:
-        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+        if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
             op = Operation('virsh vol-delete', {'pool': params.pool, 'vol': params.vol})
             op.execute()
             print dumps({'result': {'code': 0, 'msg': 'delete volume '+params.vol+' success.'}})
@@ -251,14 +251,14 @@ def deleteDisk(params):
             print dumps(result)
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while delete disk ' + params.vol + '. '+e.message}}
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {'code': 1, 'msg': 'error occur while delete disk ' + params.vol + '.'}
@@ -267,7 +267,7 @@ def deleteDisk(params):
 def resizeDisk(params):
     result = None
     try:
-        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+        if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
             op = Operation('virsh vol-resize', {'pool': params.pool, 'vol': params.vol, 'capacity': params.capacity})
             op.execute()
             vol_xml = get_volume_xml(params.pool, params.vol)
@@ -295,14 +295,14 @@ def resizeDisk(params):
                 print dumps(diskinfo)
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params.vol + '. '+e.message}}
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params.vol}}
@@ -310,7 +310,7 @@ def resizeDisk(params):
 
 def cloneDisk(params):
     try:
-        if params.type == 'dir' or type == 'nfs' or type == 'glusterfs':
+        if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
             op = Operation('virsh vol-clone', {'pool': params.pool, 'vol': params.vol, 'newname': params.newname})
             op.execute()
 
@@ -325,14 +325,14 @@ def cloneDisk(params):
             print dumps(result)
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params.vol + '. ' + e.message}}
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
-        logger.debug(type)
+        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params.vol}}
