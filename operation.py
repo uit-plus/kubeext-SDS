@@ -109,6 +109,10 @@ def createPool(type, params):
             result = get_pool_info(params['poolname'])
         print dumps({'result': {'code': 0, 'msg': 'create pool '+params['poolname']+' successful.'}, 'data': result})
     except ExecuteException, e:
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params['poolname'] + '. '+e.message}})
         exit(1)
     except Exception:
@@ -139,6 +143,10 @@ def deletePool(type, params):
             # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "poolname"}
         print dumps({'result': {'code': 0, 'msg': 'delete pool '+params['poolname']+' successful.'}, 'data': result})
     except ExecuteException, e:
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params['poolname'] + '. '+e.message}})
         exit(1)
     except Exception:
@@ -189,6 +197,10 @@ def createDisk(type, params):
                 print dumps({'result': {'code': 0,
                                         'msg': 'create disk '+params['poolname']+' success.'}, 'data': result})
     except ExecuteException, e:
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
         print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params['name'] + '. '+e.message}})
         exit(1)
     except Exception:
@@ -224,6 +236,10 @@ def deleteDisk(type, params):
             result = op.execute()
             print dumps(result)
     except ExecuteException, e:
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while delete disk ' + params['name'] + '. '+e.message}}
         exit(1)
     except Exception:
@@ -264,6 +280,10 @@ def resizeDisk(type, params):
             else:
                 print dumps(diskinfo)
     except ExecuteException, e:
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while resize disk ' + params['name'] + '. '+e.message}}
         exit(1)
     except Exception:
@@ -290,6 +310,10 @@ def cloneDisk(type, params):
             result = op.execute()
             print dumps(result)
     except ExecuteException, e:
+        logger.debug('deletePool ' + params['poolname'])
+        logger.debug(type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
         print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params['name'] + '. ' + e.message}}
         exit(1)
     except Exception:
