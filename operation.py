@@ -167,6 +167,34 @@ def deletePool(params):
         print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '.'}})
         exit(1)
 
+def showPool(params):
+    result = None
+    try:
+        if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
+            result = get_pool_info(params.pool)
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool}
+            op = Operation('cstor-cli pool-show', kv, with_result=True)
+            uus_poolinfo = op.execute()
+            result = {'name': params.pool, 'pooltype': 'uus', 'capacity': uus_poolinfo['data']['total'],
+                      'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
+
+        print dumps({'result': {'code': 0, 'msg': 'show pool '+params.pool+' successful.'}, 'data': result})
+    except ExecuteException, e:
+        logger.debug('deletePool ' + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({'result': {'code': 1, 'msg': 'error occur while show pool ' + params.pool + '. '+e.message}})
+        exit(1)
+    except Exception:
+        logger.debug('showPool ' + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({'result': {'code': 1, 'msg': 'error occur while show pool ' + params.pool + '.'}})
+        exit(1)
+
 def createDisk(params):
     try:
         if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':

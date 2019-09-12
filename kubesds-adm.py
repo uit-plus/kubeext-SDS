@@ -187,6 +187,29 @@ def deletePoolParser(args):
         check_cstor_pool_not_exist(args.pool)
     deletePool(args)
 
+def showPoolParser(args):
+    if args.type is None:
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        exit(1)
+    if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        exit(2)
+    if args.pool is None:
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        exit(3)
+    if args.type == 'dir':
+        check_virsh_pool_not_exist(args.pool)
+
+    elif args.type == 'uus':
+        check_cstor_pool_not_exist(args.pool)
+
+    elif args.type == 'nfs' or args.type == 'glusterfs':
+        # check virsh pool, only for nfs and glusterfs
+        check_virsh_pool_not_exist(args.pool)
+        # check cstor pool
+        check_cstor_pool_not_exist(args.pool)
+    showPool(args)
+
 def createDiskParser(args):
     if args.type is None:
         print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
@@ -338,6 +361,16 @@ parser_delete_pool.add_argument('--pool', metavar='[POOL]', type=str,
 # set default func
 parser_delete_pool.set_defaults(func=deletePoolParser)
 
+# -------------------- add showPool cmd ----------------------------------
+parser_show_pool = subparsers.add_parser('showPool', help='showPool help')
+parser_show_pool.add_argument('--type', metavar='[dir|uus|nfs|glusterfs]', type=str,
+                                help='storage pool type to use')
+
+parser_show_pool.add_argument('--pool', metavar='[POOL]', type=str,
+                                help='storage pool name to delete')
+# set default func
+parser_show_pool.set_defaults(func=showPoolParser)
+
 # -------------------- add createDisk cmd ----------------------------------
 parser_create_disk = subparsers.add_parser('createDisk', help='createDisk help')
 parser_create_disk.add_argument('--type', metavar='[dir|uus|nfs|glusterfs]', type=str,
@@ -397,6 +430,7 @@ parser_clone_disk.add_argument('--newname', metavar='[NEWNAME]', type=str,
                                 help='new volume name to use')
 # set default func
 parser_clone_disk.set_defaults(func=cloneDiskParser)
+
 
 
 test_args = []
