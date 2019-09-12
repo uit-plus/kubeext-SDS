@@ -84,7 +84,7 @@ def createPool(params):
             uus_poolinfo = op.execute()
             result = {'name': params.pool, 'pooltype': 'uus', 'capacity': uus_poolinfo['data']['total'], 'autostart': 'yes', 'path': uus_poolinfo['data']['url'], 'state': 'running', 'uuid': randomUUID()}
         elif params.type == 'nfs':
-            kv = {'poolname': params.pool, 'url': params.url, 'target': params.target}
+            kv = {'poolname': params.pool, 'url': params.url, 'path': params.target}
             if params.opt is not None:
                 kv['opt'] = params.opt
             op1 = Operation('cstor-cli pooladd-nfs', kv, with_result=True)
@@ -101,7 +101,7 @@ def createPool(params):
 
             result = get_pool_info(params.pool)
         elif params.type == 'glusterfs':
-            kv = {'poolname': params.pool, 'url': params.url, 'target': params.target}
+            kv = {'poolname': params.pool, 'url': params.url, 'path': params.target}
             op1 = Operation('cstor-cli pooladd-glusterfs', kv, with_result=True)
             poolinfo = op1.execute()
             if poolinfo['result']['code'] != 0:
