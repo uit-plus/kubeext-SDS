@@ -433,82 +433,82 @@ parser_clone_disk.set_defaults(func=cloneDiskParser)
 
 
 
-test_args = []
-
-dir1 = parser.parse_args(['createPool', '--type', 'dir', '--pool', 'pooldir', '--target', '/var/lib/libvirt/pooldir'])
-dir2 = parser.parse_args(['createDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir', '--capacity', '1073741824', '--format', 'qcow2'])
-dir3 = parser.parse_args(['resizeDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir', '--capacity', '2147483648'])
-dir4 = parser.parse_args(['cloneDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir', '--newname', 'diskdirclone'])
-dir5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdirclone'])
-dir6 = parser.parse_args(['deleteDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir'])
-dir7 = parser.parse_args(['deletePool', '--type', 'dir', '--pool', 'pooldir'])
+# test_args = []
 #
-uus1 = parser.parse_args(['createPool', '--type', 'uus', '--pool', 'pooldev', '--url', 'uus-iscsi-independent://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/3'])
-uus2 = parser.parse_args(['createDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev', '--capacity', '1073741824'])
-uus3 = parser.parse_args(['resizeDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev', '--capacity', '2147483648'])
-uus4 = parser.parse_args(['cloneDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev', '--newname', 'diskdevclone'])
-uus5 = parser.parse_args(['deleteDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev'])
-uus6 = parser.parse_args(['deletePool', '--type', 'uus', '--pool', 'pooldev'])
-
-nfs1 = parser.parse_args(['createPool', '--type', 'nfs', '--pool', 'poolnfs', '--url', 'nfs://192.168.3.99:/nfs/nfs', '--target', 'poolnfs', '--opt', 'nolock'])
-nfs2 = parser.parse_args(['createDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs', '--capacity', '1073741824', '--format', 'qcow2'])
-nfs3 = parser.parse_args(['resizeDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs', '--capacity', '2147483648'])
-nfs4 = parser.parse_args(['cloneDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs', '--newname', 'disknfsclone'])
-nfs5 = parser.parse_args(['deleteDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfsclone'])
-nfs6 = parser.parse_args(['deleteDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs'])
-nfs7 = parser.parse_args(['deletePool', '--type', 'nfs', '--pool', 'poolnfs'])
-
-gfs1 = parser.parse_args(['createPool', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--url', 'glusterfs://192.168.3.93:nfsvol', '--target', 'poolglusterfs'])
-gfs2 = parser.parse_args(['createDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--capacity', '1073741824', '--format', 'qcow2'])
-gfs3 = parser.parse_args(['resizeDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--capacity', '2147483648'])
-gfs4 = parser.parse_args(['cloneDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--newname', 'diskglusterfsclone'])
+# dir1 = parser.parse_args(['createPool', '--type', 'dir', '--pool', 'pooldir', '--target', '/var/lib/libvirt/pooldir'])
+# dir2 = parser.parse_args(['createDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir', '--capacity', '1073741824', '--format', 'qcow2'])
+# dir3 = parser.parse_args(['resizeDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir', '--capacity', '2147483648'])
+# dir4 = parser.parse_args(['cloneDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir', '--newname', 'diskdirclone'])
+# dir5 = parser.parse_args(['deleteDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdirclone'])
+# dir6 = parser.parse_args(['deleteDisk', '--type', 'dir', '--pool', 'pooldir', '--vol', 'diskdir'])
+# dir7 = parser.parse_args(['deletePool', '--type', 'dir', '--pool', 'pooldir'])
+# #
+# uus1 = parser.parse_args(['createPool', '--type', 'uus', '--pool', 'pooldev', '--url', 'uus-iscsi-independent://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/3'])
+# uus2 = parser.parse_args(['createDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev', '--capacity', '1073741824'])
+# uus3 = parser.parse_args(['resizeDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev', '--capacity', '2147483648'])
+# uus4 = parser.parse_args(['cloneDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev', '--newname', 'diskdevclone'])
+# uus5 = parser.parse_args(['deleteDisk', '--type', 'uus', '--pool', 'pooldev', '--vol', 'diskdev'])
+# uus6 = parser.parse_args(['deletePool', '--type', 'uus', '--pool', 'pooldev'])
+#
+# nfs1 = parser.parse_args(['createPool', '--type', 'nfs', '--pool', 'poolnfs', '--url', 'nfs://192.168.3.99:/nfs/nfs', '--target', 'poolnfs', '--opt', 'nolock'])
+# nfs2 = parser.parse_args(['createDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs', '--capacity', '1073741824', '--format', 'qcow2'])
+# nfs3 = parser.parse_args(['resizeDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs', '--capacity', '2147483648'])
+# nfs4 = parser.parse_args(['cloneDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs', '--newname', 'disknfsclone'])
+# nfs5 = parser.parse_args(['deleteDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfsclone'])
+# nfs6 = parser.parse_args(['deleteDisk', '--type', 'nfs', '--pool', 'poolnfs', '--vol', 'disknfs'])
+# nfs7 = parser.parse_args(['deletePool', '--type', 'nfs', '--pool', 'poolnfs'])
+#
+# gfs1 = parser.parse_args(['createPool', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--url', 'glusterfs://192.168.3.93:nfsvol', '--target', 'poolglusterfs'])
+# gfs2 = parser.parse_args(['createDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--capacity', '1073741824', '--format', 'qcow2'])
+# gfs3 = parser.parse_args(['resizeDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--capacity', '2147483648'])
+# gfs4 = parser.parse_args(['cloneDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--newname', 'diskglusterfsclone'])
 # gfs5 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfsclone'])
 # gfs6 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs'])
 # gfs7 = parser.parse_args(['deletePool', '--type', 'glusterfs', '--pool', 'poolglusterfs'])
 
 
-test_args.append(dir1)
-test_args.append(dir2)
-test_args.append(dir3)
-test_args.append(dir4)
-test_args.append(dir5)
-test_args.append(dir6)
-test_args.append(dir7)
-
-test_args.append(uus1)
-test_args.append(uus2)
-test_args.append(uus3)
-test_args.append(uus4)
-test_args.append(uus5)
-test_args.append(uus6)
-
-test_args.append(nfs1)
-test_args.append(nfs2)
-test_args.append(nfs3)
-test_args.append(nfs4)
-test_args.append(nfs5)
-test_args.append(nfs6)
-test_args.append(nfs7)
-
-test_args.append(gfs1)
-test_args.append(gfs2)
-test_args.append(gfs3)
-test_args.append(gfs4)
+# test_args.append(dir1)
+# test_args.append(dir2)
+# test_args.append(dir3)
+# test_args.append(dir4)
+# test_args.append(dir5)
+# test_args.append(dir6)
+# test_args.append(dir7)
+#
+# test_args.append(uus1)
+# test_args.append(uus2)
+# test_args.append(uus3)
+# test_args.append(uus4)
+# test_args.append(uus5)
+# test_args.append(uus6)
+#
+# test_args.append(nfs1)
+# test_args.append(nfs2)
+# test_args.append(nfs3)
+# test_args.append(nfs4)
+# test_args.append(nfs5)
+# test_args.append(nfs6)
+# test_args.append(nfs7)
+#
+# test_args.append(gfs1)
+# test_args.append(gfs2)
+# test_args.append(gfs3)
+# test_args.append(gfs4)
 # test_args.append(gfs5)
 # test_args.append(gfs6)
 # test_args.append(gfs7)
 
 
-for args in test_args:
-    try:
-        args.func(args)
-    except TypeError:
-        logger.debug(traceback.format_exc())
+# for args in test_args:
+#     try:
+#         args.func(args)
+#     except TypeError:
+#         logger.debug(traceback.format_exc())
 
 
-# try:
-#     args = parser.parse_args()
-#     args.func(args)
-# except TypeError:
-#     # print 'argument number not enough'
-#     logger.debug(traceback.format_exc())
+try:
+    args = parser.parse_args()
+    args.func(args)
+except TypeError:
+    # print 'argument number not enough'
+    logger.debug(traceback.format_exc())
