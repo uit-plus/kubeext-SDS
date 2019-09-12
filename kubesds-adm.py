@@ -428,9 +428,9 @@ gfs1 = parser.parse_args(['createPool', '--type', 'glusterfs', '--pool', 'poolgl
 gfs2 = parser.parse_args(['createDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--capacity', '1073741824', '--format', 'qcow2'])
 gfs3 = parser.parse_args(['resizeDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--capacity', '2147483648'])
 gfs4 = parser.parse_args(['cloneDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs', '--newname', 'diskglusterfsclone'])
-gfs5 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfsclone'])
-gfs6 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs'])
-gfs7 = parser.parse_args(['deletePool', '--type', 'glusterfs', '--pool', 'poolglusterfs'])
+# gfs5 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfsclone'])
+# gfs6 = parser.parse_args(['deleteDisk', '--type', 'glusterfs', '--pool', 'poolglusterfs', '--vol', 'diskglusterfs'])
+# gfs7 = parser.parse_args(['deletePool', '--type', 'glusterfs', '--pool', 'poolglusterfs'])
 
 
 test_args.append(dir1)
@@ -460,9 +460,9 @@ test_args.append(gfs1)
 test_args.append(gfs2)
 test_args.append(gfs3)
 test_args.append(gfs4)
-test_args.append(gfs5)
-test_args.append(gfs6)
-test_args.append(gfs7)
+# test_args.append(gfs5)
+# test_args.append(gfs6)
+# test_args.append(gfs7)
 
 
 for args in test_args:
