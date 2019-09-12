@@ -178,10 +178,10 @@ def createDisk(type, params):
                 exit(1)
             else:
                 result = {
-                    '_type': 'clouddisk',
+                    'type': 'clouddisk',
                     'name': {'text': params['name']},
-                    'capacity': {'_unit': 'bytes', 'text': params['capacity']},
-                    'target': {'format': {'_type: uus'}, 'path': prepareInfo['data']['path']},
+                    'capacity': {'text': params['capacity']},
+                    'target': {'path': prepareInfo['data']['path']},
                      'uni': diskinfo['data']['uni'],
                     'state': 'running',
                     'uuid': randomUUID()
