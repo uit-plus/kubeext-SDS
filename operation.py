@@ -35,7 +35,6 @@ class Operation(object):
 
     def execute(self):
         cmd = self.get_cmd()
-        print cmd
         logger.debug(cmd)
 
         if self.with_result:
