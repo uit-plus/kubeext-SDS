@@ -158,7 +158,7 @@ def createDisk(type, params):
             result = loads(xmlToJson(vol_xml))
             print dumps({'result': {'code': 0, 'msg': 'create disk '+params['name']+' successful.'}, 'data': result})
         elif type == 'uus':
-            op1 = Operation('cstor-cli vdisk-create', params, with_result=True)
+            op1 = Operation('cstor-cli vdisk-create', {'poolname': params.poolname, 'name': params.name, 'size': params.capacity}, with_result=True)
             diskinfo = op1.execute()
             if diskinfo['result']['code'] != 0:
                 print dumps(diskinfo)

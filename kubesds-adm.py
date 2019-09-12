@@ -217,7 +217,7 @@ def createDiskParser(args):
         # check cstor disk
         check_cstor_pool_not_exist(args.poolname)
         check_cstor_disk_exist(args.poolname, args.name)
-        createDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'size': args.capacity})
+        createDisk(args.type, {'poolname': args.poolname, 'name': args.name, 'capacity': args.capacity})
 
 def deleteDiskParser(args):
     if args.type is None:
