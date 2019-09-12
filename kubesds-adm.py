@@ -9,7 +9,7 @@ from utils.exception import *
 from utils.exception import ExecuteException
 from utils.libvirt_util import is_pool_exists, is_volume_exists
 
-LOG = 'kubeovs.log'
+LOG = 'kubesds.log'
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 

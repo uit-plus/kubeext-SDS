@@ -9,7 +9,7 @@ from json import loads
 import logger
 from exception import ExecuteException
 
-LOG = 'kubeovs.log'
+LOG = 'kubesds.log'
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
