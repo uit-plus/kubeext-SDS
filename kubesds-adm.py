@@ -33,82 +33,82 @@ def is_cstor_disk_exist(pool, diskname):
 def check_virsh_pool_exist(pool):
     try:
         if is_pool_exists(pool):
-            print {'result': {'code': 5, 'msg': 'virsh pool ' + pool + ' has exist'}}
+            print dumps({'result': {'code': 5, 'msg': 'virsh pool ' + pool + ' has exist'}, 'data': {}})
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 6, 'msg': 'cant get cstor pool info'}}
+        print {'result': {'code': 6, 'msg': 'cant get cstor pool info'}, 'data': {}}
         exit(6)
 
 def check_virsh_pool_not_exist(pool):
     try:
         if not is_pool_exists(pool):
-            print {'result': {'code': 5, 'msg': 'virsh pool ' + pool + ' not exist'}}
+            print {'result': {'code': 5, 'msg': 'virsh pool ' + pool + ' not exist'}, 'data': {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 6, 'msg': 'cant get cstor pool info'}}
+        print {'result': {'code': 6, 'msg': 'cant get cstor pool info'}, 'data': {}}
         exit(6)
 
 def check_cstor_pool_exist(pool):
     try:
         if is_cstor_pool_exist(pool):
-            print {'result': {'code': 7, 'msg': 'cstor pool ' + pool + ' has exist'}}
+            print {'result': {'code': 7, 'msg': 'cstor pool ' + pool + ' has exist'}, 'data': {}}
             exit(7)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 8, 'msg': 'cant get cstor pool info'}}
+        print {'result': {'code': 8, 'msg': 'cant get cstor pool info'}, 'data': {}}
         exit(8)
 
 def check_cstor_pool_not_exist(pool):
     try:
         if not is_cstor_pool_exist(pool):
-            print {'result': {'code': 11, 'msg': 'cstor pool ' + pool + ' not exist'}}
+            print {'result': {'code': 11, 'msg': 'cstor pool ' + pool + ' not exist'}, 'data': {}}
             exit(11)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 8, 'msg': 'cant get cstor pool info'}}
+        print {'result': {'code': 8, 'msg': 'cant get cstor pool info'}, 'data': {}}
         exit(8)
 
 
 def check_virsh_disk_exist(pool, diskname):
     try:
         if is_volume_exists(diskname, pool):
-            print {'result': {'code': 13, 'msg': 'virsh disk ' + diskname + ' has exist in pool '+pool}}
+            print {'result': {'code': 13, 'msg': 'virsh disk ' + diskname + ' has exist in pool '+pool}, 'data': {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 6, 'msg': 'cant get virsh disk info, does exist the pool '+pool}}
+        print {'result': {'code': 6, 'msg': 'cant get virsh disk info, does exist the pool '+pool}, 'data': {}}
         exit(6)
 
 def check_virsh_disk_not_exist(pool, diskname):
     try:
         if not is_volume_exists(diskname, pool):
-            print {'result': {'code': 14, 'msg': 'virsh disk ' + diskname + ' not exist in pool '+pool}}
+            print {'result': {'code': 14, 'msg': 'virsh disk ' + diskname + ' not exist in pool '+pool}, 'data': {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 6, 'msg': 'cant get virsh disk info'}}
+        print {'result': {'code': 6, 'msg': 'cant get virsh disk info'}, 'data': {}}
         exit(6)
 
 def check_cstor_disk_exist(pool, diskname):
     try:
         if is_cstor_disk_exist(pool, diskname):
-            print {'result': {'code': 15, 'msg': 'cstor disk ' + pool + ' has exist in pool '+pool}}
+            print {'result': {'code': 15, 'msg': 'cstor disk ' + pool + ' has exist in pool '+pool}, 'data': {}}
             exit(15)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 8, 'msg': 'cant get cstor disk info'}}
+        print {'result': {'code': 8, 'msg': 'cant get cstor disk info'}, 'data': {}}
         exit(8)
 
 def check_cstor_disk_not_exist(pool, diskname):
     try:
         if not is_cstor_disk_exist(pool, diskname):
-            print {'result': {'code': 16, 'msg': 'cstor disk ' + pool + ' not exist in pool '+pool}}
+            print {'result': {'code': 16, 'msg': 'cstor disk ' + pool + ' not exist in pool '+pool}, 'data': {}}
             exit(15)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 9, 'msg': 'cant get cstor disk info'}}
+        print {'result': {'code': 9, 'msg': 'cant get cstor disk info'}, 'data': {}}
         exit(9)
 
 def check_virsh_disk_size(pool, diskname, size):
@@ -116,30 +116,30 @@ def check_virsh_disk_size(pool, diskname, size):
         vol_xml = get_volume_xml(pool, diskname)
         result = loads(xmlToJson(vol_xml))
         if int(result['volume']['capacity']['text']) >= int(size):
-            print {'result': {'code': 4, 'msg': 'new cstor disk size must larger than the old size.'}}
+            print {'result': {'code': 4, 'msg': 'new cstor disk size must larger than the old size.'}, 'data': {}}
             exit(4)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {'result': {'code': 9, 'msg': 'cant get virsh disk info'}}
+        print {'result': {'code': 9, 'msg': 'cant get virsh disk info'}, 'data': {}}
         exit(9)
 
 def createPoolParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type '+args.type+' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type '+args.type+' not support'}, 'data': {}}
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         exit(3)
     if args.type == 'dir' or args.type == 'nfs' or args.type == 'glusterfs':
         if args.target is None:
-            print {'result': {'code': 9, 'msg': 'less arg, target must be set'}}
+            print {'result': {'code': 9, 'msg': 'less arg, target must be set'}, 'data': {}}
             exit(9)
     if args.type == 'uus' or args.type == 'nfs' or args.type == 'glusterfs':
         if args.url is None:
-            print {'result': {'code': 9, 'msg': 'less arg, url must be set'}}
+            print {'result': {'code': 9, 'msg': 'less arg, url must be set'}, 'data': {}}
             exit(9)
 
     if args.type == 'dir':
@@ -166,13 +166,13 @@ def createPoolParser(args):
 
 def deletePoolParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         exit(3)
     if args.type == 'dir':
         check_virsh_pool_not_exist(args.pool)
@@ -189,13 +189,13 @@ def deletePoolParser(args):
 
 def showPoolParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         exit(3)
     if args.type == 'dir':
         check_virsh_pool_not_exist(args.pool)
@@ -212,30 +212,30 @@ def showPoolParser(args):
 
 def createDiskParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         exit(3)
     if args.vol is None:
-        print {'result': {'code': 3, 'msg': 'less arg, vol must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, vol must be set'}, 'data': {}}
         exit(3)
 
     if args.type == 'dir' or args.type == 'nfs' or args.type == 'glusterfs':
         if args.capacity is None:
-            print {'result': {'code': 4, 'msg': 'less arg, capacity must be set'}}
+            print {'result': {'code': 4, 'msg': 'less arg, capacity must be set'}, 'data': {}}
             exit(4)
         if args.format is None:
-            print {'result': {'code': 4, 'msg': 'less arg, format must be set'}}
+            print {'result': {'code': 4, 'msg': 'less arg, format must be set'}, 'data': {}}
             exit(4)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_exist(args.pool, args.vol)
     elif args.type == 'uus':
         if args.capacity is None:
-            print {'result': {'code': 4, 'msg': 'less arg, capacity must be set'}}
+            print {'result': {'code': 4, 'msg': 'less arg, capacity must be set'}, 'data': {}}
             exit(4)
         # check cstor disk
         check_cstor_pool_not_exist(args.pool)
@@ -245,16 +245,16 @@ def createDiskParser(args):
 
 def deleteDiskParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         exit(3)
     if args.vol is None:
-        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}, 'data': {}}
         exit(3)
 
     if args.type == 'dir' or args.type == 'nfs' or args.type == 'glusterfs':
@@ -267,21 +267,21 @@ def deleteDiskParser(args):
 
 def resizeDiskParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
         print
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         print
         exit(3)
     if args.vol is None:
-        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}, 'data': {}}
         exit(3)
     if args.capacity is None:
-        print {'result': {'code': 3, 'msg': 'less arg, capacity must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, capacity must be set'}, 'data': {}}
         exit(3)
 
     if args.type == 'dir' or args.type == 'nfs' or args.type == 'glusterfs':
@@ -296,19 +296,19 @@ def resizeDiskParser(args):
 
 def cloneDiskParser(args):
     if args.type is None:
-        print {'result': {'code': 1, 'msg': 'less arg type must be set'}}
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
         exit(1)
     if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
-        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}}
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
         exit(2)
     if args.pool is None:
-        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
         exit(3)
     if args.vol is None:
-        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}, 'data': {}}
         exit(3)
     if args.newname is None:
-        print {'result': {'code': 3, 'msg': 'less arg, newname must be set'}}
+        print {'result': {'code': 3, 'msg': 'less arg, newname must be set'}, 'data': {}}
         exit(3)
 
     if args.type == 'dir' or args.type == 'nfs' or args.type == 'glusterfs':

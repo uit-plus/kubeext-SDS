@@ -119,14 +119,14 @@ def createPool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '. '+e.message}, 'data': {}})
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '.'}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create pool ' + params.pool + '.'}, 'data': {}})
         exit(1)
 
 
@@ -156,14 +156,14 @@ def deletePool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '. '+e.message}, 'data': {}})
         exit(1)
     except Exception:
         logger.debug('deletePool '+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '.'}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while delete pool ' + params.pool + '.'}, 'data': {}})
         exit(1)
 
 def showPool(params):
@@ -184,14 +184,14 @@ def showPool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while show pool ' + params.pool + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while show pool ' + params.pool + '. '+e.message}, 'data': {}})
         exit(1)
     except Exception:
         logger.debug('showPool ' + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while show pool ' + params.pool + '.'}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while show pool ' + params.pool + '.'}, 'data': {}})
         exit(1)
 
 def createDisk(params):
@@ -219,9 +219,9 @@ def createDisk(params):
                 op3 = Operation('cstor-cli vdisk-remove', kv, with_result=True)
                 rmDiskInfo = op3.execute()
                 if rmDiskInfo['result']['code'] == 0:
-                    print dumps({'result': {'code': 1, 'msg': 'error: create disk success but can not prepare disk' + params.vol + '.'}})
+                    print dumps({'result': {'code': 1, 'msg': 'error: create disk success but can not prepare disk' + params.vol + '.'}, 'data': {}})
                 else:
-                    print dumps({'result': {'code': 1, 'msg': 'error: can not prepare disk and roll back fail(can not delete the disk)' + params.vol + '. '}})
+                    print dumps({'result': {'code': 1, 'msg': 'error: can not prepare disk and roll back fail(can not delete the disk)' + params.vol + '. '}, 'data': {}})
                 exit(1)
             else:
                 result = {
@@ -240,14 +240,14 @@ def createDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol + '. '+e.message}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol + '. '+e.message, 'data': {}}})
         exit(1)
     except Exception:
         logger.debug('deletePool ' + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol}})
+        print dumps({'result': {'code': 1, 'msg': 'error occur while create disk ' + params.vol, 'data': {}}})
         exit(1)
 
 
@@ -256,7 +256,7 @@ def deleteDisk(params):
         if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
             op = Operation('virsh vol-delete', {'pool': params.pool, 'vol': params.vol})
             op.execute()
-            print dumps({'result': {'code': 0, 'msg': 'delete volume '+params.vol+' success.'}})
+            print dumps({'result': {'code': 0, 'msg': 'delete volume '+params.vol+' success.', 'data': {}}})
         elif params.type == 'uus':
             kv = {'poolname': params.pool, 'name': params.vol}
             op1 = Operation('cstor-cli vdisk-show', kv, with_result=True)
