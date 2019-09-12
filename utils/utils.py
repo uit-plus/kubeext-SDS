@@ -4,6 +4,7 @@ Run back-end command in subprocess.
 import os
 import random
 import subprocess
+import traceback
 from json import loads
 
 import logger
@@ -32,6 +33,8 @@ def runCmdWithResult(cmd):
                 result = loads(msg)
                 return result
             except Exception:
+                logger.debug(cmd)
+                logger.debug(traceback.format_exc())
                 error_msg = ''
                 for index, line in enumerate(std_err):
                     if not str.strip(line):
@@ -48,6 +51,8 @@ def runCmdWithResult(cmd):
                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
                 else:
                     msg = msg + str.strip(line) + ', '
+            logger.debug(cmd)
+            logger.debug(traceback.format_exc())
             raise ExecuteException('RunCmdError', msg)
     finally:
         p.stdout.close()
@@ -66,9 +71,8 @@ def runCmdAndCheckReturnCode(cmd):
     try:
         output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        # print "error code", e.returncode, e.output
-        # output = result.decode()
-        # logger.debug(output)
+        logger.debug(cmd)
+        logger.debug(traceback.format_exc())
         raise ExecuteException('ExecuteError', "Cmd: %s failed!" % cmd + ' cause: '+e.output)
 
 def randomUUID():

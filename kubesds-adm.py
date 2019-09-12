@@ -318,10 +318,6 @@ parser_create_pool.add_argument('--url', metavar='[URL]', type=str,
                                 help='storage pool create location, only for uus')
 
 # dir, nfs and glusterfs only, target will transfer to path in nfs and glusterfs
-parser_create_pool.add_argument('--tag', metavar='[TAG]', type=str,
-                                help='storage pool tag, only for uus')
-
-# dir, nfs and glusterfs only, target will transfer to path in nfs and glusterfs
 parser_create_pool.add_argument('--target', metavar='[TARGET]', type=str,
                                 help='storage pool create location, only for dir, nfs and glusterfs')
 
