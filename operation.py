@@ -35,6 +35,7 @@ class Operation(object):
 
     def execute(self):
         cmd = self.get_cmd()
+        logger.debug(cmd)
 
         if self.with_result:
             return runCmdWithResult(cmd)
