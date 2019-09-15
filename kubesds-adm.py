@@ -367,7 +367,7 @@ parser_show_pool.add_argument('--type', metavar='[dir|uus|nfs|glusterfs]', type=
                                 help='storage pool type to use')
 
 parser_show_pool.add_argument('--pool', metavar='[POOL]', type=str,
-                                help='storage pool name to delete')
+                                help='storage pool name to show')
 # set default func
 parser_show_pool.set_defaults(func=showPoolParser)
 

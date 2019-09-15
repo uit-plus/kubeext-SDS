@@ -76,6 +76,7 @@ def createPool(params):
             op.execute()
 
             result = get_pool_info(params.pool)
+            result['pooltype'] = 'dir'
         elif params.type == 'uus':
             # {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "used": 1000, "pool": "pool1", "url": "uus_://192.168.3.10:7000", "proto": "uus", "free": 2000, "disktype": "uus_", "export-mode": "3", "maintain": "normal", "total": 3000}, "obj":"pooladd"}
             kv = {'poolname': params.pool, 'url': params.url}
@@ -99,6 +100,7 @@ def createPool(params):
             op2.execute()
 
             result = get_pool_info(params.pool)
+            result['pooltype'] = 'nfs'
         elif params.type == 'glusterfs':
             kv = {'poolname': params.pool, 'url': params.url, 'path': params.target}
             op1 = Operation('cstor-cli pooladd-glusterfs', kv, with_result=True)
@@ -113,6 +115,7 @@ def createPool(params):
             op2.execute()
 
             result = get_pool_info(params.pool)
+            result['pooltype'] = 'glusterfs'
         print dumps({'result': {'code': 0, 'msg': 'create pool '+params.pool+' successful.'}, 'data': result})
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
@@ -171,6 +174,7 @@ def showPool(params):
     try:
         if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
             result = get_pool_info(params.pool)
+            result['pooltype'] = params.type
         elif params.type == 'uus':
             kv = {'poolname': params.pool}
             op = Operation('cstor-cli pool-show', kv, with_result=True)
@@ -201,6 +205,7 @@ def createDisk(params):
             op.execute()
             vol_xml = get_volume_xml(params.pool, params.vol)
             result = loads(xmlToJson(vol_xml))
+            result['disktype'] = params.type,
             print dumps({'result': {'code': 0, 'msg': 'create disk '+params.vol+' successful.'}, 'data': result})
         elif params.type == 'uus':
             kv = {'poolname': params.pool, 'name': params.vol, 'size': params.capacity}
@@ -225,7 +230,7 @@ def createDisk(params):
                 exit(1)
             else:
                 result = {
-                    'type': 'clouddisk',
+                    'disktype': 'uus',
                     'name': {'text': params.vol},
                     'capacity': {'text': params.capacity},
                     'target': {'path': prepareInfo['data']['path']},
