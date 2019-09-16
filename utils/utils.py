@@ -42,18 +42,18 @@ def runCmdWithResult(cmd):
                     error_msg = error_msg + str.strip(line)
                 error_msg = str.strip(error_msg)
                 raise ExecuteException('RunCmdError', 'can not parse cstor-cli output to json----'+msg+'. '+error_msg)
-        if std_err:
-            msg = ''
-            for index, line in enumerate(std_err):
-                if not str.strip(line):
-                    continue
-                if index == len(std_err) - 1:
-                    msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-                else:
-                    msg = msg + str.strip(line) + ', '
-            logger.debug(cmd)
-            logger.debug(traceback.format_exc())
-            raise ExecuteException('RunCmdError', msg)
+        # if std_err:
+        #     msg = ''
+        #     for index, line in enumerate(std_err):
+        #         if not str.strip(line):
+        #             continue
+        #         if index == len(std_err) - 1:
+        #             msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
+        #         else:
+        #             msg = msg + str.strip(line) + ', '
+        #     logger.debug(cmd)
+        #     logger.debug(traceback.format_exc())
+        #     raise ExecuteException('RunCmdError', msg)
     finally:
         p.stdout.close()
         p.stderr.close()
