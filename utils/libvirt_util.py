@@ -768,6 +768,35 @@ def get_volume_path(pool_, vol_):
     vol = _get_vol(pool_, vol_)
     return vol.path()
 
+def get_volume_snapshots(path):
+    cmd = 'qemu-img info -U %s' % path
+    try:
+        std_out = runCmdRaiseException(cmd)
+    except:
+        cmd = 'qemu-img info %s' % path
+        std_out = runCmdRaiseException(cmd)
+    start = False
+    snapshots = {'snapshot': []}
+    for line in std_out:
+        line = line.strip()
+        if line.startswith('ID  '):
+            start = True
+            continue
+        if line.startswith('Format '):
+            break;
+        if start:
+            data = re.split('\s+', line)
+            if len(data) == 6:
+                snapshot = {}
+                snapshot['id'] = data[0].strip()
+                snapshot['name'] = data[1].strip()
+                snapshot['date'] = '%s %s' % (data[3].strip(), data[4].strip())
+                snapshots['snapshot'].append(snapshot)
+                continue
+            else:
+                pass
+    return snapshots
+
 def delete_volume(pool_, vol_):
     vol = _get_vol(pool_, vol_)
     return vol.delete()

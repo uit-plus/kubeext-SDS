@@ -7,7 +7,7 @@ from operation import *
 from utils import logger
 from utils.exception import *
 from utils.exception import ExecuteException
-from utils.libvirt_util import is_pool_exists, is_volume_exists
+from utils.libvirt_util import is_pool_exists, is_volume_exists, get_volume_path, get_volume_snapshots
 
 LOG = "/var/log/kubesds.log"
 
@@ -121,6 +121,56 @@ def check_virsh_disk_size(pool, diskname, size):
     except Exception:
         logger.debug(traceback.format_exc())
         print {"result": {"code": 9, "msg": "cant get virsh disk info"}, "data": {}}
+        exit(9)
+
+def check_virsh_snapshot_exist(pool, vol, snapshot):
+    try:
+        vol_path = get_volume_path(pool, vol)
+        snapshots = get_volume_snapshots(vol_path)['snapshot']
+        for sn in snapshots:
+            if sn.get('name') == snapshot:
+                print {"result": {"code": 4, "msg": "snapshot " + snapshot + " has exist."}, "data": {}}
+                exit(4)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 9, "msg": "cant get virsh snapshot info"}, "data": {}}
+        exit(9)
+def check_cstor_snapshot_exist(pool, vol, snapshot):
+    try:
+        op = Operation("cstor-cli vdisk-show-ss", {"pool": pool, "vol": vol, "sname": snapshot}, True)
+        ssInfo = op.execute()
+        if ssInfo['result']['code'] == 0:
+            print {"result": {"code": 4, "msg": "snapshot " + snapshot + " has exist."}, "data": {}}
+            exit(4)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 9, "msg": "cant get cstor snapshot info"}, "data": {}}
+        exit(9)
+
+def check_virsh_snapshot_not_exist(pool, vol, snapshot):
+    try:
+        vol_path = get_volume_path(pool, vol)
+        snapshots = get_volume_snapshots(vol_path)['snapshot']
+        for sn in snapshots:
+            if sn.get('name') == snapshot:
+                return
+        print {"result": {"code": 4, "msg": "snapshot " + snapshot + " not exist."}, "data": {}}
+        exit(4)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 9, "msg": "cant get virsh snapshot info"}, "data": {}}
+        exit(9)
+
+def check_cstor_snapshot_not_exist(pool, vol, snapshot):
+    try:
+        op = Operation("cstor-cli vdisk-show-ss", {"pool": pool, "vol": vol, "sname": snapshot}, True)
+        ssInfo = op.execute()
+        if ssInfo['result']['code'] != 0:
+            print {"result": {"code": 4, "msg": "snapshot " + snapshot + " not exist."}, "data": {}}
+            exit(4)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 9, "msg": "cant get cstor snapshot info"}, "data": {}}
         exit(9)
 
 def createPoolParser(args):
@@ -345,6 +395,102 @@ def showDiskParser(args):
 
     showDisk(args)
 
+
+def createSnapshotParser(args):
+    if args.type is None:
+        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+    if args.vol is None:
+        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        exit(3)
+    if args.snapshot is None:
+        print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_snapshot_exist(args.pool, args.vol, args.snapshot)
+    elif args.type == "uus":
+        # check cstor disk
+        check_cstor_snapshot_exist(args.pool, args.vol, args.snapshot)
+
+    createSnapshot(args)
+
+
+def deleteSnapshotParser(args):
+    if args.type is None:
+        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+    if args.vol is None:
+        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        exit(3)
+    if args.snapshot is None:
+        print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+    elif args.type == "uus":
+        # check cstor disk
+        check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+
+    deleteSnapshot(args)
+
+def recoverySnapshotParser(args):
+    if args.type is None:
+        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+    if args.vol is None:
+        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        exit(3)
+    if args.snapshot is None:
+        print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+    elif args.type == "uus":
+        # check cstor disk
+        check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+
+    recoverySnapshot(args)
+
+def showSnapshotParser(args):
+    if args.type is None:
+        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+    if args.vol is None:
+        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        exit(3)
+    if args.snapshot is None:
+        print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+        exit(3)
+
+    showSnapshot(args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubeovs-adm", description="All storage adaptation tools")
 
@@ -454,17 +600,77 @@ parser_clone_disk.add_argument("--newname", metavar="[NEWNAME]", type=str,
 parser_clone_disk.set_defaults(func=cloneDiskParser)
 
 # -------------------- add showDisk cmd ----------------------------------
-parser_clone_disk = subparsers.add_parser("showDisk", help="showDisk help")
-parser_clone_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_show_disk = subparsers.add_parser("showDisk", help="showDisk help")
+parser_show_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
                                 help="storage pool type to use")
-parser_clone_disk.add_argument("--pool", metavar="[POOL]", type=str,
+parser_show_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_clone_disk.add_argument("--vol", metavar="[VOL]", type=str,
+parser_show_disk.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
 # set default func
-parser_clone_disk.set_defaults(func=showDiskParser)
+parser_show_disk.set_defaults(func=showDiskParser)
 
 
+# -------------------- add createSnapshot cmd ----------------------------------
+parser_create_ss = subparsers.add_parser("createSnapshot", help="createSnapshot help")
+parser_create_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_create_ss.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool to use")
+parser_create_ss.add_argument("--vol", metavar="[VOL]", type=str,
+                                help="volume name to use")
+parser_create_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+                                help="volume snapshot name to use")
+parser_create_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
+                                help="virtual machine name to use")
+# set default func
+parser_create_ss.set_defaults(func=createSnapshotParser)
+
+# -------------------- add deleteSnapshot cmd ----------------------------------
+parser_delete_ss = subparsers.add_parser("deleteSnapshot", help="deleteSnapshot help")
+parser_delete_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_delete_ss.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool to use")
+parser_delete_ss.add_argument("--vol", metavar="[VOL]", type=str,
+                                help="volume name to use")
+parser_delete_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+                                help="volume snapshot name to use")
+parser_delete_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
+                                help="virtual machine name to use")
+# set default func
+parser_delete_ss.set_defaults(func=deleteSnapshotParser)
+
+
+# -------------------- add recoverySnapshot cmd ----------------------------------
+parser_recovery_ss = subparsers.add_parser("recoverySnapshot", help="recoverySnapshot help")
+parser_recovery_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_recovery_ss.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool to use")
+parser_recovery_ss.add_argument("--vol", metavar="[VOL]", type=str,
+                                help="volume name to use")
+parser_recovery_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+                                help="volume snapshot name to use")
+parser_recovery_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
+                                help="virtual machine name to use")
+# set default func
+parser_recovery_ss.set_defaults(func=recoverySnapshotParser)
+
+# -------------------- add showSnapshot cmd ----------------------------------
+parser_show_ss = subparsers.add_parser("showSnapshot", help="showSnapshot help")
+parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_show_ss.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool to use")
+parser_show_ss.add_argument("--vol", metavar="[VOL]", type=str,
+                                help="volume name to use")
+parser_show_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+                                help="volume snapshot name to use")
+parser_show_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
+                                help="virtual machine name to use")
+# set default func
+parser_show_ss.set_defaults(func=showSnapshotParser)
 
 # test_args = []
 #
