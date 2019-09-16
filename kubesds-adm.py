@@ -322,6 +322,28 @@ def cloneDiskParser(args):
 
     cloneDisk(args)
 
+def showDiskParser(args):
+    if args.type is None:
+        print {'result': {'code': 1, 'msg': 'less arg type must be set'}, 'data': {}}
+        exit(1)
+    if args.type not in ['dir', 'uus', 'nfs', 'glusterfs']:
+        print {'result': {'code': 2, 'msg': 'not support value type ' + args.type + ' not support'}, 'data': {}}
+        exit(2)
+    if args.pool is None:
+        print {'result': {'code': 3, 'msg': 'less arg, pool must be set'}, 'data': {}}
+        exit(3)
+    if args.vol is None:
+        print {'result': {'code': 3, 'msg': 'less arg, name must be set'}, 'data': {}}
+        exit(3)
+
+    if args.type == 'dir' or args.type == 'nfs' or args.type == 'glusterfs':
+        check_virsh_disk_not_exist(args.pool, args.vol)
+
+    elif args.type == 'uus':
+        # check cstor disk
+        check_cstor_disk_not_exist(args.pool, args.vol)
+
+    showDisk(args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog='kubeovs-adm', description='All storage adaptation tools')
@@ -430,6 +452,17 @@ parser_clone_disk.add_argument('--newname', metavar='[NEWNAME]', type=str,
                                 help='new volume name to use')
 # set default func
 parser_clone_disk.set_defaults(func=cloneDiskParser)
+
+# -------------------- add showDisk cmd ----------------------------------
+parser_clone_disk = subparsers.add_parser('showDisk', help='showDisk help')
+parser_clone_disk.add_argument('--type', metavar='[dir|uus|nfs|glusterfs]', type=str,
+                                help='storage pool type to use')
+parser_clone_disk.add_argument('--pool', metavar='[POOL]', type=str,
+                                help='storage pool to use')
+parser_clone_disk.add_argument('--vol', metavar='[VOL]', type=str,
+                                help='volume name to use')
+# set default func
+parser_clone_disk.set_defaults(func=showDiskParser)
 
 
 

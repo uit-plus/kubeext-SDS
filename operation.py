@@ -346,15 +346,87 @@ def cloneDisk(params):
             op = Operation('virsh vol-clone', {'pool': params.pool, 'vol': params.vol, 'newname': params.newname})
             op.execute()
 
-            vol_xml = get_volume_xml(params.pool, params.vol)
+            vol_xml = get_volume_xml(params.pool, params.newname)
             result = loads(xmlToJson(vol_xml))
             print dumps(
                 {'result': {'code': 0, 'msg': 'resize disk ' + params.vol + ' successful.'}, 'data': result})
         elif params.type == 'uus':
             kv = {'poolname': params.pool, 'name': params.vol, 'clonename': params.newname}
             op = Operation('cstor-cli vdisk-clone', kv, True)
-            result = op.execute()
-            print dumps(result)
+            diskinfo = op.execute()
+            if diskinfo['result']['code'] != 0:
+                print dumps(diskinfo)
+                exit(1)
+
+            kv = {'poolname': params.pool, 'name': params.vol, 'uni': diskinfo['data']['uni']}
+            op2 = Operation('cstor-cli vdisk-prepare', kv, with_result=True)
+            prepareInfo = op2.execute()
+            # delete the disk
+            if prepareInfo['result']['code'] != 0:
+                kv = {'poolname': params.pool, 'name': params.vol}
+                op3 = Operation('cstor-cli vdisk-remove', kv, with_result=True)
+                rmDiskInfo = op3.execute()
+                if rmDiskInfo['result']['code'] == 0:
+                    print dumps({'result': {'code': 1,
+                                            'msg': 'error: clone disk success but can not prepare disk' + params.vol + '.'},
+                                 'data': {}})
+                else:
+                    print dumps({'result': {'code': 1,
+                                            'msg': 'error: can not prepare disk and roll back fail(can not delete the disk)' + params.vol + '. '},
+                                 'data': {}})
+                exit(1)
+            else:
+                result = {
+                    'disktype': 'uus',
+                    'name': {'text': params.vol},
+                    'capacity': {'text': params.capacity},
+                    'target': {'path': prepareInfo['data']['path']},
+                    'uni': diskinfo['data']['uni'],
+                    'state': 'running',
+                    'uuid': randomUUID()
+                }
+                print dumps({'result': {'code': 0,
+                                        'msg': 'clone disk ' + params.pool + ' success.'}, 'data': result})
+    except ExecuteException, e:
+        logger.debug('deletePool ' + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params.vol + '. ' + e.message}}
+        exit(1)
+    except Exception:
+        logger.debug('deletePool ' + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {'result': {'code': 1, 'msg': 'error occur while clone disk ' + params.vol}}
+        exit(1)
+
+
+def showDisk(params):
+    try:
+        if params.type == 'dir' or params.type == 'nfs' or params.type == 'glusterfs':
+            vol_xml = get_volume_xml(params.pool, params.vol)
+            result = loads(xmlToJson(vol_xml))
+            print dumps(
+                {'result': {'code': 0, 'msg': 'resize disk ' + params.vol + ' successful.'}, 'data': result})
+        elif params.type == 'uus':
+            kv = {'poolname': params.pool, 'name': params.vol}
+            op = Operation('cstor-cli vdisk-show', kv, True)
+            diskinfo = op.execute()
+
+            result = {
+                'disktype': 'uus',
+                'name': {'text': params.vol},
+                'capacity': {'text': params.capacity},
+                'target': {'path': ''},
+                'uni': diskinfo['data']['uni'],
+                'state': 'running',
+                'uuid': randomUUID()
+            }
+
+            print dumps({'result': {'code': 0,
+                                    'msg': 'show disk ' + params.pool + ' success.'}, 'data': result})
     except ExecuteException, e:
         logger.debug('deletePool ' + params.pool)
         logger.debug(params.type)
