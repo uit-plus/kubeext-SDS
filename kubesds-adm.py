@@ -37,7 +37,7 @@ def check_virsh_pool_exist(pool):
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 6, "msg": "cant get cstor pool info"}, "data": {}}
+        print {"result": {"code": 6, "msg": "cant get virsh pool info"}, "data": {}}
         exit(6)
 
 def check_virsh_pool_not_exist(pool):
@@ -47,7 +47,7 @@ def check_virsh_pool_not_exist(pool):
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 6, "msg": "cant get cstor pool info"}, "data": {}}
+        print {"result": {"code": 6, "msg": "cant get virsh pool info"}, "data": {}}
         exit(6)
 
 def check_cstor_pool_exist(pool):
