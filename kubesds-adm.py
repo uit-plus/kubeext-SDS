@@ -713,8 +713,8 @@ dir7 = parser.parse_args(["deletePool", "--type", "dir", "--pool", "pooldir"])
 #
 uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "uus-iscsi-independent://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/3"])
 uus2 = parser.parse_args(["createDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "1073741824"])
-uus3 = parser.parse_args(["resizeDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "2147483648"])
-uus4 = parser.parse_args(["cloneDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--newname", "diskdevclone"])
+# uus3 = parser.parse_args(["resizeDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "2147483648"])
+# uus4 = parser.parse_args(["cloneDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--newname", "diskdevclone"])
 uus5 = parser.parse_args(["deleteDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev"])
 uus6 = parser.parse_args(["deletePool", "--type", "uus", "--pool", "pooldev"])
 
@@ -745,8 +745,8 @@ test_args.append(dir7)
 
 test_args.append(uus1)
 test_args.append(uus2)
-test_args.append(uus3)
-test_args.append(uus4)
+# test_args.append(uus3)
+# test_args.append(uus4)
 test_args.append(uus5)
 test_args.append(uus6)
 
