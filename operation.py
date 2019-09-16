@@ -139,7 +139,7 @@ def deletePool(params):
         if params.type == "dir":
             op = Operation("virsh pool-destroy "+params.pool, {})
             op.execute()
-            result = {"code": 0, "msg": "delete pool "+params.pool+" success"}
+            result = {"msg": "delete pool "+params.pool+" success"}
         elif params.type == "uus":
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
