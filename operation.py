@@ -445,17 +445,15 @@ def showDisk(params):
 def createSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            vol_path = get_volume_path(params.pool, params.vol)
-            op = Operation("virsh vol-create " + params.snapshot+" "+vol_path, {})
+            op = Operation("virsh vol-create-as ", {'pool': params.pool, 'name': params.vol, 'capacity': params.capacity,
+                                                    'format': params.format, 'backing_vol': params.snapshot,
+                                                    'backing_vol_format': params.backing_vol_format})
             op.execute()
             # get snapshot info
-            snapshots = get_volume_snapshots(vol_path)['snapshot']
-            for sn in snapshots:
-                if sn['name'] == params.snapshot:
-                    print {"result": {"code": 0, "msg": "success"}, "data": sn}
-                    exit(0)
-            print {"result": {"code": 1, "msg": "fail: can not get snapshot " + params.snapshot + " info, create snapshot fail."}, "data": {}}
-            exit(1)
+            vol_xml = get_volume_xml(params.pool, params.snapshot)
+            result = loads(xmlToJson(vol_xml))
+            print dumps(
+                {"result": {"code": 0, "msg": "create snapshot " + params.snapshot + " successful."}, "data": result})
 
         elif params.type == "uus":
             if params.vmname is None:
@@ -486,20 +484,9 @@ def createSnapshot(params):
 def deleteSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            vol_path = get_volume_path(params.pool, params.vol)
-            op = Operation("qemu-img snapshot -d " + params.snapshot+" "+vol_path, {})
+            op = Operation("virsh vol-delete ", {'pool': params.pool, 'vol': params.snapshot})
             op.execute()
-            # get snapshot info
-            snapshots = get_volume_snapshots(vol_path)['snapshot']
-            for sn in snapshots:
-                if sn['name'] == params.snapshot:
-                    print {"result": {"code": 1,
-                                      "msg": "fail: can not delete snapshot " + params.snapshot + ", snapshot still exist."},
-                           "data": {}}
-                    exit(1)
-            print {"result": {"code": 0, "msg": "success"}, "data": {}}
-            exit(0)
-
+            print dumps({"result": {"code": 0, "msg": "delete snapshot " + params.snapshot + " success.", "data": {}}})
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-rm-ss",
@@ -530,9 +517,7 @@ def deleteSnapshot(params):
 def recoverySnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            vol_path = get_volume_path(params.pool, params.vol)
-            op = Operation("qemu-img snapshot -a " + params.snapshot + " " + vol_path, {})
-            op.execute()
+            print dumps({"result": {"code": 1, "msg": "not support operation.", "data": {}}})
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-rr-ss",
@@ -563,14 +548,10 @@ def recoverySnapshot(params):
 def showSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            vol_path = get_volume_path(params.pool, params.vol)
-            snapshots = get_volume_snapshots(vol_path)['snapshot']
-            for sn in snapshots:
-                if sn['name'] == params.snapshot:
-                    print {"result": {"code": 0, "msg": "success"}, "data": sn}
-                    exit(0)
-            print {"result": {"code": 1, "msg": "fail: can not get snapshot "+params.snapshot+" info."}, "data": {}}
-            exit(1)
+            vol_xml = get_volume_xml(params.pool, params.snapshot)
+            result = loads(xmlToJson(vol_xml))
+            print dumps(
+                {"result": {"code": 0, "msg": "get snapshot info " + params.snapshot + " successful."}, "data": result})
         elif params.type == "uus":
             op = Operation("cstor-cli vdisk-show-ss", {"pool": params.pool, "vol": params.vol, "sname": params.snapshot}, True)
             ssInfo = op.execute()
