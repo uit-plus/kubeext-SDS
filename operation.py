@@ -286,14 +286,14 @@ def deleteDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while delete disk " + params.vol + ". "+e.message}}
+        print {"result": {"code": 1, "msg": "error occur while delete disk " + params.vol + ". "+e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"code": 1, "msg": "error occur while delete disk " + params.vol + "."}
+        print {"result": {"code": 1, "msg": "error occur while delete disk "}, "data": {}}
         exit(1)
 
 def resizeDisk(params):
@@ -330,14 +330,14 @@ def resizeDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while resize disk " + params.vol + ". "+e.message}}
+        print {"result": {"code": 1, "msg": "error occur while resize disk " + params.vol + ". "+e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while resize disk " + params.vol}}
+        print {"result": {"code": 1, "msg": "error occur while resize disk " + params.vol}, "data": {}}
         exit(1)
 
 def cloneDisk(params):
@@ -392,14 +392,14 @@ def cloneDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol + ". " + e.message}}
+        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol}}
+        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol}, "data": {}}
         exit(1)
 
 
@@ -432,14 +432,14 @@ def showDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol + ". " + e.message}}
+        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol}}
+        print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol}, "data": {}}
         exit(1)
 
 def xmlToJson(xmlStr):
