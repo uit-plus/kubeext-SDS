@@ -445,11 +445,10 @@ def showDisk(params):
 def createSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("/usr/bin/vmm create_disk_snapshot",
-                           {"pool": params.pool, "name": params.vol, "snapshotname": params.snapshot})
+            vol_path = get_volume_path(params.pool, params.vol)
+            op = Operation("virsh vol-create " + params.snapshot+" "+vol_path, {})
             op.execute()
             # get snapshot info
-            vol_path = get_volume_path(params.pool, params.vol)
             snapshots = get_volume_snapshots(vol_path)['snapshot']
             for sn in snapshots:
                 if sn['name'] == params.snapshot:
@@ -487,11 +486,10 @@ def createSnapshot(params):
 def deleteSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("/usr/bin/vmm delete_disk_snapshot",
-                           {"pool": params.pool, "name": params.vol, "snapshotname": params.snapshot})
+            vol_path = get_volume_path(params.pool, params.vol)
+            op = Operation("qemu-img snapshot -d " + params.snapshot+" "+vol_path, {})
             op.execute()
             # get snapshot info
-            vol_path = get_volume_path(params.pool, params.vol)
             snapshots = get_volume_snapshots(vol_path)['snapshot']
             for sn in snapshots:
                 if sn['name'] == params.snapshot:
@@ -532,8 +530,8 @@ def deleteSnapshot(params):
 def recoverySnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("/usr/bin/vmm revert_disk_snapshot",
-                           {"pool": params.pool, "name": params.vol, "snapshotname": params.snapshot})
+            vol_path = get_volume_path(params.pool, params.vol)
+            op = Operation("qemu-img snapshot -a " + params.snapshot + " " + vol_path, {})
             op.execute()
         elif params.type == "uus":
             if params.vmname is None:
