@@ -82,8 +82,3 @@ def randomUUID():
     u[8] = (u[8] & 0x3F) | (2 << 6)
     return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
                      "%02x" * 6]) % tuple(u)
-
-if __name__ == '__main__':
-    op = Operation("cstor-cli pool-show", {"poolname": 'poolnfs'}, with_result=True)
-    result = op.execute()
-    print result
