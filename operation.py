@@ -90,7 +90,7 @@ def createPool(params):
             op1 = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
             poolinfo = op1.execute()
             if poolinfo["result"]["code"] != 0:
-                print poolinfo
+                print dumps(poolinfo)
                 exit(1)
             # {"result":{"code":0, "msg":"success"}, "data":{"opt": "nolock", "status": "active", "mountpath": "/mnt/cstor/var/lib/libvirt/nfs/", "proto": "nfs", "url": "192.168.3.99:/nfs/nfs", "pool": "pool2", "free": 549, "disktype": "file", "maintain": "normal", "used": 0, "total": 549}, "obj":"pooladd"}
 
@@ -106,7 +106,7 @@ def createPool(params):
             op1 = Operation("cstor-cli pooladd-glusterfs", kv, with_result=True)
             poolinfo = op1.execute()
             if poolinfo["result"]["code"] != 0:
-                print poolinfo
+                print dumps(poolinfo)
                 exit(1)
 
             # create dir pool in virsh
