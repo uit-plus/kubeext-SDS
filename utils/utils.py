@@ -9,7 +9,6 @@ from json import loads
 
 import logger
 from exception import ExecuteException
-from operation import Operation
 
 LOG = '/var/log/kubesds.log'
 
