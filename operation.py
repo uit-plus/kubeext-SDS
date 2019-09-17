@@ -95,7 +95,8 @@ def createPool(params):
             # {"result":{"code":0, "msg":"success"}, "data":{"opt": "nolock", "status": "active", "mountpath": "/mnt/cstor/var/lib/libvirt/nfs/", "proto": "nfs", "url": "192.168.3.99:/nfs/nfs", "pool": "pool2", "free": 549, "disktype": "file", "maintain": "normal", "used": 0, "total": 549}, "obj":"pooladd"}
 
             # create dir pool in virsh
-            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"]+"/"+params.pool, "name": params.pool}
+            logger.debug(poolinfo["data"]["mountpath"])
+            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"], "name": params.pool}
             op2 = Operation("virsh pool-create-as", kv)
             op2.execute()
 
@@ -110,7 +111,8 @@ def createPool(params):
                 exit(1)
 
             # create dir pool in virsh
-            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"]+"/"+params.pool, "name": params.pool}
+            logger.debug(poolinfo["data"]["mountpath"])
+            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"], "name": params.pool}
             op2 = Operation("virsh pool-create-as", kv)
             op2.execute()
 
