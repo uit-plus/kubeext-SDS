@@ -205,7 +205,7 @@ def createDisk(params):
             op.execute()
             vol_xml = get_volume_xml(params.pool, params.vol)
             result = loads(xmlToJson(vol_xml))
-            result["disktype"] = params.type,
+            result["disktype"] = params.type
             print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol, "size": params.capacity}
