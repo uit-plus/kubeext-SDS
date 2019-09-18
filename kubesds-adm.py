@@ -406,8 +406,8 @@ def createSnapshotParser(args):
     if args.pool is None:
         print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
-    if args.vol is None:
-        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+    if args.backing_vol is None:
+        print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
         exit(3)
     if args.snapshot is None:
         print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
@@ -460,14 +460,13 @@ def deleteSnapshotParser(args):
 
     deleteSnapshot(args)
 
-def recoverySnapshotParser(args):
+def revertSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
         print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
-
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         print {"result": {"code": 3, "msg": "not support operation"}, "data": {}}
         exit(3)
@@ -484,7 +483,7 @@ def recoverySnapshotParser(args):
         # check cstor disk
         check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
 
-    recoverySnapshot(args)
+    revertSnapshot(args)
 
 def showSnapshotParser(args):
     if args.type is None:
@@ -684,7 +683,7 @@ parser_recovery_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
 parser_recovery_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
                                 help="virtual machine name to use")
 # set default func
-parser_recovery_ss.set_defaults(func=recoverySnapshotParser)
+parser_recovery_ss.set_defaults(func=revertSnapshotParser)
 
 # -------------------- add showSnapshot cmd ----------------------------------
 parser_show_ss = subparsers.add_parser("showSnapshot", help="showSnapshot help")

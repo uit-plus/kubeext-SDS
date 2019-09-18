@@ -524,7 +524,7 @@ def deleteSnapshot(params):
         print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol}, "data": {}}
         exit(1)
 
-def recoverySnapshot(params):
+def revertSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             print dumps({"result": {"code": 1, "msg": "not support operation.", "data": {}}})

@@ -484,7 +484,7 @@ def recoverySnapshotParser(args):
         # check cstor disk
         check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
 
-    recoverySnapshot(args)
+    revertSnapshot(args)
 
 def showSnapshotParser(args):
     if args.type is None:
