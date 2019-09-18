@@ -457,7 +457,7 @@ def createSnapshot(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             op = Operation("virsh vol-create-as ", {'pool': params.pool, 'name': params.snapshot, 'capacity': params.capacity,
                                                     'format': params.format, 'backing-vol': params.vol,
-                                                    'backing-vol-format': params.snapshot_format})
+                                                    'backing-vol-format': params.backing_vol_format})
             op.execute()
             # get snapshot info
             vol_xml = get_volume_xml(params.pool, params.snapshot)
