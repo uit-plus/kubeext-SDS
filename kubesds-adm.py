@@ -640,18 +640,18 @@ parser_create_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=
                                 help="storage pool type to use")
 parser_create_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_create_ss.add_argument("--vol", metavar="[VOL]", type=str,
-                                help="volume name to use")
 parser_create_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
-parser_create_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
-                                help="virtual machine name to use")
 parser_create_ss.add_argument("--capacity", metavar="[CAPACITY]", type=str,
                                 help="disk capacity to use")
-parser_create_ss.add_argument("--backing_vol_format", metavar="[SNAPSHOT_FORMAT]", type=str,
-                                help="disk backing vol format to use")
 parser_create_ss.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
+parser_create_ss.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
+                                help="disk backing vol to use")
+parser_create_ss.add_argument("--backing_vol_format", metavar="[BSCKING_VOL_FORMAT]", type=str,
+                                help="disk backing vol format to use")
+parser_create_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
+                                help="virtual machine name to use")
 # set default func
 parser_create_ss.set_defaults(func=createSnapshotParser)
 
