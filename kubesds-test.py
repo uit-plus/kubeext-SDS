@@ -417,8 +417,8 @@ def createSnapshotParser(args):
         if args.capacity is None:
             print {"result": {"code": 3, "msg": "less arg, capacity must be set"}, "data": {}}
             exit(3)
-        if args.backing_vol_format is None:
-            print {"result": {"code": 3, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
+        if args.snapshot_format is None:
+            print {"result": {"code": 3, "msg": "less arg, snapshot_format must be set"}, "data": {}}
             exit(3)
         if args.format is None:
             print {"result": {"code": 3, "msg": "less arg, format must be set"}, "data": {}}
@@ -648,7 +648,7 @@ parser_create_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
                                 help="virtual machine name to use")
 parser_create_ss.add_argument("--capacity", metavar="[CAPACITY]", type=str,
                                 help="disk capacity to use")
-parser_create_ss.add_argument("--backing_vol_format", metavar="[BACKING_VOL_FORMAT]", type=str,
+parser_create_ss.add_argument("--snapshot_format", metavar="[SNAPSHOT_FORMAT]", type=str,
                                 help="disk backing vol format to use")
 parser_create_ss.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
