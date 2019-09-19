@@ -29,6 +29,7 @@ def runCmdWithResult(cmd):
                     continue
                 msg = msg + str.strip(line)
             msg = str.strip(msg)
+            logger.debug(msg)
             try:
                 result = loads(msg)
                 return result
