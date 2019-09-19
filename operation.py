@@ -326,7 +326,7 @@ def resizeDisk(params):
                     "_type": "clouddisk",
                     "name": {"text": params.vol},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type: uus"}, "path": diskinfo["data"]["path"]},
+                    "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
                     "uni": diskinfo["data"]["uni"],
                     "state": "running",
                     "uuid": randomUUID()
