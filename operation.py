@@ -82,25 +82,27 @@ def createPool(params):
             kv = {"poolname": params.pool, "url": params.url}
             op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
             uus_poolinfo = op.execute()
-            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "running", "uuid": randomUUID()}
+            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "no", "path": uus_poolinfo["data"]["url"], "state": "running", "uuid": randomUUID()}
         elif params.type == "nfs":
-            kv = {"poolname": params.pool, "url": params.url, "path": params.target}
-            if params.opt is not None:
-                kv["opt"] = params.opt
-            op1 = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
-            poolinfo = op1.execute()
-            if poolinfo["result"]["code"] != 0:
-                print dumps(poolinfo)
-                exit(1)
+            # kv = {"poolname": params.pool, "url": params.url, "path": params.target}
+            # if params.opt is not None:
+            #     kv["opt"] = params.opt
+            # op1 = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
+            # poolinfo = op1.execute()
+            # if poolinfo["result"]["code"] != 0:
+            #     print dumps(poolinfo)
+            #     exit(1)
             # {"result":{"code":0, "msg":"success"}, "data":{"opt": "nolock", "status": "active", "mountpath": "/mnt/cstor/var/lib/libvirt/nfs/", "proto": "nfs", "url": "192.168.3.99:/nfs/nfs", "pool": "pool2", "free": 549, "disktype": "file", "maintain": "normal", "used": 0, "total": 549}, "obj":"pooladd"}
 
             # create dir pool in virsh
-            logger.debug(poolinfo["data"]["mountpath"])
-            POOL_PATH = poolinfo["data"]["mountpath"] + '/pool'
+            logger.debug("/var/lib/libvirt/cstor" + '/' + params.pool + '/' + params.pool)
+            POOL_PATH = "/var/lib/libvirt/cstor" + '/' + params.pool + '/' + params.pool
             if not os.path.isdir(POOL_PATH):
                 os.makedirs(POOL_PATH)
 
-            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/pool', "name": params.pool}
+            Operation("mount -t nfs " + params.url + POOL_PATH, {})
+
+            kv = {"type": "dir", "target": POOL_PATH, "name": params.pool}
             op2 = Operation("virsh pool-create-as", kv)
             op2.execute()
 
