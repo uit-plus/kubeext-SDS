@@ -101,7 +101,8 @@ def createPool(params):
                 os.makedirs(POOL_PATH)
 
             logger.debug("mount -t nfs " + params.url + ' ' + POOL_PATH)
-            Operation("mount -t nfs " + params.url + ' ' + POOL_PATH, {})
+            op1 = Operation("mount -t nfs " + params.url + ' ' + POOL_PATH, {})
+            op1.execute()
 
             kv = {"type": "dir", "target": POOL_PATH, "name": params.pool}
             op2 = Operation("virsh pool-create-as", kv)
