@@ -1,0 +1,14 @@
+    syntax = "proto3";
+
+    package cmdcall;
+    service CmdCall {
+        rpc Call (CallRequest) returns (CallResponse) {}
+    }
+
+    message CallRequest {
+        string cmd = 1;
+    }
+
+    message CallResponse {
+        string json = 1;
+    }
