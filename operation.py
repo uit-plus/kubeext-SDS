@@ -96,6 +96,8 @@ def createPool(params):
 
             # create dir pool in virsh
             MOUNT_PATH = "/var/lib/libvirt/cstor" + '/' + params.pool
+            if not os.path.isdir(MOUNT_PATH):
+                os.makedirs(MOUNT_PATH)
             op1 = Operation("mount -t nfs " + params.url + ' ' + MOUNT_PATH, {})
             op1.execute()
 
