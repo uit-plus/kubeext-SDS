@@ -96,11 +96,11 @@ def createPool(params):
 
             # create dir pool in virsh
             logger.debug(poolinfo["data"]["mountpath"])
-            POOL_PATH = poolinfo["data"]["mountpath"]
+            POOL_PATH = poolinfo["data"]["mountpath"] + '/pool'
             if not os.path.isdir(POOL_PATH):
                 os.makedirs(POOL_PATH)
 
-            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/' + params.pool, "name": params.pool}
+            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/pool', "name": params.pool}
             op2 = Operation("virsh pool-create-as", kv)
             op2.execute()
 
