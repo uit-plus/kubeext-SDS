@@ -38,9 +38,9 @@ class Operation(object):
         logger.debug(cmd)
 
         if self.with_result:
-            return runCmdWithResult(cmd)
+            return rpcCallWithResult(cmd)
         else:
-            return runCmdAndCheckReturnCode(cmd)
+            return rpcCallAndCheckReturnCode(cmd)
 
 
 
