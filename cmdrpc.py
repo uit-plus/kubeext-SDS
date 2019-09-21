@@ -54,10 +54,10 @@ def run_server():
     server.start()
     # 使用 ctrl+c 可以退出服务
     try:
-        print("running...")
+        print("rpc server running...")
         time.sleep(1000)
     except KeyboardInterrupt:
-        print("stopping...")
+        print("rpc server stopping...")
         server.stop(0)
 
 def get_IP():
