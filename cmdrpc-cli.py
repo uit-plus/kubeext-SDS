@@ -22,5 +22,6 @@ with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
     client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
     response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
     logger.debug("received: " + response.json)
+    print response.json
 
 
