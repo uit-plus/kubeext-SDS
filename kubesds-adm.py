@@ -697,12 +697,8 @@ parser_show_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
 parser_show_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
                                 help="virtual machine name to use")
-
-
 # set default func
 parser_show_ss.set_defaults(func=showSnapshotParser)
-
-
 
 # test_args = []
 #
