@@ -2,6 +2,8 @@
 Run back-end command in subprocess.
 '''
 import atexit
+import socket
+
 import fcntl
 import os
 import random
@@ -128,6 +130,10 @@ def randomUUID():
     return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
                      "%02x" * 6]) % tuple(u)
 
+def get_IP():
+    myname = socket.getfqdn(socket.gethostname())
+    myaddr = socket.gethostbyname(myname)
+    return myaddr
 
 class CDaemon:
     '''

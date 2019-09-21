@@ -13,7 +13,7 @@ from concurrent import futures
 
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
-from operation import Operation
+from operation import Operation, get_IP
 from utils import logger
 from utils.utils import CDaemon, singleton
 
@@ -84,11 +84,6 @@ def run_server():
     except KeyboardInterrupt:
         print("rpc server stopping...")
         server.stop(0)
-
-def get_IP():
-    myname = socket.getfqdn(socket.gethostname())
-    myaddr = socket.gethostbyname(myname)
-    return myaddr
 
 
 class ClientDaemon(CDaemon):
