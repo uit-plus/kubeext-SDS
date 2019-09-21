@@ -26,6 +26,10 @@ parser.set_defaults()
 
 
 def call_rpc(host, port, cmd):
+    logger.debug(host)
+    logger.debug(port)
+    logger.debug(cmd)
+    print host, port, cmd
     with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
         client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
         response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
