@@ -35,7 +35,7 @@ def call_rpc(host, port, cmd):
 
 try:
     args = parser.parse_args()
-    args.func(args)
+    call_rpc(args.host, args.port, args.cmd)
     print call_rpc(args.host, args.port, args.cmd)
 except TypeError:
     # print "argument number not enough"
