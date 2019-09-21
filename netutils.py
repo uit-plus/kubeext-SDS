@@ -26,4 +26,4 @@ def get_docker0_IP():
 
 
 if __name__ == '__main__':
-    print get_netcard()
+    print get_docker0_IP()
