@@ -11,9 +11,12 @@ import grpc
 from json import dumps
 from concurrent import futures
 
+sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
+
 from operation import Operation
 from utils import logger
 from utils.utils import CDaemon, singleton, get_IP
+
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
