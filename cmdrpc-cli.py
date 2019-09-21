@@ -18,9 +18,9 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 parser = argparse.ArgumentParser(prog="kubeovs-adm", description="All storage adaptation tools")
 
-parser.add_argument('host', help='host help')
-parser.add_argument('port', help='port help')
-parser.add_argument('cmd', help='cmd help')
+parser.add_argument('--host', help='host help')
+parser.add_argument('--port', help='port help')
+parser.add_argument('--cmd', help='cmd help')
 parser.set_defaults()
 
 
