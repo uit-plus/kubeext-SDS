@@ -11,10 +11,6 @@ import cmdcall_pb2
 import cmdcall_pb2_grpc
 from operation import Operation
 
-'''
-Import third party libs
-'''
-from kubernetes import config
 
 '''
 Import local libs
