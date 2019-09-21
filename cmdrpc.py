@@ -83,7 +83,7 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             op = Operation(cmd, {}, with_result=True)
             result = op.execute()
             logger.debug(request)
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': result}))
+            return cmdcall_pb2.CallResponse(json=dumps(result))
         except Exception:
             logger.debug(traceback.format_exc())
 
