@@ -11,6 +11,9 @@ import grpc
 from json import loads, dumps
 from concurrent import futures
 
+sys.path.append('%s' % (os.path.dirname(os.path.realpath(__file__))))
+sys.path.append('%s/utils' % (os.path.dirname(os.path.realpath(__file__))))
+
 from operation import Operation
 from utils import logger
 from utils.utils import CDaemon, singleton
@@ -23,6 +26,8 @@ LOG = "/var/log/cmdrpc.log"
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 DEFAULT_PORT = '19999'
+
+
 
 class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
 
