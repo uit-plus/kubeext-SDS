@@ -111,7 +111,7 @@ def daemonize():
         print help_msg
         sys.exit(1)
     p_name = 'virtctl'
-    pid_fn = '/var/run//var/run/rpc-service.pid'
+    pid_fn = '/var/run/rpc-service.pid'
     log_fn = '/var/log/rpc-service.log'
     err_fn = '/var/log/rpc-service.log'
     cD = ClientDaemon(p_name, pid_fn, stderr=err_fn, verbose=1)
