@@ -15,10 +15,8 @@ from netutils import get_docker0_IP
 
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
-from operation import Operation
 from utils import logger
-from utils.utils import CDaemon, singleton, get_IP
-
+from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckReturnCode
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -29,6 +27,32 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 DEFAULT_PORT = '19999'
 
 
+class Operation(object):
+    def __init__(self, cmd, params, with_result=False):
+        if cmd is None or cmd == "":
+            raise Exception("plz give me right cmd.")
+        if not isinstance(params, dict):
+            raise Exception("plz give me right parameters.")
+
+        self.params = params
+        self.cmd = cmd
+        self.params = params
+        self.with_result = with_result
+
+    def get_cmd(self):
+        cmd = self.cmd
+        for key in self.params.keys():
+            cmd = cmd + " --" + key + " " + self.params[key] + " "
+        return cmd
+
+    def execute(self):
+        cmd = self.get_cmd()
+        logger.debug(cmd)
+
+        if self.with_result:
+            return runCmdWithResult(cmd)
+        else:
+            return runCmdAndCheckReturnCode(cmd)
 
 class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
 
