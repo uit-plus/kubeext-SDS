@@ -19,6 +19,11 @@ class CmdCallStub(object):
         request_serializer=cmdcall__pb2.CallRequest.SerializeToString,
         response_deserializer=cmdcall__pb2.CallResponse.FromString,
         )
+    self.CallWithResult = channel.unary_unary(
+        '/cmdcall.CmdCall/CallWithResult',
+        request_serializer=cmdcall__pb2.CallRequest.SerializeToString,
+        response_deserializer=cmdcall__pb2.CallResponse.FromString,
+        )
 
 
 class CmdCallServicer(object):
@@ -32,11 +37,23 @@ class CmdCallServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def CallWithResult(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_CmdCallServicer_to_server(servicer, server):
   rpc_method_handlers = {
       'Call': grpc.unary_unary_rpc_method_handler(
           servicer.Call,
+          request_deserializer=cmdcall__pb2.CallRequest.FromString,
+          response_serializer=cmdcall__pb2.CallResponse.SerializeToString,
+      ),
+      'CallWithResult': grpc.unary_unary_rpc_method_handler(
+          servicer.CallWithResult,
           request_deserializer=cmdcall__pb2.CallRequest.FromString,
           response_serializer=cmdcall__pb2.CallResponse.SerializeToString,
       ),

@@ -1,6 +1,7 @@
 # coding=utf-8
 import os
 import socket
+import subprocess
 import sys
 import time
 import traceback
@@ -24,21 +25,39 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 DEFAULT_PORT = '19999'
 
 class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
-    def Call(self, request, ctx):
-        max_len = str(len(request.cmd))
-        cmd = str(request.cmd)
-        logger.debug(cmd)
 
+    def Call(self, request, ctx):
+        try:
+            cmd = str(request.cmd)
+            logger.debug(cmd)
+            op = Operation(cmd, {})
+            op.execute()
+
+            logger.debug(request)
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': {}}))
+        except subprocess.CalledProcessError as e:
+            logger.debug(e.output)
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+e.output}, 'data': {}}))
+        except Exception:
+            logger.debug(traceback.format_exc())
+        return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure'}, 'data': {}}))
+
+
+    def CallWithResult(self, request, context):
         jsonstr= ''
         try:
+            cmd = str(request.cmd)
+            logger.debug(cmd)
+
             op = Operation(cmd, {}, with_result=True)
             result = op.execute()
             logger.debug(request)
-            jsonstr = dumps(result)
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': result}))
         except Exception:
             logger.debug(traceback.format_exc())
 
-        return cmdcall_pb2.CallResponse(json=jsonstr)
+        return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure'}, 'data': {}}))
 
 
 def run_server():

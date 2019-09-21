@@ -3,6 +3,7 @@
     package cmdcall;
     service CmdCall {
         rpc Call (CallRequest) returns (CallResponse) {}
+        rpc CallWithResult (CallRequest) returns (CallResponse) {}
     }
 
     message CallRequest {

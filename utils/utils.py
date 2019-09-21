@@ -13,7 +13,12 @@ import traceback
 from functools import wraps
 from json import loads
 
+import grpc
+
+import cmdcall_pb2
+import cmdcall_pb2_grpc
 import logger
+from cmdrpc import get_IP
 from exception import ExecuteException
 
 LOG = '/var/log/kubesds.log'
@@ -81,6 +86,40 @@ def runCmdAndCheckReturnCode(cmd):
         logger.debug(cmd)
         logger.debug(traceback.format_exc())
         raise ExecuteException('ExecuteError', "Cmd: %s failed!" % cmd + ' cause: '+e.output)
+
+def rpcCallAndCheckReturnCode(cmd):
+    jsondict = None
+    try:
+        logger.debug(cmd)
+        host = get_IP()
+        port = 19999
+        with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
+            client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
+            response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
+            logger.debug(response.json)
+            jsondict = loads(str(response.json))
+    except Exception:
+        logger.debug(traceback.format_exc())
+        raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
+
+    if jsondict['result']['code'] != 0:
+        raise ExecuteException('RunCmdError', jsondict['result']['msg'])
+
+def rpcCallWithResult(cmd):
+    logger.debug(cmd)
+    host = get_IP()
+    port = 19999
+    with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
+        client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
+        response = client.CallWithResult(cmdcall_pb2.CallRequest(cmd=cmd))
+        logger.debug("received: " + response.json)
+        try:
+            result = loads(str(response.json))
+            return result
+        except Exception:
+            logger.debug(cmd)
+            logger.debug(traceback.format_exc())
+            raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
 def randomUUID():
     u = [random.randint(0, 255) for ignore in range(0, 16)]
