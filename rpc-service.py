@@ -30,7 +30,7 @@ class parser(ConfigParser.ConfigParser):
         return optionstr 
     
 
-logger = logger.set_logger(os.path.basename(__file__), '/var/log/virtctl.log')
+logger = logger.set_logger(os.path.basename(__file__), '/var/log/rpc-service.log')
 
 DEFAULT_PORT = '19999'
 
