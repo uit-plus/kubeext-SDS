@@ -11,6 +11,8 @@ import grpc
 from json import dumps
 from concurrent import futures
 
+from netutils import get_docker0_IP
+
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from operation import Operation
@@ -72,9 +74,9 @@ def run_server():
     # 注册本地服务,方法ComputeServicer只有这个是变的
     cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
     # 监听端口
-    print get_IP()+':'+DEFAULT_PORT
-    logger.debug(get_IP()+':'+DEFAULT_PORT)
-    server.add_insecure_port(get_IP()+':'+DEFAULT_PORT)
+    print get_docker0_IP()+':'+DEFAULT_PORT
+    logger.debug(get_docker0_IP()+':'+DEFAULT_PORT)
+    server.add_insecure_port(get_docker0_IP()+':'+DEFAULT_PORT)
     # 开始接收请求进行服务
     server.start()
     # 使用 ctrl+c 可以退出服务

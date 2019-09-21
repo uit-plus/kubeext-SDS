@@ -20,6 +20,7 @@ import cmdcall_pb2
 import cmdcall_pb2_grpc
 import logger
 from exception import ExecuteException
+from netutils import get_docker0_IP
 
 LOG = '/var/log/kubesds.log'
 
@@ -91,7 +92,7 @@ def rpcCallAndCheckReturnCode(cmd):
     jsondict = None
     try:
         logger.debug(cmd)
-        host = get_IP()
+        host = get_docker0_IP()
         port = 19999
         with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
             client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
@@ -107,7 +108,7 @@ def rpcCallAndCheckReturnCode(cmd):
 
 def rpcCallWithResult(cmd):
     logger.debug(cmd)
-    host = get_IP()
+    host = get_docker0_IP()
     port = 19999
     with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
         client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)

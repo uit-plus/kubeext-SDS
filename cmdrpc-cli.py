@@ -1,20 +1,18 @@
 import os
-import traceback
 
 import grpc
-import argparse
 
+from netutils import get_docker0_IP
 from utils import logger
 
 import cmdcall_pb2
 import cmdcall_pb2_grpc
-from utils.utils import get_IP
 
 LOG = "/var/log/cmdrpc.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
-host = get_IP()
+host = get_docker0_IP()
 port = '19999'
 
 cmd = 'virsh pool-create-as --type dir  --name pooldir2  --target /var/lib/libvirt/pooldir2'
