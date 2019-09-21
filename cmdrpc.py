@@ -11,7 +11,7 @@ import grpc
 from json import loads, dumps
 from concurrent import futures
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from operation import Operation
 from utils import logger
