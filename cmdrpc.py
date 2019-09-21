@@ -49,6 +49,8 @@ def run_server():
     # 注册本地服务,方法ComputeServicer只有这个是变的
     cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
     # 监听端口
+    print get_IP()+':'+DEFAULT_PORT
+    logger.debug(get_IP()+':'+DEFAULT_PORT)
     server.add_insecure_port(get_IP()+':'+DEFAULT_PORT)
     # 开始接收请求进行服务
     server.start()
