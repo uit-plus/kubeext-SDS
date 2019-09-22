@@ -15,18 +15,19 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 host = get_docker0_IP()
 port = '19999'
 
-cmd = 'virsh pool-create-as --type dir  --name pooldir2  --target /var/lib/libvirt/pooldir2'
-with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
-    client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
-    response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
-    logger.debug("received: " + response.json)
-    print response.json
+# cmd = 'virsh pool-create-as --type dir  --name pooldir2  --target /var/lib/libvirt/pooldir2'
+# with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
+#     client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
+#     response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
+#     logger.debug("received: " + response.json)
+#     print response.json
 
 channel = grpc.insecure_channel("{0}:{1}".format(host, port))
 stub = cmdcall_pb2_grpc.CmdCallStub(channel)
 
 
 
+cmd = 'virsh pool-create-as --type dir  --name pooldir2  --target /var/lib/libvirt/pooldir2'
 
 try:
     # ideally, you should have try catch block here too
