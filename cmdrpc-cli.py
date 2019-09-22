@@ -50,4 +50,4 @@ except grpc.RpcError as e:
         pass
 else:
     logger.debug("received: " + response.json)
-    print(response.Result)
+    print(response.json)
