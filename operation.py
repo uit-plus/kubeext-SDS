@@ -238,7 +238,7 @@ def createDisk(params):
                     "disktype": "uus",
                     "name": {"text": params.vol},
                     "capacity": {"text": params.capacity},
-                    "target": {"path": prepareInfo["data"]["path"]},
+                    "target": {"format": {'_type': 'uus'}, "path": {'text': prepareInfo["data"]["path"]}},
                      "uni": diskinfo["data"]["uni"],
                     "state": "running",
                     "uuid": randomUUID()
