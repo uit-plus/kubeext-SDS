@@ -31,7 +31,7 @@ cmd = 'virsh pool-create-as --type dir  --name pooldir2  --target /var/lib/libvi
 
 try:
     # ideally, you should have try catch block here too
-    response = stub.Call(cmdcall_pb2.CallRequest(Name=cmd))
+    response = stub.Call(cmdcall_pb2.CallRequest(cmd=cmd))
 except grpc.RpcError as e:
     # ouch!
     # lets print the gRPC error message

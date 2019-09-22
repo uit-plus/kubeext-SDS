@@ -130,7 +130,7 @@ def rpcCallWithResult(cmd):
     logger.debug(cmd)
     try:
         # ideally, you should have try catch block here too
-        response = client.CallWithResult(cmdcall_pb2.CallRequest(Name=cmd))
+        response = client.CallWithResult(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
         return result
     except grpc.RpcError as e:
