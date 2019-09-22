@@ -22,4 +22,31 @@ with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
     logger.debug("received: " + response.json)
     print response.json
 
+channel = grpc.insecure_channel("{0}:{1}".format(host, port))
+stub = cmdcall_pb2_grpc.CmdCallStub(channel)
 
+
+
+
+try:
+    # ideally, you should have try catch block here too
+    response = stub.Call(cmdcall_pb2.CallRequest(Name=cmd))
+except grpc.RpcError as e:
+    # ouch!
+    # lets print the gRPC error message
+    # which is "Length of `Name` cannot be more than 10 characters"
+    print(e.details())
+    # lets access the error code, which is `INVALID_ARGUMENT`
+    # `type` of `status_code` is `grpc.StatusCode`
+    status_code = e.code()
+    # should print `INVALID_ARGUMENT`
+    print(status_code.name)
+    # should print `(3, 'invalid argument')`
+    print(status_code.value)
+    # want to do some specific action based on the error?
+    if grpc.StatusCode.INVALID_ARGUMENT == status_code:
+        # do your stuff here
+        pass
+else:
+    logger.debug("received: " + response.json)
+    print(response.Result)

@@ -88,17 +88,37 @@ def runCmdAndCheckReturnCode(cmd):
         logger.debug(traceback.format_exc())
         raise ExecuteException('ExecuteError', "Cmd: %s failed!" % cmd + ' cause: '+e.output)
 
+host = get_docker0_IP()
+port = '19999'
+
+channel = grpc.insecure_channel("{0}:{1}".format(host, port))
+client = cmdcall_pb2_grpc.CmdCallStub(channel)
+
 def rpcCallAndCheckReturnCode(cmd):
     jsondict = None
+    logger.debug(cmd)
     try:
-        logger.debug(cmd)
-        host = get_docker0_IP()
-        port = 19999
-        with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
-            client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
-            response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
-            logger.debug(response.json)
-            jsondict = loads(str(response.json))
+        response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
+        logger.debug(response.json)
+        jsondict = loads(str(response.json))
+    except grpc.RpcError as e:
+        logger.debug(traceback.format_exc())
+        # ouch!
+        # lets print the gRPC error message
+        # which is "Length of `Name` cannot be more than 10 characters"
+        logger.debug(e.details())
+        # lets access the error code, which is `INVALID_ARGUMENT`
+        # `type` of `status_code` is `grpc.StatusCode`
+        status_code = e.code()
+        # should print `INVALID_ARGUMENT`
+        logger.debug(status_code.name)
+        # should print `(3, 'invalid argument')`
+        logger.debug(status_code.value)
+        # want to do some specific action based on the error?
+        if grpc.StatusCode.INVALID_ARGUMENT == status_code:
+            # do your stuff here
+            pass
+        raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
     except Exception:
         logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
@@ -108,19 +128,32 @@ def rpcCallAndCheckReturnCode(cmd):
 
 def rpcCallWithResult(cmd):
     logger.debug(cmd)
-    host = get_docker0_IP()
-    port = 19999
-    with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
-        client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
-        response = client.CallWithResult(cmdcall_pb2.CallRequest(cmd=cmd))
-        logger.debug("received: " + response.json)
-        try:
-            result = loads(str(response.json))
-            return result
-        except Exception:
-            logger.debug(cmd)
-            logger.debug(traceback.format_exc())
-            raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
+    try:
+        # ideally, you should have try catch block here too
+        response = client.CallWithResult(cmdcall_pb2.CallRequest(Name=cmd))
+        result = loads(str(response.json))
+        return result
+    except grpc.RpcError as e:
+        logger.debug(traceback.format_exc())
+        # ouch!
+        # lets print the gRPC error message
+        # which is "Length of `Name` cannot be more than 10 characters"
+        logger.debug(e.details())
+        # lets access the error code, which is `INVALID_ARGUMENT`
+        # `type` of `status_code` is `grpc.StatusCode`
+        status_code = e.code()
+        # should print `INVALID_ARGUMENT`
+        logger.debug(status_code.name)
+        # should print `(3, 'invalid argument')`
+        logger.debug(status_code.value)
+        # want to do some specific action based on the error?
+        if grpc.StatusCode.INVALID_ARGUMENT == status_code:
+            # do your stuff here
+            pass
+        raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
 def randomUUID():
     u = [random.randint(0, 255) for ignore in range(0, 16)]
