@@ -83,7 +83,7 @@ def createPool(params):
             kv = {"poolname": params.pool, "url": params.url}
             op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
             uus_poolinfo = op.execute()
-            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "no", "path": uus_poolinfo["data"]["url"], "state": "running", "uuid": randomUUID()}
+            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "running", "uuid": randomUUID()}
         elif params.type == "nfs":
             kv = {"poolname": params.pool, "url": params.url, "path": params.target}
             if params.opt is not None:
@@ -239,7 +239,7 @@ def createDisk(params):
                     "_type": "clouddisk",
                     "name": {"text": params.vol},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
+                    "target": {"format": {"_type": "uus"}, "path": prepareInfo["data"]["path"]},
                     "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID()
                 }
@@ -386,7 +386,7 @@ def cloneDisk(params):
                     "_type": "clouddisk",
                     "name": {"text": params.newname},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
+                    "target": {"format": {"_type": "uus"}, "path": prepareInfo["data"]["path"]},
                     "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID()
                 }
