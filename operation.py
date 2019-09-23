@@ -206,10 +206,20 @@ def showPool(params):
 def createDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("virsh vol-create-as", {"pool": params.pool, "name": params.vol, "capacity": params.capacity, "format": params.format})
-            op.execute()
+            if params.backing_vol and params.backing_vol_format:
+                op = Operation("virsh vol-create-as",
+                               {"pool": params.pool, "name": params.vol, "capacity": params.capacity,
+                                "format": params.format, 'backing-vol': params.backing_vol,
+                                'backing-vol-format': params.backing_vol_format})
+                op.execute()
+            else:
+                op = Operation("virsh vol-create-as",
+                               {"pool": params.pool, "name": params.vol, "capacity": params.capacity,
+                                "format": params.format})
+                op.execute()
             vol_xml = get_volume_xml(params.pool, params.vol)
-            result = loads(xmlToJson(vol_xml))
+            result = loads(xmlToJson(vol_xml))['volume']
+
             result["disktype"] = params.type
             print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
         elif params.type == "uus":
@@ -308,7 +318,7 @@ def resizeDisk(params):
             op = Operation("virsh vol-resize", {"pool": params.pool, "vol": params.vol, "capacity": params.capacity})
             op.execute()
             vol_xml = get_volume_xml(params.pool, params.vol)
-            result = loads(xmlToJson(vol_xml))
+            result = loads(xmlToJson(vol_xml))['volume']
             print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
 
         elif params.type == "uus":
@@ -352,7 +362,7 @@ def cloneDisk(params):
             op.execute()
 
             vol_xml = get_volume_xml(params.pool, params.newname)
-            result = loads(xmlToJson(vol_xml))
+            result = loads(xmlToJson(vol_xml))['volume']
             print dumps(
                 {"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
@@ -412,7 +422,7 @@ def showDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             vol_xml = get_volume_xml(params.pool, params.vol)
-            result = loads(xmlToJson(vol_xml))
+            result = loads(xmlToJson(vol_xml))['volume']
             print dumps(
                 {"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
@@ -455,7 +465,7 @@ def createSnapshot(params):
             op.execute()
             # get snapshot info
             vol_xml = get_volume_xml(params.pool, params.snapshot)
-            result = loads(xmlToJson(vol_xml))
+            result = loads(xmlToJson(vol_xml))['volume']
             print dumps(
                 {"result": {"code": 0, "msg": "create snapshot " + params.snapshot + " successful."}, "data": result})
 
@@ -553,7 +563,7 @@ def showSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             vol_xml = get_volume_xml(params.pool, params.snapshot)
-            result = loads(xmlToJson(vol_xml))
+            result = loads(xmlToJson(vol_xml))['volume']
             print dumps(
                 {"result": {"code": 0, "msg": "get snapshot info " + params.snapshot + " successful."}, "data": result})
         elif params.type == "uus":

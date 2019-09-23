@@ -283,6 +283,18 @@ def createDiskParser(args):
             exit(4)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_exist(args.pool, args.vol)
+
+        if args.backing_vol is not None:
+            check_virsh_disk_not_exist(args.pool, args.backing_vol)
+            if args.backing_vol_format is None:
+                print {"result": {"code": 4, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
+                exit(4)
+            else:
+                vol_xml = get_volume_xml(args.pool, args.backing_vol)
+                volume = loads(xmlToJson(vol_xml))['volume']
+                if volume['target']['format']['_type'] != args.backing_vol_format:
+                    print {"result": {"code": 4, "msg": "backing_vol_format can not match, plz set right value"}, "data": {}}
+                    exit(4)
     elif args.type == "uus":
         if args.capacity is None:
             print {"result": {"code": 4, "msg": "less arg, capacity must be set"}, "data": {}}
@@ -514,7 +526,7 @@ def showSnapshotParser(args):
     showSnapshot(args)
 
 # --------------------------- cmd line parser ---------------------------------------
-parser = argparse.ArgumentParser(prog="kubeovs-adm", description="All storage adaptation tools")
+parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
 subparsers = parser.add_subparsers(help="sub-command help")
 
@@ -576,6 +588,11 @@ parser_create_disk.add_argument("--capacity", metavar="[CAPACITY]", type=str,
                                 help="capacity is the size of the volume to be created, as a scaled integer (see NOTES above), defaulting to bytes")
 parser_create_disk.add_argument("--format", metavar="[raw|bochs|qcow|qcow2|vmdk|qed]", type=str,
                                 help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed.")
+
+parser_create_disk.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
+                                help="disk backing vol to use")
+parser_create_disk.add_argument("--backing_vol_format", metavar="[BSCKING_VOL_FORMAT]", type=str,
+                                help="disk backing vol format to use")
 
 # set default func
 parser_create_disk.set_defaults(func=createDiskParser)
