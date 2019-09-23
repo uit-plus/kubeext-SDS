@@ -85,7 +85,6 @@ def runCmdAndGetOutput(cmd):
                     continue
                 msg = msg + str.strip(line)
             msg = str.strip(msg)
-            logger.debug(msg)
             return msg
         if std_err:
             msg = ''
