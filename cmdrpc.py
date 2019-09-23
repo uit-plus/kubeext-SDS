@@ -120,7 +120,7 @@ def keep_alive():
     t.start()  # 启动一个线程
     while True:
         output = runCmdAndGetOutput('netstat -anp|grep 19999')
-        if output.find('19999') >= 0:
+        if output is None or output.find('19999') >= 0:
             pass
         else:
             nt = threading.Thread(target=run_server())
