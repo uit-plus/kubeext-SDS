@@ -97,7 +97,7 @@ def run_server():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     # 实例化 计算len的类
     servicer = CmdCallServicer()
-    # 注册本地服务,方法ComputeServicer只有这个是变的
+    # 注册本地服务,方法CmdCallServicer只有这个是变的
     cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
     # 监听端口
     print get_docker0_IP() + ':' + DEFAULT_PORT

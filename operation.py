@@ -236,11 +236,11 @@ def createDisk(params):
             else:
                 result = {
                     "disktype": "uus",
+                    "_type": "clouddisk",
                     "name": {"text": params.vol},
-                    "capacity": {"text": params.capacity},
-                    "target": {"format": {'_type': 'uus'}, "path": {'text': prepareInfo["data"]["path"]}},
-                     "uni": diskinfo["data"]["uni"],
-                    "state": "running",
+                    "capacity": {"_unit": "bytes", "text": params.capacity},
+                    "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
+                    "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID()
                 }
                 print dumps({"result": {"code": 0,
@@ -318,12 +318,12 @@ def resizeDisk(params):
 
             if diskinfo["result"]["code"] == 0:
                 result = {
+                    "disktype": "uus",
                     "_type": "clouddisk",
                     "name": {"text": params.vol},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
                     "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
                     "uni": diskinfo["data"]["uni"],
-                    "state": "running",
                     "uuid": randomUUID()
                 }
                 print dumps({"result": {"code": 0,
@@ -383,11 +383,11 @@ def cloneDisk(params):
             else:
                 result = {
                     "disktype": "uus",
-                    "name": {"text": params.vol},
-                    "capacity": {"text": params.capacity},
-                    "target": {"path": prepareInfo["data"]["path"]},
+                    "_type": "clouddisk",
+                    "name": {"text": params.newname},
+                    "capacity": {"_unit": "bytes", "text": params.capacity},
+                    "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
                     "uni": diskinfo["data"]["uni"],
-                    "state": "running",
                     "uuid": randomUUID()
                 }
                 print dumps({"result": {"code": 0,
@@ -426,7 +426,6 @@ def showDisk(params):
                 "capacity": {"text": params.capacity},
                 "target": {"path": ""},
                 "uni": diskinfo["data"]["uni"],
-                "state": "running",
                 "uuid": randomUUID()
             }
 
