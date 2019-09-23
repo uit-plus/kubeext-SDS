@@ -249,7 +249,7 @@ def createDisk(params):
                     "_type": "clouddisk",
                     "name": {"text": params.vol},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": prepareInfo["data"]["path"]},
+                    "target": {"format": {"_type": "uus"}, "path": {"text": prepareInfo["data"]["path"]}},
                     "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID()
                 }
@@ -332,7 +332,7 @@ def resizeDisk(params):
                     "_type": "clouddisk",
                     "name": {"text": params.vol},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": diskinfo["data"]["path"]},
+                    "target": {"format": {"_type": "uus"}, "path": {"text": diskinfo["data"]["path"]}},
                     "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID()
                 }
@@ -396,7 +396,7 @@ def cloneDisk(params):
                     "_type": "clouddisk",
                     "name": {"text": params.newname},
                     "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": prepareInfo["data"]["path"]},
+                    "target": {"format": {"_type": "uus"}, "path": {"text": prepareInfo["data"]["path"]}},
                     "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID()
                 }
