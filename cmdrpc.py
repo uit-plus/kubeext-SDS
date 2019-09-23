@@ -3,6 +3,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from threading import Thread
@@ -16,7 +17,7 @@ from netutils import get_docker0_IP
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
-from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckReturnCode
+from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckReturnCode, runCmdAndGetOutput
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -114,6 +115,18 @@ def run_server():
         server.stop(0)
 
 
+def keep_alive():
+    t = threading.Thread(target=run_server())
+    t.start()  # 启动一个线程
+    while True:
+        output = runCmdAndGetOutput('netstat -anp|grep 19999')
+        if output.find('19999') >= 0:
+            pass
+        else:
+            nt = threading.Thread(target=run_server())
+            nt.start()  # 启动一个线程
+        time.sleep(1)
+
 class ClientDaemon(CDaemon):
     def __init__(self, name, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=022,
                  verbose=1):
@@ -130,9 +143,13 @@ class ClientDaemon(CDaemon):
         logger.debug("---------------------------------------------------------------------------------")
 
         try:
-            thread_1 = Thread(target=run_server)
+            # thread_1 = Thread(target=run_server)
+            # thread_1.daemon = True
+            # thread_1.name = 'run_server'
+            # thread_1.start()
+            thread_1 = Thread(target=keep_alive)
             thread_1.daemon = True
-            thread_1.name = 'run_server'
+            thread_1.name = 'keep_alive'
             thread_1.start()
             try:
                 while True:
@@ -141,7 +158,6 @@ class ClientDaemon(CDaemon):
                 return
         except:
             logger.error('Oops! ', exc_info=1)
-
 
 def daemonize():
     help_msg = 'Usage: python %s <start|stop|restart|status>' % sys.argv[0]

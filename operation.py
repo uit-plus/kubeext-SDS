@@ -442,7 +442,7 @@ def showDisk(params):
             print dumps({"result": {"code": 0,
                                     "msg": "show disk " + params.pool + " success."}, "data": result})
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("showDisk " + params.vol)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
