@@ -125,6 +125,7 @@ def keep_alive():
         else:
             nt = threading.Thread(target=run_server())
             nt.start()  # 启动一个线程
+        logger.debug("watching port 19999")
         time.sleep(1)
 
 class ClientDaemon(CDaemon):
