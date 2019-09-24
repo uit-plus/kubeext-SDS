@@ -121,7 +121,8 @@ def keep_alive():
     while True:
         output = runCmdAndGetOutput('netstat -anp|grep 19999')
         if output is not None and output.find('19999') >= 0:
-            logger.debug("port 19999 is alive")
+            # logger.debug("port 19999 is alive")
+            pass
         else:
             nt = threading.Thread(target=run_server)
             nt.start()  # 启动一个线程
