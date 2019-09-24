@@ -68,7 +68,7 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             return cmdcall_pb2.CallResponse(
                 json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': {}}))
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError, e:
             logger.debug(e.output)
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
@@ -166,10 +166,10 @@ def daemonize():
     if len(sys.argv) != 2:
         print help_msg
         sys.exit(1)
-    p_name = 'virtlet'
-    pid_fn = '/var/run/cmdrpc.pid'
-    log_fn = '/var/log/cmdrpc.log'
-    err_fn = '/var/log/cmdrpc.log'
+    p_name = 'kubesds-rpc'
+    pid_fn = '/var/run/kubesds-rpc.pid'
+    log_fn = '/var/log/kubesds-rpc.log'
+    err_fn = '/var/log/kubesds-rpc.log'
     cD = ClientDaemon(p_name, pid_fn, stderr=err_fn, verbose=1)
 
     if sys.argv[1] == 'start':

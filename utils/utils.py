@@ -115,7 +115,7 @@ def runCmdAndCheckReturnCode(cmd):
     result = ''
     try:
         output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError, e:
         logger.debug(cmd)
         logger.debug(traceback.format_exc())
         raise ExecuteException('ExecuteError', "Cmd: %s failed!" % cmd + ' cause: '+e.output)
@@ -133,7 +133,7 @@ def rpcCallAndCheckReturnCode(cmd):
         response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
         logger.debug(response.json)
         jsondict = loads(str(response.json))
-    except grpc.RpcError as e:
+    except grpc.RpcError, e:
         logger.debug(traceback.format_exc())
         # ouch!
         # lets print the gRPC error message
@@ -165,7 +165,7 @@ def rpcCallWithResult(cmd):
         response = client.CallWithResult(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
         return result
-    except grpc.RpcError as e:
+    except grpc.RpcError, e:
         logger.debug(traceback.format_exc())
         # ouch!
         # lets print the gRPC error message

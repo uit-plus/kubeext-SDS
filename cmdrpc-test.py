@@ -67,7 +67,7 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             return cmdcall_pb2.CallResponse(
                 json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': {}}))
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError, e:
             logger.debug(e.output)
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
