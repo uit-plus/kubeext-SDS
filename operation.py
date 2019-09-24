@@ -70,8 +70,7 @@ def createPool(params):
         if params.type == "dir":
             POOL_PATH = params.target
             if not os.path.isdir(POOL_PATH):  # container can see the domain path ? TODO
-                mkdir_op = Operation("mkdir -p "+POOL_PATH, {})
-                mkdir_op.execute()
+                os.makedirs(POOL_PATH)
 
             op = Operation("virsh pool-create-as", {"name": params.pool, "type": "dir", "target": params.target})
             op.execute()
