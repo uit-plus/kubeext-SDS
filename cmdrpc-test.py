@@ -20,7 +20,7 @@ from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckRetu
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
-LOG = "/var/log/cmdrpc.log"
+LOG = "/var/log/kubesds-rpc.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
@@ -67,7 +67,7 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             return cmdcall_pb2.CallResponse(
                 json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': {}}))
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError, e:
             logger.debug(e.output)
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(

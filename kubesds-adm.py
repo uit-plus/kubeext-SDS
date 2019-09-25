@@ -14,6 +14,23 @@ LOG = "/var/log/kubesds.log"
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 
+def get_cstor_pool_info(pool):
+    op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
+    result = op.execute()
+    return result
+
+def check_pool_type(pool, type):
+    poolInfo = get_cstor_pool_info(args.pool)
+    if args.type == "dir":
+        if poolInfo['result']['code'] == 0:
+            print {"result": {"code": 3, "msg": "type is not match, plz check"}, "data": {}}
+            exit(3)
+    else:
+        # check pool type, if pool type not match, stop delete pool
+        if poolInfo['data']['proto'] != args.type:
+            print {"result": {"code": 3, "msg": "type is not match, plz check"}, "data": {}}
+            exit(3)
+
 def is_cstor_pool_exist(pool):
     op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
     result = op.execute()
@@ -29,6 +46,7 @@ def is_cstor_disk_exist(pool, diskname):
         return True
     else:
         return False
+
 
 def check_virsh_pool_exist(pool):
     try:
@@ -224,13 +242,20 @@ def deletePoolParser(args):
     if args.pool is None:
         print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
+
+
     if args.type == "dir":
         check_virsh_pool_not_exist(args.pool)
+        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
+        check_pool_type(args.pool, args.type)
 
     elif args.type == "uus":
         check_cstor_pool_not_exist(args.pool)
 
     elif args.type == "nfs" or args.type == "glusterfs":
+        # check pool type, if pool type not match, stop delete pool
+        check_pool_type(args.pool, args.type)
+
         # check virsh pool, only for nfs and glusterfs
         check_virsh_pool_not_exist(args.pool)
         # check cstor pool
@@ -283,6 +308,19 @@ def createDiskParser(args):
             exit(4)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_exist(args.pool, args.vol)
+        check_pool_type(args.pool, args.type)
+
+        if args.backing_vol is not None:
+            check_virsh_disk_not_exist(args.pool, args.backing_vol)
+            if args.backing_vol_format is None:
+                print {"result": {"code": 4, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
+                exit(4)
+            else:
+                vol_xml = get_volume_xml(args.pool, args.backing_vol)
+                volume = loads(xmlToJson(vol_xml))['volume']
+                if volume['target']['format']['_type'] != args.backing_vol_format:
+                    print {"result": {"code": 4, "msg": "backing_vol_format can not match, plz set right value"}, "data": {}}
+                    exit(4)
     elif args.type == "uus":
         if args.capacity is None:
             print {"result": {"code": 4, "msg": "less arg, capacity must be set"}, "data": {}}
@@ -309,6 +347,7 @@ def deleteDiskParser(args):
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
+        check_pool_type(args.pool, args.type)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
@@ -337,7 +376,7 @@ def resizeDiskParser(args):
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_size(args.pool, args.vol, args.capacity)
-
+        check_pool_type(args.pool, args.type)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
@@ -364,7 +403,7 @@ def cloneDiskParser(args):
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_exist(args.pool, args.newname)
-
+        check_pool_type(args.pool, args.type)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
@@ -514,7 +553,7 @@ def showSnapshotParser(args):
     showSnapshot(args)
 
 # --------------------------- cmd line parser ---------------------------------------
-parser = argparse.ArgumentParser(prog="kubeovs-adm", description="All storage adaptation tools")
+parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
 subparsers = parser.add_subparsers(help="sub-command help")
 
@@ -576,6 +615,11 @@ parser_create_disk.add_argument("--capacity", metavar="[CAPACITY]", type=str,
                                 help="capacity is the size of the volume to be created, as a scaled integer (see NOTES above), defaulting to bytes")
 parser_create_disk.add_argument("--format", metavar="[raw|bochs|qcow|qcow2|vmdk|qed]", type=str,
                                 help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed.")
+
+parser_create_disk.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
+                                help="disk backing vol to use")
+parser_create_disk.add_argument("--backing_vol_format", metavar="[BSCKING_VOL_FORMAT]", type=str,
+                                help="disk backing vol format to use")
 
 # set default func
 parser_create_disk.set_defaults(func=createDiskParser)
