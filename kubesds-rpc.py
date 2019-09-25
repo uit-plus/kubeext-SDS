@@ -21,7 +21,7 @@ from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckRetu
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
-LOG = "/var/log/cmdrpc.log"
+LOG = "/var/log/kubesds-rpc.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
@@ -135,10 +135,10 @@ class ClientDaemon(CDaemon):
         CDaemon.__init__(self, save_path, stdin, stdout, stderr, home_dir, umask, verbose)
         self.name = name
 
-    @singleton('/var/run/cmdrpc.pid')
+    @singleton('/var/run/kubesds-rpc.pid')
     def run(self, output_fn, **kwargs):
         logger.debug("---------------------------------------------------------------------------------")
-        logger.debug("------------------------Welcome to Virtlet Daemon.-------------------------------")
+        logger.debug("------------------------Welcome to kubesds-rpc Daemon.-------------------------------")
         logger.debug("------Copyright (2019, ) Institute of Software, Chinese Academy of Sciences------")
         logger.debug("---------author: wuyuewen@otcaix.iscas.ac.cn,liuhe18@otcaix.iscas.ac.cn----------")
         logger.debug("--------------------------------wuheng@otcaix.iscas.ac.cn------------------------")

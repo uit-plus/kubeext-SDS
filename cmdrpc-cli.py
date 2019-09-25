@@ -8,7 +8,7 @@ from utils import logger
 import cmdcall_pb2
 import cmdcall_pb2_grpc
 
-LOG = "/var/log/cmdrpc.log"
+LOG = "/var/log/kubesds-rpc.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
