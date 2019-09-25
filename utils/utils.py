@@ -98,27 +98,53 @@ def runCmdAndGetOutput(cmd):
             logger.debug(cmd)
             logger.debug(traceback.format_exc())
             raise ExecuteException('RunCmdError', msg)
+    except Exception:
+        logger.debug(traceback.format_exc())
     finally:
         p.stdout.close()
         p.stderr.close()
 
 
-
 '''
 Run back-end command in subprocess.
 '''
-def runCmdAndCheckReturnCode(cmd):
+def runCmd(cmd):
+    std_err = None
     if not cmd:
-        logger.debug('No CMD to execute.')
-        raise ExecuteException('error', 'cmd not found')
-
-    result = ''
+#         logger.debug('No CMD to execute.')
+        return
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError, e:
-        logger.debug(cmd)
-        logger.debug(traceback.format_exc())
-        raise ExecuteException('ExecuteError', "Cmd: %s failed!" % cmd + ' cause: '+e.output)
+        std_out = p.stdout.readlines()
+        std_err = p.stderr.readlines()
+        if std_out:
+#             msg = ''
+#             for index,line in enumerate(std_out):
+#                 if not str.strip(line):
+#                     continue
+#                 if index == len(std_out) - 1:
+#                     msg = msg + str.strip(line) + '. '
+#                 else:
+#                     msg = msg + str.strip(line) + ', '
+#             logger.debug(str.strip(msg))
+            logger.debug(std_out)
+        if std_err:
+#             msg = ''
+#             for index, line in enumerate(std_err):
+#                 if not str.strip(line):
+#                     continue
+#                 if index == len(std_err) - 1:
+#                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
+#                 else:
+#                     msg = msg + str.strip(line) + ', '
+            logger.error(std_err)
+#             raise ExecuteException('VirtctlError', str.strip(msg))
+            raise ExecuteException('VirtctlError', std_err)
+#         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
+        return
+    finally:
+        p.stdout.close()
+        p.stderr.close()
 
 host = get_docker0_IP()
 port = '19999'
@@ -126,7 +152,7 @@ port = '19999'
 channel = grpc.insecure_channel("{0}:{1}".format(host, port))
 client = cmdcall_pb2_grpc.CmdCallStub(channel)
 
-def rpcCallAndCheckReturnCode(cmd):
+def rpcCall(cmd):
     jsondict = None
     logger.debug(cmd)
     try:

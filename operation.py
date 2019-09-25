@@ -40,7 +40,7 @@ class Operation(object):
         if self.with_result:
             return rpcCallWithResult(cmd)
         else:
-            return rpcCallAndCheckReturnCode(cmd)
+            return rpcCall(cmd)
 
 
 
@@ -340,14 +340,14 @@ def resizeDisk(params):
             else:
                 print dumps(diskinfo)
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("resizeDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {"result": {"code": 1, "msg": "error occur while resize disk " + params.vol + ". "+e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("resizeDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())

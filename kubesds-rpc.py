@@ -13,11 +13,12 @@ from json import dumps
 from concurrent import futures
 
 from netutils import get_docker0_IP
+from utils.exception import ExecuteException
 
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
-from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckReturnCode, runCmdAndGetOutput
+from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndGetOutput, runCmd
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -53,7 +54,7 @@ class Operation(object):
         if self.with_result:
             return runCmdWithResult(cmd)
         else:
-            return runCmdAndCheckReturnCode(cmd)
+            return runCmd(cmd)
 
 
 class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
@@ -68,14 +69,13 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             return cmdcall_pb2.CallResponse(
                 json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': {}}))
-        except subprocess.CalledProcessError, e:
-            logger.debug(e.output)
+        except ExecuteException:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + e.output}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure'}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
 
     def CallWithResult(self, request, context):
         jsonstr = ''
@@ -90,7 +90,7 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             return cmdcall_pb2.CallResponse(json=dumps(result))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure'}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
 
 
 def run_server():
@@ -119,8 +119,12 @@ def keep_alive():
     t = threading.Thread(target=run_server)
     t.start()  # 启动一个线程
     while True:
-        output = runCmdAndGetOutput('netstat -anp|grep 19999')
-        if output is not None and output.find('19999') >= 0:
+        output = None
+        try:
+            output = runCmdAndGetOutput('netstat -anp|grep '+get_docker0_IP()+':19999')
+        except ExecuteException:
+            logger.debug(traceback.format_exc())
+        if output is not None and output.find(get_docker0_IP()+':19999') >= 0:
             # logger.debug("port 19999 is alive")
             pass
         else:

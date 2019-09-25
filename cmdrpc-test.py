@@ -16,7 +16,7 @@ from netutils import get_docker0_IP
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
-from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndCheckReturnCode
+from utils.utils import CDaemon, singleton, runCmdWithResult, runCmd
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -52,7 +52,7 @@ class Operation(object):
         if self.with_result:
             return runCmdWithResult(cmd)
         else:
-            return runCmdAndCheckReturnCode(cmd)
+            return runCmd(cmd)
 
 
 class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
