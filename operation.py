@@ -250,14 +250,14 @@ def createDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 1, "msg": "error occur while create disk " + params.vol + ". "+e.message, "data": {}}})
+        print dumps({"result": {"code": 1, "msg": "error occur while create disk " + params.vol + ". "+e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 1, "msg": "error occur while create disk " + params.vol, "data": {}}})
+        print dumps({"result": {"code": 1, "msg": "error occur while create disk " + params.vol}, "data": {}})
         exit(1)
 
 
@@ -266,7 +266,7 @@ def deleteDisk(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             op = Operation("virsh vol-delete", {"pool": params.pool, "vol": params.vol})
             op.execute()
-            print dumps({"result": {"code": 0, "msg": "delete volume "+params.vol+" success.", "data": {}}})
+            print dumps({"result": {"code": 0, "msg": "delete volume "+params.vol+" success."}, "data": {}})
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol}
             op1 = Operation("cstor-cli vdisk-show", kv, with_result=True)
@@ -491,7 +491,7 @@ def deleteSnapshot(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             op = Operation("virsh vol-delete ", {'pool': params.pool, 'vol': params.snapshot})
             op.execute()
-            print dumps({"result": {"code": 0, "msg": "delete snapshot " + params.snapshot + " success.", "data": {}}})
+            print dumps({"result": {"code": 0, "msg": "delete snapshot " + params.snapshot + " success."}, "data": {}})
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-rm-ss",
@@ -522,7 +522,7 @@ def deleteSnapshot(params):
 def revertSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            print dumps({"result": {"code": 1, "msg": "not support operation.", "data": {}}})
+            print dumps({"result": {"code": 1, "msg": "not support operation."}, "data": {}})
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-rr-ss",
