@@ -19,6 +19,18 @@ def get_cstor_pool_info(pool):
     result = op.execute()
     return result
 
+def check_pool_type(pool, type):
+    poolInfo = get_cstor_pool_info(args.pool)
+    if args.type == "dir":
+        if poolInfo['result']['code'] == 0:
+            print {"result": {"code": 3, "msg": "type is not match, plz check"}, "data": {}}
+            exit(3)
+    else:
+        # check pool type, if pool type not match, stop delete pool
+        if poolInfo['data']['proto'] != args.type:
+            print {"result": {"code": 3, "msg": "type is not match, plz check"}, "data": {}}
+            exit(3)
+
 def is_cstor_pool_exist(pool):
     op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
     result = op.execute()
@@ -230,20 +242,19 @@ def deletePoolParser(args):
     if args.pool is None:
         print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
+
+
     if args.type == "dir":
         check_virsh_pool_not_exist(args.pool)
         # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
-        check_cstor_pool_exist(args.pool)
+        check_pool_type(args.pool, args.type)
 
     elif args.type == "uus":
         check_cstor_pool_not_exist(args.pool)
 
     elif args.type == "nfs" or args.type == "glusterfs":
         # check pool type, if pool type not match, stop delete pool
-        poolInfo = get_cstor_pool_info(args.pool)
-        if poolInfo['data']['proto'] != args.type:
-            print {"result": {"code": 3, "msg": "pool type is not right, plz check"}, "data": {}}
-            exit(3)
+        check_pool_type(args.pool, args.type)
 
         # check virsh pool, only for nfs and glusterfs
         check_virsh_pool_not_exist(args.pool)
@@ -297,6 +308,7 @@ def createDiskParser(args):
             exit(4)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_exist(args.pool, args.vol)
+        check_pool_type(args.pool, args.type)
 
         if args.backing_vol is not None:
             check_virsh_disk_not_exist(args.pool, args.backing_vol)
@@ -334,12 +346,8 @@ def deleteDiskParser(args):
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
-        # check pool type, if pool type not match, stop delete pool
-        poolInfo = get_cstor_pool_info(args.pool)
-        if poolInfo['data']['proto'] != args.type:
-            print {"result": {"code": 3, "msg": "disk type is not right, plz check"}, "data": {}}
-            exit(3)
         check_virsh_disk_not_exist(args.pool, args.vol)
+        check_pool_type(args.pool, args.type)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
@@ -368,7 +376,7 @@ def resizeDiskParser(args):
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_size(args.pool, args.vol, args.capacity)
-
+        check_pool_type(args.pool, args.type)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
@@ -395,7 +403,7 @@ def cloneDiskParser(args):
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_exist(args.pool, args.newname)
-
+        check_pool_type(args.pool, args.type)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
