@@ -110,18 +110,18 @@ def run_server():
     server.add_insecure_port(get_docker0_IP() + ':' + DEFAULT_PORT)
     # 开始接收请求进行服务
     server.start()
+    return server
     # 使用 ctrl+c 可以退出服务
-    try:
-        print("rpc server running...")
-        time.sleep(1000)
-    except KeyboardInterrupt:
-        print("rpc server stopping...")
-        server.stop(0)
+    # try:
+    #     print("rpc server running...")
+    #     time.sleep(1000)
+    # except KeyboardInterrupt:
+    #     print("rpc server stopping...")
+    #     server.stop(0)
 
 
 def keep_alive():
-    t = threading.Thread(target=run_server)
-    t.start()  # 启动一个线程
+    server = run_server()
     while True:
         output = None
         try:
@@ -132,8 +132,13 @@ def keep_alive():
             # logger.debug("port 19999 is alive")
             pass
         else:
-            nt = threading.Thread(target=run_server)
-            nt.start()  # 启动一个线程
+            # try stop server
+            try:
+                server.stop(0)
+            except Exception:
+                logger.debug(traceback.format_exc())
+            # restart server
+            server = run_server()
             logger.debug("restart port 19999")
         time.sleep(1)
 
