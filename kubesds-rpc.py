@@ -139,7 +139,7 @@ def keep_alive():
                 logger.debug(traceback.format_exc())
             # restart server
             server = run_server()
-            logger.debug("restart port 19999")
+            logger.debug("restart port 19999...")
         time.sleep(1)
 
 class ClientDaemon(CDaemon):
