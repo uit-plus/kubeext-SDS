@@ -462,11 +462,11 @@ def createSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 3, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
-        check_virsh_disk_not_exist(args.pool, args.vol)
+        check_virsh_disk_not_exist(args.pool, args.backing_vol)
         check_virsh_disk_exist(args.pool, args.snapshot)
     elif args.type == "uus":
         # check cstor disk
-        check_cstor_snapshot_exist(args.pool, args.vol, args.snapshot)
+        check_cstor_snapshot_exist(args.pool, args.backing_vol, args.snapshot)
 
     createSnapshot(args)
 

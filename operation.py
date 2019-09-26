@@ -459,7 +459,7 @@ def createSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             op = Operation("virsh vol-create-as ", {'pool': params.pool, 'name': params.snapshot, 'capacity': params.capacity,
-                                                    'format': params.format, 'backing-vol': params.vol,
+                                                    'format': params.format, 'backing-vol': params.backing_vol,
                                                     'backing-vol-format': params.backing_vol_format})
             op.execute()
             # get snapshot info
@@ -471,12 +471,12 @@ def createSnapshot(params):
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-add-ss",
-                               {"poolname": params.pool, "name": params.vol, "sname": params.snapshot}, True)
+                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
                 ssInfo = op.execute()
                 print dumps(ssInfo)
             else:
                 op = Operation("cstor-cli vdisk-add-ss",
-                               {"poolname": params.pool, "name": params.vol, "sname": params.snapshot, 'vmname': params.vmname}, True)
+                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot, 'vmname': params.vmname}, True)
                 ssInfo = op.execute()
                 print dumps(ssInfo)
     except ExecuteException, e:
@@ -484,14 +484,14 @@ def createSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while create Snapshot " + params.vol + ". " + e.message}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while create Snapshot " + params.vol}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol}, "data": {}}
         exit(1)
 
 def deleteSnapshot(params):
