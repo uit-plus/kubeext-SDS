@@ -175,21 +175,21 @@ def check_cstor_snapshot_not_exist(pool, vol, snapshot):
 
 def createPoolParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type "+args.type+" not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type "+args.type+" not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.target is None:
-            print {"result": {"code": 9, "msg": "less arg, target must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, target must be set"}, "data": {}}
             exit(9)
     if args.type == "uus" or args.type == "nfs" or args.type == "glusterfs":
         if args.url is None:
-            print {"result": {"code": 9, "msg": "less arg, url must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
             exit(9)
 
     if args.type == "dir":
@@ -216,13 +216,13 @@ def createPoolParser(args):
 
 def deletePoolParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
 
@@ -246,13 +246,13 @@ def deletePoolParser(args):
 
 def showPoolParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.type == "dir":
         check_virsh_pool_not_exist(args.pool)
@@ -269,24 +269,24 @@ def showPoolParser(args):
 
 def createDiskParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.vol is None:
-        print {"result": {"code": 3, "msg": "less arg, vol must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.capacity is None:
-            print {"result": {"code": 4, "msg": "less arg, capacity must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
             exit(4)
         if args.format is None:
-            print {"result": {"code": 4, "msg": "less arg, format must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(4)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_exist(args.pool, args.vol)
@@ -295,17 +295,17 @@ def createDiskParser(args):
         if args.backing_vol is not None:
             check_virsh_disk_not_exist(args.pool, args.backing_vol)
             if args.backing_vol_format is None:
-                print {"result": {"code": 4, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
+                print {"result": {"code": 100, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
                 exit(4)
             else:
                 vol_xml = get_volume_xml(args.pool, args.backing_vol)
                 volume = loads(xmlToJson(vol_xml))['volume']
                 if volume['target']['format']['_type'] != args.backing_vol_format:
-                    print {"result": {"code": 4, "msg": "backing_vol_format can not match, plz set right value"}, "data": {}}
+                    print {"result": {"code": 100, "msg": "backing_vol_format can not match, plz set right value"}, "data": {}}
                     exit(4)
     elif args.type == "uus":
         if args.capacity is None:
-            print {"result": {"code": 4, "msg": "less arg, capacity must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
             exit(4)
         # check cstor disk
         check_cstor_pool_not_exist(args.pool)
@@ -315,16 +315,16 @@ def createDiskParser(args):
 
 def deleteDiskParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.vol is None:
-        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -338,21 +338,21 @@ def deleteDiskParser(args):
 
 def resizeDiskParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         print
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         print
         exit(3)
     if args.vol is None:
-        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
     if args.capacity is None:
-        print {"result": {"code": 3, "msg": "less arg, capacity must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -367,19 +367,19 @@ def resizeDiskParser(args):
 
 def cloneDiskParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.vol is None:
-        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
     if args.newname is None:
-        print {"result": {"code": 3, "msg": "less arg, newname must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, newname must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -395,16 +395,16 @@ def cloneDiskParser(args):
 
 def showDiskParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.vol is None:
-        print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -418,30 +418,30 @@ def showDiskParser(args):
 
 def createSnapshotParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.backing_vol is None:
-        print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, backing_vol must be set"}, "data": {}}
         exit(3)
     if args.snapshot is None:
-        print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.capacity is None:
-            print {"result": {"code": 3, "msg": "less arg, capacity must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
             exit(3)
         if args.backing_vol_format is None:
-            print {"result": {"code": 3, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
             exit(3)
         if args.format is None:
-            print {"result": {"code": 3, "msg": "less arg, format must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
         check_virsh_disk_not_exist(args.pool, args.snapshot)
         check_virsh_disk_exist(args.pool, args.backing_vol)
@@ -453,26 +453,26 @@ def createSnapshotParser(args):
 
 def deleteSnapshotParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type, " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type, " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         check_virsh_disk_not_exist(args.pool, args.snapshot)
     elif args.type == "uus":
         if args.backing_vol is None:
-            print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, backing_vol must be set"}, "data": {}}
             exit(3)
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         # check cstor disk
         check_cstor_snapshot_not_exist(args.pool, args.backing_vol, args.snapshot)
@@ -481,23 +481,23 @@ def deleteSnapshotParser(args):
 
 def revertSnapshotParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
-        print {"result": {"code": 3, "msg": "not support operation"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support operation"}, "data": {}}
         exit(3)
     elif args.type == "uus":
         if args.pool is None:
-            print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
             exit(3)
         if args.backing_vol is None:
-            print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, backing_vol must be set"}, "data": {}}
             exit(3)
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         # check cstor disk
         check_cstor_snapshot_not_exist(args.pool, args.backing_vol, args.snapshot)
@@ -506,26 +506,26 @@ def revertSnapshotParser(args):
 
 def showSnapshotParser(args):
     if args.type is None:
-        print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
-        print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         check_virsh_disk_not_exist(args.pool, args.snapshot)
     elif args.type == "uus":
         if args.backing_vol is None:
-            print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, backing_vol must be set"}, "data": {}}
             exit(3)
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
+            print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         # check cstor disk
         check_cstor_snapshot_not_exist(args.pool, args.backing_vol, args.snapshot)
