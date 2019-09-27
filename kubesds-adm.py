@@ -23,20 +23,20 @@ def check_pool_type(pool, type):
     poolInfo = get_cstor_pool_info(pool)
     if type == "dir":
         if poolInfo['result']['code'] == 0:
-            print {"result": {"code": 3, "msg": "type is not match, plz check"}, "data": {}}
+            print {"result": {"code": 21, "msg": "type is not match, plz check"}, "data": {}}
             exit(3)
     else:
         if poolInfo['result']['code'] == 0:  # is cstor pool, and check pool type
             # check pool type, if pool type not match, stop delete pool
             if 'proto' not in poolInfo['data'].keys():
-                print {"result": {"code": 3, "msg": "can not get pool proto, cstor-cli cmd bug"}, "data": {}}
+                print {"result": {"code": 21, "msg": "can not get pool proto, cstor-cli cmd bug"}, "data": {}}
                 exit(3)
 
             if poolInfo['data']['proto'] != type:
-                print {"result": {"code": 3, "msg": "type is not match, plz check"}, "data": {}}
+                print {"result": {"code": 21, "msg": "type is not match, plz check"}, "data": {}}
                 exit(3)
         else:  # not is cstor pool, exit
-            print {"result": {"code": 3, "msg": "can not get pool "+pool+" info, not exist the pool or type is not match"}, "data": {}}
+            print {"result": {"code": 21, "msg": "can not get pool "+pool+" info, not exist the pool or type is not match"}, "data": {}}
             exit(3)
 
 def is_cstor_pool_exist(pool):
