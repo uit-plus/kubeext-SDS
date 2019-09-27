@@ -416,7 +416,6 @@ def cloneDisk(params):
         print {"result": {"code": 1, "msg": "error occur while clone disk " + params.vol}, "data": {}}
         exit(1)
 
-
 def showDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
@@ -480,7 +479,7 @@ def createSnapshot(params):
                 ssInfo = op.execute()
                 print dumps(ssInfo)
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("createSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
@@ -503,28 +502,28 @@ def deleteSnapshot(params):
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-rm-ss",
-                               {"poolname": params.pool, "name": params.vol, "sname": params.snapshot}, True)
+                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
                 ssInfo = op.execute()
                 print dumps(ssInfo)
             else:
                 op = Operation("cstor-cli vdisk-rm-ss",
-                               {"poolname": params.pool, "name": params.vol, "sname": params.snapshot,
+                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot,
                                 'vmname': params.vmname}, True)
                 ssInfo = op.execute()
                 print dumps(ssInfo)
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("deleteSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol + ". " + e.message}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while delete Snapshot " + params.snapshot + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while delete Snapshot " + params.snapshot}, "data": {}}
         exit(1)
 
 def revertSnapshot(params):
@@ -534,28 +533,28 @@ def revertSnapshot(params):
         elif params.type == "uus":
             if params.vmname is None:
                 op = Operation("cstor-cli vdisk-rr-ss",
-                               {"poolname": params.pool, "name": params.vol, "sname": params.snapshot}, True)
+                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
                 ssInfo = op.execute()
                 print dumps(ssInfo)
             else:
                 op = Operation("cstor-cli vdisk-rr-ss",
-                               {"poolname": params.pool, "name": params.vol, "sname": params.snapshot,
+                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot,
                                 'vmname': params.vmname}, True)
                 ssInfo = op.execute()
                 print dumps(ssInfo)
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("revertSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol + ". " + e.message}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while revert Snapshot " + params.backing_vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("revertSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while revert Snapshot " + params.backing_vol}, "data": {}}
         exit(1)
 
 def showSnapshot(params):
@@ -566,22 +565,29 @@ def showSnapshot(params):
             print dumps(
                 {"result": {"code": 0, "msg": "get snapshot info " + params.snapshot + " successful."}, "data": result})
         elif params.type == "uus":
-            op = Operation("cstor-cli vdisk-show-ss", {"pool": params.pool, "vol": params.vol, "sname": params.snapshot}, True)
-            ssInfo = op.execute()
-            print dumps(ssInfo)
+            if params.vmname is None:
+                op = Operation("cstor-cli vdisk-show-ss",
+                               {"pool": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
+                ssInfo = op.execute()
+                print dumps(ssInfo)
+            else:
+                op = Operation("cstor-cli vdisk-show-ss",
+                               {"pool": params.pool, "name": params.backing_vol, "sname": params.snapshot, 'vmname': params.vmname}, True)
+                ssInfo = op.execute()
+                print dumps(ssInfo)
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("showSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol + ". " + e.message}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.backing_vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("showSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.vol}, "data": {}}
+        print {"result": {"code": 1, "msg": "error occur while show Snapshot " + params.backing_vol}, "data": {}}
         exit(1)
 
 def xmlToJson(xmlStr):

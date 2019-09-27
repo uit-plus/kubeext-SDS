@@ -23,20 +23,20 @@ def check_pool_type(pool, type):
     poolInfo = get_cstor_pool_info(pool)
     if type == "dir":
         if poolInfo['result']['code'] == 0:
-            print {"result": {"code": 21, "msg": "type is not match, plz check"}, "data": {}}
+            print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
             exit(3)
     else:
         if poolInfo['result']['code'] == 0:  # is cstor pool, and check pool type
             # check pool type, if pool type not match, stop delete pool
             if 'proto' not in poolInfo['data'].keys():
-                print {"result": {"code": 21, "msg": "can not get pool proto, cstor-cli cmd bug"}, "data": {}}
+                print {"result": {"code": 221, "msg": "can not get pool proto, cstor-cli cmd bug"}, "data": {}}
                 exit(3)
 
             if poolInfo['data']['proto'] != type:
-                print {"result": {"code": 21, "msg": "type is not match, plz check"}, "data": {}}
+                print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
                 exit(3)
         else:  # not is cstor pool, exit
-            print {"result": {"code": 21, "msg": "can not get pool "+pool+" info, not exist the pool or type is not match"}, "data": {}}
+            print {"result": {"code": 221, "msg": "can not get pool "+pool+" info, not exist the pool or type is not match"}, "data": {}}
             exit(3)
 
 def is_cstor_pool_exist(pool):
@@ -59,82 +59,82 @@ def is_cstor_disk_exist(pool, diskname):
 def check_virsh_pool_exist(pool):
     try:
         if is_pool_exists(pool):
-            print dumps({"result": {"code": 5, "msg": "virsh pool " + pool + " has exist"}, "data": {}})
-            exit(5)
+            print dumps({"result": {"code": 201, "msg": "virsh pool " + pool + " has exist"}, "data": {}})
+            exit(1)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 6, "msg": "cant get virsh pool info"}, "data": {}}
-        exit(6)
+        print {"result": {"code": 202, "msg": "cant get virsh pool info"}, "data": {}}
+        exit(2)
 
 def check_virsh_pool_not_exist(pool):
     try:
         if not is_pool_exists(pool):
-            print {"result": {"code": 5, "msg": "virsh pool " + pool + " not exist"}, "data": {}}
+            print {"result": {"code": 203, "msg": "virsh pool " + pool + " not exist"}, "data": {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 6, "msg": "cant get virsh pool info"}, "data": {}}
+        print {"result": {"code": 202, "msg": "cant get virsh pool info"}, "data": {}}
         exit(6)
 
 def check_cstor_pool_exist(pool):
     try:
         if is_cstor_pool_exist(pool):
-            print {"result": {"code": 7, "msg": "cstor pool " + pool + " has exist"}, "data": {}}
+            print {"result": {"code": 204, "msg": "cstor pool " + pool + " has exist"}, "data": {}}
             exit(7)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 8, "msg": "cant get cstor pool info"}, "data": {}}
+        print {"result": {"code": 205, "msg": "cant get cstor pool info"}, "data": {}}
         exit(8)
 
 def check_cstor_pool_not_exist(pool):
     try:
         if not is_cstor_pool_exist(pool):
-            print {"result": {"code": 11, "msg": "cstor pool " + pool + " not exist"}, "data": {}}
+            print {"result": {"code": 206, "msg": "cstor pool " + pool + " not exist"}, "data": {}}
             exit(11)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 8, "msg": "cant get cstor pool info"}, "data": {}}
+        print {"result": {"code": 205, "msg": "cant get cstor pool info"}, "data": {}}
         exit(8)
 
 
 def check_virsh_disk_exist(pool, diskname):
     try:
         if is_volume_exists(diskname, pool):
-            print {"result": {"code": 13, "msg": "virsh disk " + diskname + " has exist in pool "+pool}, "data": {}}
+            print {"result": {"code": 207, "msg": "virsh disk " + diskname + " has exist in pool "+pool}, "data": {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 6, "msg": "cant get virsh disk info, does exist the pool "+pool}, "data": {}}
+        print {"result": {"code": 208, "msg": "cant get virsh disk info, please check pool and disk is match or not"}, "data": {}}
         exit(6)
 
 def check_virsh_disk_not_exist(pool, diskname):
     try:
         if not is_volume_exists(diskname, pool):
-            print {"result": {"code": 14, "msg": "virsh disk " + diskname + " not exist in pool "+pool}, "data": {}}
+            print {"result": {"code": 209, "msg": "virsh disk " + diskname + " not exist in pool "+pool}, "data": {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 6, "msg": "cant get virsh disk info"}, "data": {}}
+        print {"result": {"code": 208, "msg": "cant get virsh disk info"}, "data": {}}
         exit(6)
 
 def check_cstor_disk_exist(pool, diskname):
     try:
         if is_cstor_disk_exist(pool, diskname):
-            print {"result": {"code": 15, "msg": "cstor disk " + pool + " has exist in pool "+pool}, "data": {}}
+            print {"result": {"code": 210, "msg": "cstor disk " + pool + " has exist in pool "+pool}, "data": {}}
             exit(15)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 8, "msg": "cant get cstor disk info"}, "data": {}}
+        print {"result": {"code": 211, "msg": "cant get cstor disk info"}, "data": {}}
         exit(8)
 
 def check_cstor_disk_not_exist(pool, diskname):
     try:
         if not is_cstor_disk_exist(pool, diskname):
-            print {"result": {"code": 16, "msg": "cstor disk " + pool + " not exist in pool "+pool}, "data": {}}
+            print {"result": {"code": 212, "msg": "cstor disk " + pool + " not exist in pool "+pool}, "data": {}}
             exit(15)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 9, "msg": "cant get cstor disk info"}, "data": {}}
+        print {"result": {"code": 211, "msg": "cant get cstor disk info"}, "data": {}}
         exit(9)
 
 def check_virsh_disk_size(pool, diskname, size):
@@ -142,61 +142,35 @@ def check_virsh_disk_size(pool, diskname, size):
         vol_xml = get_volume_xml(pool, diskname)
         result = loads(xmlToJson(vol_xml))
         if int(result["volume"]["capacity"]["text"]) >= int(size):
-            print {"result": {"code": 4, "msg": "new cstor disk size must larger than the old size."}, "data": {}}
+            print {"result": {"code": 213, "msg": "new cstor disk size must larger than the old size."}, "data": {}}
             exit(4)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 9, "msg": "cant get virsh disk info"}, "data": {}}
+        print {"result": {"code": 208, "msg": "cant get virsh disk info"}, "data": {}}
         exit(9)
 
-def check_virsh_snapshot_exist(pool, vol, snapshot):
-    try:
-        vol_path = get_volume_path(pool, vol)
-        snapshots = get_volume_snapshots(vol_path)['snapshot']
-        for sn in snapshots:
-            if sn.get('name') == snapshot:
-                print {"result": {"code": 4, "msg": "snapshot " + snapshot + " has exist."}, "data": {}}
-                exit(4)
-    except Exception:
-        logger.debug(traceback.format_exc())
-        print {"result": {"code": 9, "msg": "cant get virsh snapshot info"}, "data": {}}
-        exit(9)
 def check_cstor_snapshot_exist(pool, vol, snapshot):
     try:
-        op = Operation("cstor-cli vdisk-show-ss", {"pool": pool, "vol": vol, "sname": snapshot}, True)
+        op = Operation("cstor-cli vdisk-show-ss", {"poolname": pool, "name": vol, "sname": snapshot}, True)
         ssInfo = op.execute()
         if ssInfo['result']['code'] == 0:
-            print {"result": {"code": 4, "msg": "snapshot " + snapshot + " has exist."}, "data": {}}
+            print {"result": {"code": 214, "msg": "snapshot " + snapshot + " has exist."}, "data": {}}
             exit(4)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 9, "msg": "cant get cstor snapshot info"}, "data": {}}
-        exit(9)
-
-def check_virsh_snapshot_not_exist(pool, vol, snapshot):
-    try:
-        vol_path = get_volume_path(pool, vol)
-        snapshots = get_volume_snapshots(vol_path)['snapshot']
-        for sn in snapshots:
-            if sn.get('name') == snapshot:
-                return
-        print {"result": {"code": 4, "msg": "snapshot " + snapshot + " not exist."}, "data": {}}
-        exit(4)
-    except Exception:
-        logger.debug(traceback.format_exc())
-        print {"result": {"code": 9, "msg": "cant get virsh snapshot info"}, "data": {}}
+        print {"result": {"code": 215, "msg": "cant get cstor snapshot info"}, "data": {}}
         exit(9)
 
 def check_cstor_snapshot_not_exist(pool, vol, snapshot):
     try:
-        op = Operation("cstor-cli vdisk-show-ss", {"pool": pool, "vol": vol, "sname": snapshot}, True)
+        op = Operation("cstor-cli vdisk-show-ss", {"poolname": pool, "name": vol, "sname": snapshot}, True)
         ssInfo = op.execute()
         if ssInfo['result']['code'] != 0:
-            print {"result": {"code": 4, "msg": "snapshot " + snapshot + " not exist."}, "data": {}}
+            print {"result": {"code": 216, "msg": "snapshot " + snapshot + " not exist."}, "data": {}}
             exit(4)
     except Exception:
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 9, "msg": "cant get cstor snapshot info"}, "data": {}}
+        print {"result": {"code": 215, "msg": "cant get cstor snapshot info"}, "data": {}}
         exit(9)
 
 def createPoolParser(args):
@@ -442,7 +416,6 @@ def showDiskParser(args):
 
     showDisk(args)
 
-
 def createSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
@@ -457,7 +430,7 @@ def createSnapshotParser(args):
         print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
         exit(3)
     if args.snapshot is None:
-        print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+        print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -470,21 +443,20 @@ def createSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 3, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
-        check_virsh_disk_not_exist(args.pool, args.backing_vol)
-        check_virsh_disk_exist(args.pool, args.snapshot)
+        check_virsh_disk_not_exist(args.pool, args.snapshot)
+        check_virsh_disk_exist(args.pool, args.backing_vol)
     elif args.type == "uus":
         # check cstor disk
         check_cstor_snapshot_exist(args.pool, args.backing_vol, args.snapshot)
 
     createSnapshot(args)
 
-
 def deleteSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 1, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
     if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
-        print {"result": {"code": 2, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        print {"result": {"code": 2, "msg": "not support value type, " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
@@ -492,18 +464,18 @@ def deleteSnapshotParser(args):
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         check_virsh_disk_not_exist(args.pool, args.snapshot)
     elif args.type == "uus":
-        if args.vol is None:
-            print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        if args.backing_vol is None:
+            print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
             exit(3)
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         # check cstor disk
-        check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+        check_cstor_snapshot_not_exist(args.pool, args.backing_vol, args.snapshot)
 
     deleteSnapshot(args)
 
@@ -521,14 +493,14 @@ def revertSnapshotParser(args):
         if args.pool is None:
             print {"result": {"code": 3, "msg": "less arg, pool must be set"}, "data": {}}
             exit(3)
-        if args.vol is None:
-            print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        if args.backing_vol is None:
+            print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
             exit(3)
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         # check cstor disk
-        check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+        check_cstor_snapshot_not_exist(args.pool, args.backing_vol, args.snapshot)
 
     revertSnapshot(args)
 
@@ -545,18 +517,18 @@ def showSnapshotParser(args):
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         check_virsh_disk_not_exist(args.pool, args.snapshot)
     elif args.type == "uus":
-        if args.vol is None:
-            print {"result": {"code": 3, "msg": "less arg, name must be set"}, "data": {}}
+        if args.backing_vol is None:
+            print {"result": {"code": 3, "msg": "less arg, backing_vol must be set"}, "data": {}}
             exit(3)
         if args.snapshot is None:
-            print {"result": {"code": 3, "msg": "less arg, sname must be set"}, "data": {}}
+            print {"result": {"code": 3, "msg": "less arg, snapshot must be set"}, "data": {}}
             exit(3)
         # check cstor disk
-        check_cstor_snapshot_not_exist(args.pool, args.vol, args.snapshot)
+        check_cstor_snapshot_not_exist(args.pool, args.backing_vol, args.snapshot)
 
     showSnapshot(args)
 
@@ -712,7 +684,7 @@ parser_delete_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=
                                 help="storage pool type to use")
 parser_delete_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_delete_ss.add_argument("--vol", metavar="[VOL]", type=str,
+parser_delete_ss.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
                                 help="volume name to use")
 parser_delete_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
@@ -723,19 +695,19 @@ parser_delete_ss.set_defaults(func=deleteSnapshotParser)
 
 
 # -------------------- add recoverySnapshot cmd ----------------------------------
-parser_recovery_ss = subparsers.add_parser("recoverySnapshot", help="recoverySnapshot help")
-parser_recovery_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_revert_ss = subparsers.add_parser("recoverySnapshot", help="recoverySnapshot help")
+parser_revert_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
                                 help="storage pool type to use")
-parser_recovery_ss.add_argument("--pool", metavar="[POOL]", type=str,
+parser_revert_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_recovery_ss.add_argument("--vol", metavar="[VOL]", type=str,
+parser_revert_ss.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
                                 help="volume name to use")
-parser_recovery_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+parser_revert_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
-parser_recovery_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
+parser_revert_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
                                 help="virtual machine name to use")
 # set default func
-parser_recovery_ss.set_defaults(func=revertSnapshotParser)
+parser_revert_ss.set_defaults(func=revertSnapshotParser)
 
 # -------------------- add showSnapshot cmd ----------------------------------
 parser_show_ss = subparsers.add_parser("showSnapshot", help="showSnapshot help")
@@ -743,7 +715,7 @@ parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=st
                                 help="storage pool type to use")
 parser_show_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_show_ss.add_argument("--vol", metavar="[VOL]", type=str,
+parser_show_ss.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
                                 help="volume name to use")
 parser_show_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
