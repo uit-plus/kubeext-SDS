@@ -72,8 +72,18 @@ def createPool(params):
             if not os.path.isdir(POOL_PATH):  # container can see the domain path ? TODO
                 os.makedirs(POOL_PATH)
 
-            op = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": params.target})
-            op.execute()
+            # step1 define pool
+            op1 = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": params.target})
+            op1.execute()
+
+            # step2 autostart pool
+            try:
+                op2 = Operation("virsh pool-autostart", {"pool": params.pool})
+                op2.execute()
+            except ExecuteException, e:
+                op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
+                op_cancel.execute()
+                raise e
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "dir"
@@ -101,6 +111,15 @@ def createPool(params):
             op2 = Operation("virsh pool-define-as", kv)
             op2.execute()
 
+            # step3 autostart pool
+            try:
+                op3 = Operation("virsh pool-autostart", {"pool": params.pool})
+                op3.execute()
+            except ExecuteException, e:
+                op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
+                op_cancel.execute()
+                raise e
+
             result = get_pool_info(params.pool)
             result["pooltype"] = "nfs"
         elif params.type == "glusterfs":
@@ -117,6 +136,15 @@ def createPool(params):
             kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/' + params.pool, "name": params.pool}
             op2 = Operation("virsh pool-define-as", kv)
             op2.execute()
+
+            # step3 autostart pool
+            try:
+                op3 = Operation("virsh pool-autostart", {"pool": params.pool})
+                op3.execute()
+            except ExecuteException, e:
+                op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
+                op_cancel.execute()
+                raise e
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
@@ -141,20 +169,26 @@ def deletePool(params):
     result = None
     try:
         if params.type == "dir":
-            op = Operation("virsh pool-destroy "+params.pool, {})
-            op.execute()
+            pool_info = get_pool_info(params.pool)
+            if pool_info['autostart'] == 'yes':
+                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                op1.execute()
+            op2 = Operation("virsh pool-undefine", {"pool": params.pool})
+            op2.execute()
             result = {"msg": "delete pool "+params.pool+" success"}
         elif params.type == "uus":
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             result = op.execute()
         elif params.type == "nfs" or params.type == "glusterfs":
-            kv = {"pool": params.pool}
-            op = Operation("virsh pool-destroy", kv)
-            op.execute()
+            pool_info = get_pool_info(params.pool)
+            if pool_info['autostart'] == 'yes':
+                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                op1.execute()
+            op2 = Operation("virsh pool-undefine", {"pool": params.pool})
+            op2.execute()
 
-            kv = {"poolname": params.pool}
-            op = Operation("cstor-cli pool-remove", kv, with_result=True)
+            op = Operation("cstor-cli pool-remove", {"poolname": params.pool}, with_result=True)
             result = op.execute()
             # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "pool"}
         print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": result})
