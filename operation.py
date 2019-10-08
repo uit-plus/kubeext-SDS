@@ -181,9 +181,9 @@ def deletePool(params):
     result = None
     try:
         if params.type == "dir":
-            # if is_pool_started(params.pool):
-            #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-            #     op1.execute()
+            if is_pool_started(params.pool):
+                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                op1.execute()
 
             op2 = Operation("virsh pool-undefine", {"pool": params.pool})
             op2.execute()
@@ -193,9 +193,9 @@ def deletePool(params):
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             result = op.execute()
         elif params.type == "nfs" or params.type == "glusterfs":
-            # if is_pool_started(params.pool):
-            #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-            #     op1.execute()
+            if is_pool_started(params.pool):
+                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                op1.execute()
             op2 = Operation("virsh pool-undefine", {"pool": params.pool})
             op2.execute()
 
