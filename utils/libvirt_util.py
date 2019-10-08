@@ -143,6 +143,11 @@ def is_pool_exists(pool_):
         return True
     return False
 
+def is_pool_defined(pool_):
+    if pool_ in list_defined_pools():
+        return True
+    return False
+
 def is_pool_started(pool_):
     if pool_ in list_pools():
         return True

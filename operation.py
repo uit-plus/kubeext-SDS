@@ -6,7 +6,8 @@ from json import dumps, loads
 from sys import exit
 
 from utils.exception import *
-from utils.libvirt_util import get_pool_info, get_volume_xml, get_volume_path, get_volume_snapshots, is_pool_started
+from utils.libvirt_util import get_pool_info, get_volume_xml, get_volume_path, get_volume_snapshots, is_pool_started, \
+    is_pool_defined
 from utils.utils import *
 from utils import logger
 
@@ -184,9 +185,9 @@ def deletePool(params):
             if is_pool_started(params.pool):
                 op1 = Operation("virsh pool-destroy", {"pool": params.pool})
                 op1.execute()
-
-            op2 = Operation("virsh pool-undefine", {"pool": params.pool})
-            op2.execute()
+            if is_pool_defined(params.pool):
+                op2 = Operation("virsh pool-undefine", {"pool": params.pool})
+                op2.execute()
             result = {"msg": "delete pool "+params.pool+" success"}
         elif params.type == "uus":
             kv = {"poolname": params.pool}
@@ -196,8 +197,9 @@ def deletePool(params):
             if is_pool_started(params.pool):
                 op1 = Operation("virsh pool-destroy", {"pool": params.pool})
                 op1.execute()
-            op2 = Operation("virsh pool-undefine", {"pool": params.pool})
-            op2.execute()
+            if is_pool_defined(params.pool):
+                op2 = Operation("virsh pool-undefine", {"pool": params.pool})
+                op2.execute()
 
             op = Operation("cstor-cli pool-remove", {"poolname": params.pool}, with_result=True)
             result = op.execute()
