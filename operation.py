@@ -86,6 +86,9 @@ def createPool(params):
                     op_cancel.execute()
                     raise e
 
+            op3 = Operation("virsh pool-tart", {"pool": params.pool})
+            op3.execute()
+
             result = get_pool_info(params.pool)
             result["pooltype"] = "dir"
         elif params.type == "uus":
@@ -122,6 +125,9 @@ def createPool(params):
                     op_cancel.execute()
                     raise e
 
+            op3 = Operation("virsh pool-tart", {"pool": params.pool})
+            op3.execute()
+
             result = get_pool_info(params.pool)
             result["pooltype"] = "nfs"
         elif params.type == "glusterfs":
@@ -148,6 +154,9 @@ def createPool(params):
                     op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
                     op_cancel.execute()
                     raise e
+
+            op3 = Operation("virsh pool-tart", {"pool": params.pool})
+            op3.execute()
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
