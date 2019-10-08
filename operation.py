@@ -72,7 +72,7 @@ def createPool(params):
             if not os.path.isdir(POOL_PATH):  # container can see the domain path ? TODO
                 os.makedirs(POOL_PATH)
 
-            op = Operation("virsh pool-create-as", {"name": params.pool, "type": "dir", "target": params.target})
+            op = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": params.target})
             op.execute()
 
             result = get_pool_info(params.pool)
@@ -98,7 +98,7 @@ def createPool(params):
             logger.debug(poolinfo["data"]["mountpath"])
 
             kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/' + params.pool, "name": params.pool}
-            op2 = Operation("virsh pool-create-as", kv)
+            op2 = Operation("virsh pool-define-as", kv)
             op2.execute()
 
             result = get_pool_info(params.pool)
@@ -115,7 +115,7 @@ def createPool(params):
             logger.debug(poolinfo["data"]["mountpath"])
 
             kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/' + params.pool, "name": params.pool}
-            op2 = Operation("virsh pool-create-as", kv)
+            op2 = Operation("virsh pool-define-as", kv)
             op2.execute()
 
             result = get_pool_info(params.pool)
