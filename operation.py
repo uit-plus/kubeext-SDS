@@ -69,7 +69,7 @@ def createPool(params):
     try:
         if params.type == "dir":
             POOL_PATH = params.target
-            if not os.path.isdir(POOL_PATH):  # container can see the domain path ? TODO
+            if not os.path.isdir(POOL_PATH):
                 os.makedirs(POOL_PATH)
 
             # step1 define pool
@@ -77,13 +77,14 @@ def createPool(params):
             op1.execute()
 
             # step2 autostart pool
-            try:
-                op2 = Operation("virsh pool-autostart", {"pool": params.pool})
-                op2.execute()
-            except ExecuteException, e:
-                op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
-                op_cancel.execute()
-                raise e
+            if params.autostart == 'yes':
+                try:
+                    op2 = Operation("virsh pool-autostart", {"pool": params.pool})
+                    op2.execute()
+                except ExecuteException, e:
+                    op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
+                    op_cancel.execute()
+                    raise e
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "dir"
@@ -112,13 +113,14 @@ def createPool(params):
             op2.execute()
 
             # step3 autostart pool
-            try:
-                op3 = Operation("virsh pool-autostart", {"pool": params.pool})
-                op3.execute()
-            except ExecuteException, e:
-                op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
-                op_cancel.execute()
-                raise e
+            if params.autostart == 'yes':
+                try:
+                    op3 = Operation("virsh pool-autostart", {"pool": params.pool})
+                    op3.execute()
+                except ExecuteException, e:
+                    op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
+                    op_cancel.execute()
+                    raise e
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "nfs"
@@ -138,13 +140,14 @@ def createPool(params):
             op2.execute()
 
             # step3 autostart pool
-            try:
-                op3 = Operation("virsh pool-autostart", {"pool": params.pool})
-                op3.execute()
-            except ExecuteException, e:
-                op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
-                op_cancel.execute()
-                raise e
+            if params.autostart == 'yes':
+                try:
+                    op3 = Operation("virsh pool-autostart", {"pool": params.pool})
+                    op3.execute()
+                except ExecuteException, e:
+                    op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
+                    op_cancel.execute()
+                    raise e
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
