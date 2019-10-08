@@ -6,7 +6,7 @@ from json import dumps, loads
 from sys import exit
 
 from utils.exception import *
-from utils.libvirt_util import get_pool_info, get_volume_xml, get_volume_path, get_volume_snapshots
+from utils.libvirt_util import get_pool_info, get_volume_xml, get_volume_path, get_volume_snapshots, is_pool_started
 from utils.utils import *
 from utils import logger
 
@@ -181,10 +181,12 @@ def deletePool(params):
     result = None
     try:
         if params.type == "dir":
-            pool_info = get_pool_info(params.pool)
-            if pool_info['autostart'] == 'yes':
-                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-                op1.execute()
+            if is_pool_started(params.pool):
+                pool_info = get_pool_info(params.pool)
+                if pool_info['autostart'] == 'yes':
+                    op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                    op1.execute()
+
             op2 = Operation("virsh pool-undefine", {"pool": params.pool})
             op2.execute()
             result = {"msg": "delete pool "+params.pool+" success"}
@@ -193,10 +195,11 @@ def deletePool(params):
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             result = op.execute()
         elif params.type == "nfs" or params.type == "glusterfs":
-            pool_info = get_pool_info(params.pool)
-            if pool_info['autostart'] == 'yes':
-                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-                op1.execute()
+            if is_pool_started(params.pool):
+                pool_info = get_pool_info(params.pool)
+                if pool_info['autostart'] == 'yes':
+                    op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                    op1.execute()
             op2 = Operation("virsh pool-undefine", {"pool": params.pool})
             op2.execute()
 

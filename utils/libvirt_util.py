@@ -143,6 +143,11 @@ def is_pool_exists(pool_):
         return True
     return False
 
+def is_pool_started(pool_):
+    if pool_ not in list_pools() and pool_ in list_defined_pools():
+        return True
+    return False
+
 def is_vm_active(vm_):
     if vm_ in list_active_vms():
         return True
