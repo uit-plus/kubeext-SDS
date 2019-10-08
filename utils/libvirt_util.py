@@ -144,7 +144,7 @@ def is_pool_exists(pool_):
     return False
 
 def is_pool_started(pool_):
-    if pool_ not in list_pools() and pool_ in list_defined_pools():
+    if pool_ in list_pools():
         return True
     return False
 
@@ -904,7 +904,9 @@ if __name__ == '__main__':
     # print(get_boot_disk_path("750646e8c17a49d0b83c1c797811e078"))
     # print(get_pool_xml('pool1'))
     # print _get_pool("pool1").info()
-    print list_defined_pools()
+    pool = _get_pool('pooltest')
+    lines = pool.XMLDesc()
+    print lines
     # print list_volumes('vmdi')
 #     print(list_volumes('volumes'))
 #     print(get_volume_xml('volumes', 'ddd.qcow2'))

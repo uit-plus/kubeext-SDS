@@ -86,7 +86,7 @@ def createPool(params):
                     op_cancel.execute()
                     raise e
 
-            op3 = Operation("virsh pool-tart", {"pool": params.pool})
+            op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
             result = get_pool_info(params.pool)
@@ -125,7 +125,7 @@ def createPool(params):
                     op_cancel.execute()
                     raise e
 
-            op3 = Operation("virsh pool-tart", {"pool": params.pool})
+            op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
             result = get_pool_info(params.pool)
@@ -155,8 +155,8 @@ def createPool(params):
                     op_cancel.execute()
                     raise e
 
-            op3 = Operation("virsh pool-tart", {"pool": params.pool})
-            op3.execute()
+            op4 = Operation("virsh pool-start", {"pool": params.pool})
+            op4.execute()
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
@@ -182,10 +182,8 @@ def deletePool(params):
     try:
         if params.type == "dir":
             if is_pool_started(params.pool):
-                pool_info = get_pool_info(params.pool)
-                if pool_info['autostart'] == 'yes':
-                    op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-                    op1.execute()
+                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                op1.execute()
 
             op2 = Operation("virsh pool-undefine", {"pool": params.pool})
             op2.execute()
@@ -196,10 +194,8 @@ def deletePool(params):
             result = op.execute()
         elif params.type == "nfs" or params.type == "glusterfs":
             if is_pool_started(params.pool):
-                pool_info = get_pool_info(params.pool)
-                if pool_info['autostart'] == 'yes':
-                    op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-                    op1.execute()
+                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+                op1.execute()
             op2 = Operation("virsh pool-undefine", {"pool": params.pool})
             op2.execute()
 
