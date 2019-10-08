@@ -139,7 +139,7 @@ def is_vm_exists(vm_):
     return False
 
 def is_pool_exists(pool_):
-    if pool_ in list_pools():
+    if pool_ in list_pools() or pool_ in list_defined_pools():
         return True
     return False
 
@@ -716,6 +716,10 @@ def list_pools():
     conn = __get_conn()
     return conn.listStoragePools()
 
+def list_defined_pools():
+    conn = __get_conn()
+    return conn.listDefinedStoragePools()
+
 def refresh_pool(pool_):
     pool = _get_pool(pool_)
     try:
@@ -895,7 +899,7 @@ if __name__ == '__main__':
     # print(get_boot_disk_path("750646e8c17a49d0b83c1c797811e078"))
     # print(get_pool_xml('pool1'))
     # print _get_pool("pool1").info()
-    print list_all_volumes()
-    print list_volumes('vmdi')
+    print list_defined_pools()
+    # print list_volumes('vmdi')
 #     print(list_volumes('volumes'))
 #     print(get_volume_xml('volumes', 'ddd.qcow2'))
