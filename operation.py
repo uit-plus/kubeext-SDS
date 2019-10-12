@@ -78,7 +78,7 @@ def createPool(params):
             op1.execute()
 
             # step2 autostart pool
-            if params.autostart == 'yes':
+            if params.autostart:
                 try:
                     op2 = Operation("virsh pool-autostart", {"pool": params.pool})
                     op2.execute()
@@ -117,7 +117,7 @@ def createPool(params):
             op2.execute()
 
             # step3 autostart pool
-            if params.autostart == 'yes':
+            if params.autostart:
                 try:
                     op3 = Operation("virsh pool-autostart", {"pool": params.pool})
                     op3.execute()
@@ -147,7 +147,7 @@ def createPool(params):
             op2.execute()
 
             # step3 autostart pool
-            if params.autostart == 'yes':
+            if params.autostart:
                 try:
                     op3 = Operation("virsh pool-autostart", {"pool": params.pool})
                     op3.execute()
