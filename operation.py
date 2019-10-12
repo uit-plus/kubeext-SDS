@@ -246,7 +246,7 @@ def startPool(params):
         print dumps({"result": {"code": 300, "msg": "error occur while start pool " + params.pool + "."}, "data": {}})
         exit(1)
 
-def autoStartPool(params):
+def autostartPool(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             op1 = Operation("virsh pool-autostart", {"pool": params.pool})
