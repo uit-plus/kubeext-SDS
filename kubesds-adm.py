@@ -677,10 +677,10 @@ parser_autostart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", 
                                 help="storage pool type to use")
 
 parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
-                                help="storage pool name to delete")
+                                help="storage pool name to autostart")
+parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool,
+                                help="disable autostart")
 
-parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
-                                help="storage pool name to delete")
 # set default func
 parser_autostart_pool.set_defaults(func=autoStartPoolParser)
 
@@ -690,7 +690,7 @@ parser_unregister_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]",
                                 help="storage pool type to use")
 
 parser_unregister_pool.add_argument("--pool", metavar="[POOL]", type=str,
-                                help="storage pool name to delete")
+                                help="storage pool name to unregister")
 # set default func
 parser_unregister_pool.set_defaults(func=unregisterPoolParser)
 
@@ -700,7 +700,7 @@ parser_stop_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=
                                 help="storage pool type to use")
 
 parser_stop_pool.add_argument("--pool", metavar="[POOL]", type=str,
-                                help="storage pool name to delete")
+                                help="storage pool name to stop")
 # set default func
 parser_stop_pool.set_defaults(func=stopPoolParser)
 
