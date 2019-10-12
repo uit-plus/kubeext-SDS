@@ -265,7 +265,7 @@ def startPoolParser(args):
 
     startPool(args)
 
-def autostartPoolParser(args):
+def autoStartPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
@@ -285,7 +285,7 @@ def autostartPoolParser(args):
         print {"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}
         exit(3)
 
-    autostartPool(args)
+    autoStartPool(args)
 
 def unregisterPoolParser(args):
     if args.type is None:
@@ -671,8 +671,8 @@ parser_start_pool.add_argument("--pool", metavar="[POOL]", type=str,
 # set default func
 parser_start_pool.set_defaults(func=startPoolParser)
 
-# -------------------- add autostartPool cmd ----------------------------------
-parser_autostart_pool = subparsers.add_parser("autostartPool", help="autostartPool help")
+# -------------------- add autoStartPool cmd ----------------------------------
+parser_autostart_pool = subparsers.add_parser("autoStartPool", help="autoStartPool help")
 parser_autostart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
                                 help="storage pool type to use")
 
@@ -682,7 +682,7 @@ parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
 parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool name to delete")
 # set default func
-parser_autostart_pool.set_defaults(func=autostartPoolParser)
+parser_autostart_pool.set_defaults(func=autoStartPoolParser)
 
 # -------------------- add unregisterPool cmd ----------------------------------
 parser_unregister_pool = subparsers.add_parser("unregisterPool", help="unregisterPool help")

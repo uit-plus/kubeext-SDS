@@ -246,7 +246,7 @@ def startPool(params):
         print dumps({"result": {"code": 300, "msg": "error occur while start pool " + params.pool + "."}, "data": {}})
         exit(1)
 
-def autostartPool(params):
+def autoStartPool(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             op1 = Operation("virsh pool-autostart", {"pool": params.pool})
@@ -262,14 +262,14 @@ def autostartPool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while autostart pool " + params.pool + ". "+e.message}, "data": {}})
+        print dumps({"result": {"code": 400, "msg": "error occur while autoStart pool " + params.pool + ". "+e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("autoStartPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while autostart pool " + params.pool + "."}, "data": {}})
+        print dumps({"result": {"code": 300, "msg": "error occur while autoStart pool " + params.pool + "."}, "data": {}})
         exit(1)
 
 def unregisterPool(params):
