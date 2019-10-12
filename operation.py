@@ -182,9 +182,9 @@ def deletePool(params):
     result = None
     try:
         if params.type == "dir":
-            if is_pool_started(params.pool):
-                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-                op1.execute()
+            # if is_pool_started(params.pool):
+            #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+            #     op1.execute()
             if is_pool_defined(params.pool):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
                 op2.execute()
@@ -194,9 +194,9 @@ def deletePool(params):
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             result = op.execute()
         elif params.type == "nfs" or params.type == "glusterfs":
-            if is_pool_started(params.pool):
-                op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-                op1.execute()
+            # if is_pool_started(params.pool):
+            #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+            #     op1.execute()
             if is_pool_defined(params.pool):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
                 op2.execute()
@@ -279,12 +279,7 @@ def autoStartPool(params):
 def unregisterPool(params):
     try:
         if params.type == "dir":
-            op1 = Operation("virsh pool-undefine", {"pool": params.pool})
-            op1.execute()
-            result = get_pool_info(params.pool)
-            result["pooltype"] = params.type
-            print dumps(
-                {"result": {"code": 0, "msg": "unregister pool " + params.pool + " successful."}, "data": result})
+            deletePool(params)
         elif params.type == "nfs" or params.type == "glusterfs":
             print dumps(
                 {"result": {"code": 500, "msg": params.pool + " is nfs or glusterfs." + "unregister pool " + params.pool + " will make pool be deleted, but mount point still exist."}, "data": {}})
@@ -308,10 +303,12 @@ def unregisterPool(params):
 def stopPool(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            result = get_pool_info(params.pool)
             op1 = Operation("virsh pool-destroy", {"pool": params.pool})
             op1.execute()
-            result = get_pool_info(params.pool)
+
             result["pooltype"] = params.type
+            result["state"] = "disable"
             print dumps(
                 {"result": {"code": 0, "msg": "stop pool " + params.pool + " successful."}, "data": result})
         elif params.type == "uus":
