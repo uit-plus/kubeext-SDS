@@ -249,8 +249,12 @@ def startPool(params):
 def autoStartPool(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op1 = Operation("virsh pool-autostart", {"pool": params.pool})
-            op1.execute()
+            if params.disable:
+                op = Operation("virsh pool-autostart --disable", {"pool": params.pool})
+                op.execute()
+            else:
+                op = Operation("virsh pool-autostart", {"pool": params.pool})
+                op.execute()
             result = get_pool_info(params.pool)
             result["pooltype"] = params.type
             print dumps(
