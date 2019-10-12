@@ -220,6 +220,113 @@ def deletePool(params):
         print dumps({"result": {"code": 300, "msg": "error occur while delete pool " + params.pool + "."}, "data": {}})
         exit(1)
 
+def startPool(params):
+    try:
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            op1 = Operation("virsh pool-start", {"pool": params.pool})
+            op1.execute()
+            result = get_pool_info(params.pool)
+            result["pooltype"] = params.type
+            print dumps(
+                {"result": {"code": 0, "msg": "start pool " + params.pool + " successful."}, "data": result})
+        elif params.type == "uus":
+            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+    except ExecuteException, e:
+        logger.debug("startPool " + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 400, "msg": "error occur while start pool " + params.pool + ". "+e.message}, "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug("startPool "+ params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while start pool " + params.pool + "."}, "data": {}})
+        exit(1)
+
+def autoStartPool(params):
+    try:
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            op1 = Operation("virsh pool-autostart", {"pool": params.pool})
+            op1.execute()
+            result = get_pool_info(params.pool)
+            result["pooltype"] = params.type
+            print dumps(
+                {"result": {"code": 0, "msg": "autostart pool " + params.pool + " successful."}, "data": result})
+        elif params.type == "uus":
+            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+    except ExecuteException, e:
+        logger.debug("autoStartPool " + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 400, "msg": "error occur while autostart pool " + params.pool + ". "+e.message}, "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug("autoStartPool "+ params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while autostart pool " + params.pool + "."}, "data": {}})
+        exit(1)
+
+def unregisterPool(params):
+    try:
+        if params.type == "dir":
+            op1 = Operation("virsh pool-undefine", {"pool": params.pool})
+            op1.execute()
+            result = get_pool_info(params.pool)
+            result["pooltype"] = params.type
+            print dumps(
+                {"result": {"code": 0, "msg": "unregister pool " + params.pool + " successful."}, "data": result})
+        elif params.type == "nfs" or params.type == "glusterfs":
+            print dumps(
+                {"result": {"code": 500, "msg": params.pool + " is nfs or glusterfs." + "unregister pool " + params.pool + " will make pool be deleted, but mount point still exist."}, "data": {}})
+        elif params.type == "uus":
+            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+    except ExecuteException, e:
+        logger.debug("unregisterPool " + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 400, "msg": "error occur while unregister pool " + params.pool + ". "+e.message}, "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug("unregisterPool "+ params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while unregister pool " + params.pool + "."}, "data": {}})
+        exit(1)
+
+def stopPool(params):
+    try:
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            op1 = Operation("virsh pool-destroy", {"pool": params.pool})
+            op1.execute()
+            result = get_pool_info(params.pool)
+            result["pooltype"] = params.type
+            print dumps(
+                {"result": {"code": 0, "msg": "stop pool " + params.pool + " successful."}, "data": result})
+        elif params.type == "uus":
+            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+    except ExecuteException, e:
+        logger.debug("stopPool " + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 400, "msg": "error occur while stop pool " + params.pool + ". "+e.message}, "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug("stopPool "+ params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while stop pool " + params.pool + "."}, "data": {}})
+        exit(1)
+
 def showPool(params):
     result = None
     try:

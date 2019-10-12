@@ -142,7 +142,7 @@ def check_virsh_disk_size(pool, diskname, size):
         vol_xml = get_volume_xml(pool, diskname)
         result = loads(xmlToJson(vol_xml))
         if int(result["volume"]["capacity"]["text"]) >= int(size):
-            print {"result": {"code": 213, "msg": "new cstor disk size must larger than the old size."}, "data": {}}
+            print {"result": {"code": 213, "msg": "new disk size must larger than the old size."}, "data": {}}
             exit(4)
     except Exception:
         logger.debug(traceback.format_exc())
@@ -213,7 +213,6 @@ def createPoolParser(args):
 
     createPool(args)
 
-
 def deletePoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
@@ -243,6 +242,94 @@ def deletePoolParser(args):
         # check cstor pool
         check_cstor_pool_not_exist(args.pool)
     deletePool(args)
+
+def startPoolParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_pool_not_exist(args.pool)
+        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
+        check_pool_type(args.pool, args.type)
+
+    elif args.type == "uus":
+        print {"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}
+        exit(3)
+
+    startPool(args)
+
+def autoStartPoolParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_pool_not_exist(args.pool)
+        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
+        check_pool_type(args.pool, args.type)
+
+    elif args.type == "uus":
+        print {"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}
+        exit(3)
+
+    autoStartPool(args)
+
+def unregisterPoolParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_pool_not_exist(args.pool)
+        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
+        check_pool_type(args.pool, args.type)
+
+    elif args.type == "uus":
+        print {"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}
+        exit(3)
+
+    unregisterPool(args)
+
+def stopPoolParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_pool_not_exist(args.pool)
+        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
+        check_pool_type(args.pool, args.type)
+
+    elif args.type == "uus":
+        print {"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}
+        exit(3)
+
+    stopPool(args)
 
 def showPoolParser(args):
     if args.type is None:
@@ -573,6 +660,49 @@ parser_delete_pool.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool name to delete")
 # set default func
 parser_delete_pool.set_defaults(func=deletePoolParser)
+
+# -------------------- add startPool cmd ----------------------------------
+parser_start_pool = subparsers.add_parser("startPool", help="startPool help")
+parser_start_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+
+parser_start_pool.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool name to delete")
+# set default func
+parser_start_pool.set_defaults(func=startPoolParser)
+
+# -------------------- add autoStartPool cmd ----------------------------------
+parser_autoStart_pool = subparsers.add_parser("autoStartPool", help="autoStartPool help")
+parser_autoStart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+
+parser_autoStart_pool.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool name to delete")
+
+parser_autoStart_pool.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool name to delete")
+# set default func
+parser_autoStart_pool.set_defaults(func=autoStartPoolParser)
+
+# -------------------- add unregisterPool cmd ----------------------------------
+parser_unregister_pool = subparsers.add_parser("unregisterPool", help="unregisterPool help")
+parser_unregister_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+
+parser_unregister_pool.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool name to delete")
+# set default func
+parser_unregister_pool.set_defaults(func=unregisterPoolParser)
+
+# -------------------- add stopPool cmd ----------------------------------
+parser_stop_pool = subparsers.add_parser("stopPool", help="stopPool help")
+parser_stop_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+
+parser_stop_pool.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool name to delete")
+# set default func
+parser_stop_pool.set_defaults(func=stopPoolParser)
 
 # -------------------- add showPool cmd ----------------------------------
 parser_show_pool = subparsers.add_parser("showPool", help="showPool help")
