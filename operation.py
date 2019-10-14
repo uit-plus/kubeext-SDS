@@ -326,10 +326,10 @@ def unregisterPool(params):
 def stopPool(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            result = get_pool_info(params.pool)
             op1 = Operation("virsh pool-destroy", {"pool": params.pool})
             op1.execute()
 
+            result = get_pool_info(params.pool)
             result["pooltype"] = params.type
             if is_pool_started(params.pool):
                 result["state"] = "active"
