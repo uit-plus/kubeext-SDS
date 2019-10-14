@@ -640,7 +640,7 @@ parser_create_pool.add_argument("--url", metavar="[URL]", type=str,
 parser_create_pool.add_argument("--target", metavar="[TARGET]", type=str,
                                 help="storage pool create location, only for dir, nfs and glusterfs")
 # set autostart
-parser_create_pool.add_argument("--autostart", metavar="[AUTOSTART]", type=bool, nargs='?', const='yes',
+parser_create_pool.add_argument("--autostart", metavar="[AUTOSTART]", type=bool, nargs='?', const=True,
                                 help="if autostart, pool will set autostart yes after create pool")
 
 # nfs only
@@ -678,7 +678,7 @@ parser_autostart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", 
 
 parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool name to autostart")
-parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool, nargs='?',  const='yes',
+parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool, nargs='?',  const=True,
                                 help="disable autostart")
 
 # set default func

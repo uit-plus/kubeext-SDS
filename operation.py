@@ -79,7 +79,7 @@ def createPool(params):
             op1.execute()
 
             # step2 autostart pool
-            if params.autostart == 'yes':
+            if params.autostart:
                 try:
                     op2 = Operation("virsh pool-autostart", {"pool": params.pool})
                     op2.execute()
@@ -268,7 +268,7 @@ def startPool(params):
 def autoStartPool(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            if params.disable == 'yes':
+            if params.disable:
                 op = Operation("virsh pool-autostart --disable", {"pool": params.pool})
                 op.execute()
             else:
