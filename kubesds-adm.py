@@ -678,7 +678,7 @@ parser_autostart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", 
 
 parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool name to autostart")
-parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool, nargs='?',  const=True,
+parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool, nargs='?',  const=False,
                                 help="disable autostart")
 
 # set default func
