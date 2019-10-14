@@ -66,6 +66,7 @@ class Operation(object):
 
 
 def createPool(params):
+    logger.debug(params)
     result = None
     try:
         if params.type == "dir":
