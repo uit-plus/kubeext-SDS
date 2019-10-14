@@ -130,7 +130,6 @@ def get_pool_info(pool_):
         if line.find("path") >= 0:
             result['path'] = line.replace('<path>', '').replace('</path>', '')
             break
-    print lines
     for line in lines.splitlines():
         if line.find("capacity") >= 0:
             result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', ''))
