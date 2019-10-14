@@ -92,12 +92,17 @@ def createPool(params):
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "dir"
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
         elif params.type == "uus":
             # {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "used": 1000, "pool": "pool1", "url": "uus_://192.168.3.10:7000", "proto": "uus", "free": 2000, "disktype": "uus_", "export-mode": "3", "maintain": "normal", "total": 3000}, "obj":"pooladd"}
             kv = {"poolname": params.pool, "url": params.url}
             op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
             uus_poolinfo = op.execute()
             result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "running", "uuid": randomUUID()}
+            result["state"] = "Running"
         elif params.type == "nfs":
             kv = {"poolname": params.pool, "url": params.url, "path": params.target}
             if params.opt is not None:
@@ -131,6 +136,10 @@ def createPool(params):
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "nfs"
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
         elif params.type == "glusterfs":
             kv = {"poolname": params.pool, "url": params.url, "path": params.target}
             op1 = Operation("cstor-cli pooladd-glusterfs", kv, with_result=True)
@@ -161,6 +170,10 @@ def createPool(params):
 
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
         print dumps({"result": {"code": 0, "msg": "create pool "+params.pool+" successful."}, "data": result})
     except ExecuteException, e:
         logger.debug("createPool " + params.pool)
@@ -227,6 +240,10 @@ def startPool(params):
             op1.execute()
             result = get_pool_info(params.pool)
             result["pooltype"] = params.type
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
             print dumps(
                 {"result": {"code": 0, "msg": "start pool " + params.pool + " successful."}, "data": result})
         elif params.type == "uus":
@@ -257,6 +274,10 @@ def autoStartPool(params):
                 op.execute()
             result = get_pool_info(params.pool)
             result["pooltype"] = params.type
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
             print dumps(
                 {"result": {"code": 0, "msg": "autoStart pool " + params.pool + " successful."}, "data": result})
         elif params.type == "uus":
@@ -308,7 +329,10 @@ def stopPool(params):
             op1.execute()
 
             result["pooltype"] = params.type
-            result["state"] = "disable"
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
             print dumps(
                 {"result": {"code": 0, "msg": "stop pool " + params.pool + " successful."}, "data": result})
         elif params.type == "uus":
@@ -334,10 +358,15 @@ def showPool(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             result = get_pool_info(params.pool)
             result["pooltype"] = params.type
+            if is_pool_started(params.pool):
+                result["state"] = "Running"
+            else:
+                result["state"] = "Shutdown"
         elif params.type == "uus":
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-show", kv, with_result=True)
             uus_poolinfo = op.execute()
+            result["state"] = "Running"
             result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"],
                       "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "running", "uuid": randomUUID()}
 
