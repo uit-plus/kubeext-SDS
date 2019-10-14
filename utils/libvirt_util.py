@@ -121,18 +121,18 @@ def get_pool_info(pool_):
         lines = pool.XMLDesc()
     if is_pool_defined(pool_):
         pool = _get_defined_pool(pool_)
-        try:
-            pool.refresh()
-        except:
-            pass
+        # try:
+        #     pool.refresh()
+        # except:
+        #     pass
         lines = pool.XMLDesc()
     for line in lines.splitlines():
         if line.find("path") >= 0:
-            result['path'] = line.replace('<path>', '').replace('</path>', '')
+            result['path'] = line.replace('<path>', '').replace('</path>', '').strip()
             break
     for line in lines.splitlines():
         if line.find("capacity") >= 0:
-            result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', ''))
+            result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', '').strip())
             break
     return result
 
@@ -936,8 +936,8 @@ if __name__ == '__main__':
     # pool = _get_pool('pooltest')
     # lines = pool.XMLDesc()
     # print lines
-    # print get_pool_info('pooltest')
-    print list_defined_pools()
+    print get_pool_info('pooltest2')
+    # print list_defined_pools()
     # print list_volumes('vmdi')
 #     print(list_volumes('volumes'))
 #     print(get_volume_xml('volumes', 'ddd.qcow2'))
