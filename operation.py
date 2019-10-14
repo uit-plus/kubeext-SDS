@@ -258,7 +258,7 @@ def autoStartPool(params):
             result = get_pool_info(params.pool)
             result["pooltype"] = params.type
             print dumps(
-                {"result": {"code": 0, "msg": "autostart pool " + params.pool + " successful."}, "data": result})
+                {"result": {"code": 0, "msg": "autoStart pool " + params.pool + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:

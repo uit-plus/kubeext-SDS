@@ -77,6 +77,13 @@ def _get_pool(pool_):
     pool = conn.storagePoolLookupByName(pool_)
     return pool
 
+def _get_defined_pool(pool_):
+    conn = __get_conn()
+    if pool_ not in list_defined_pools():
+        raise Exception('The specified pool is not present(%s).' % pool_)
+    pool = conn.storagePoolLookupByName(pool_)
+    return pool
+
 def _get_all_pool_path():
     paths = {}
     try:
@@ -93,22 +100,40 @@ def _get_all_pool_path():
     return paths
 
 def get_pool_info(pool_):
-    pool = _get_pool(pool_)
-    try:
-        pool.refresh()
-    except:
-        pass
-    lines = pool.XMLDesc()
     result = runCmdWithResult('virsh pool-info ' + pool_)
     # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
     # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
     # result['code'] = 0
-    result['capacity'] = int(1024 * 1024 * 1024 * float(result['capacity']))
-    del result['allocation']
-    del result['available']
-    for line in lines.split():
+    # result['capacity'] = int(1024 * 1024 * 1024 * float(result['capacity']))
+    if 'allocation' in result.keys():
+        del result['allocation']
+        del result['available']
+    if 'available' in result.keys():
+        del result['available']
+
+    lines = ''
+    if is_pool_started(pool_):
+        pool = _get_pool(pool_)
+        try:
+            pool.refresh()
+        except:
+            pass
+        lines = pool.XMLDesc()
+    if is_pool_defined(pool_):
+        pool = _get_defined_pool(pool_)
+        try:
+            pool.refresh()
+        except:
+            pass
+        lines = pool.XMLDesc()
+    for line in lines.splitlines():
         if line.find("path") >= 0:
             result['path'] = line.replace('<path>', '').replace('</path>', '')
+            break
+    print lines
+    for line in lines.splitlines():
+        if line.find("capacity") >= 0:
+            result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', ''))
             break
     return result
 
@@ -909,9 +934,10 @@ if __name__ == '__main__':
     # print(get_boot_disk_path("750646e8c17a49d0b83c1c797811e078"))
     # print(get_pool_xml('pool1'))
     # print _get_pool("pool1").info()
-    pool = _get_pool('pooltest')
-    lines = pool.XMLDesc()
-    print lines
+    # pool = _get_pool('pooltest')
+    # lines = pool.XMLDesc()
+    # print lines
+    print get_pool_info('pooltest')
     # print list_volumes('vmdi')
 #     print(list_volumes('volumes'))
 #     print(get_volume_xml('volumes', 'ddd.qcow2'))
