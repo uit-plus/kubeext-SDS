@@ -11,8 +11,9 @@ import subprocess
 import sys
 import time
 import traceback
+import uuid
 from functools import wraps
-from json import loads
+from json import loads, dumps, load, dump
 
 import grpc
 
@@ -21,6 +22,7 @@ import cmdcall_pb2_grpc
 import logger
 from exception import ExecuteException
 from netutils import get_docker0_IP
+from libvirt_util import get_pool_info
 
 LOG = '/var/log/kubesds.log'
 
@@ -220,6 +222,10 @@ def randomUUID():
     return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
                      "%02x" * 6]) % tuple(u)
 
+def randomUUIDFromName(name):
+    namespace = uuid.NAMESPACE_URL
+
+    return str(uuid.uuid5(namespace, name))
 
 class CDaemon:
     '''
@@ -394,3 +400,36 @@ def get_IP():
     myname = socket.getfqdn(socket.gethostname())
     myaddr = socket.gethostbyname(myname)
     return myaddr
+
+def get_vol_info(vol_path):
+    return runCmdWithResult('qemu-img info --output json ' + vol_path)
+
+def get_disk_config_by_current(pool, current):
+    poolInfo = get_pool_info(pool)
+    pool_path = poolInfo['path']
+    if not os.path.isdir(pool_path):
+        raise ExecuteException('', "can not get pool " + pool + " path.")
+    for disk_dir in os.listdir(pool_path):
+        with open(pool_path + '/' + disk_dir + '/config.json', "r") as f:
+            config = load(f)
+            if config['current'] == current:
+                return config
+    raise ExecuteException('', 'can not get disk config by current')
+
+
+def get_sn_chain(ss_path):
+    return runCmdWithResult('qemu-img info --backing-chain --output json '+ss_path)
+
+def get_all_snapshot_to_delete(ss_path, current):
+    delete_sn = []
+    chain = get_sn_chain(current)
+    for info in chain:
+        if 'backing-filename' in info.keys() and info['backing-filename'] == ss_path:
+            delete_sn.append(info['filename'])
+            delete_sn.extend(get_all_snapshot_to_delete(info['filename'], current))
+            break
+    return delete_sn
+
+# print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
+
+# print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
