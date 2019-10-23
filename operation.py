@@ -795,7 +795,7 @@ def createExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config(params.pool, params.vol)
-            ss_path = disk_config['dir'] + '/' + params.snapshot
+            ss_path = disk_config['dir'] + '/' + params.name
             op1 = Operation('qemu-img create -f ' + params.format + ' -b' + disk_config['current'] + ' ' + ss_path, {})
             op1.execute()
 
@@ -811,29 +811,29 @@ def createExternalSnapshot(params):
 
             result["disktype"] = params.type
             result["current"] = ss_path
-            print dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.snapshot + " successful."}, "data": result})
+            print dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
-        logger.debug("createExternalSnapshot " + params.snapshot)
+        logger.debug("createExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.snapshot +" on "+ params.vol + ". " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("createExternalSnapshot " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.snapshot +" on "+ params.vol}, "data": {}}
+        print {"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
         exit(1)
 
 def revertExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config(params.pool, params.vol)
-            ss_path = disk_config['dir'] + '/' + params.snapshot
+            ss_path = disk_config['dir'] + '/' + params.name
 
             uuid = randomUUIDFromName(os.path.basename(disk_config['current']))
             op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + ss_path + ' ' + disk_config['dir']+'/'+uuid, {})
@@ -864,29 +864,29 @@ def revertExternalSnapshot(params):
 
             result["disktype"] = params.type
             result["current"] = ss_path
-            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.snapshot + " successful."}, "data": result})
+            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
-        logger.debug("revertExternalSnapshot " + params.snapshot)
+        logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.snapshot +" on "+ params.vol + ". " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("revertExternalSnapshot " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.snapshot +" on "+ params.vol}, "data": {}}
+        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
         exit(1)
 
 def deleteExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config_by_current(params.pool, params.current)
-            ss_path = disk_config['dir'] + '/' + params.snapshot
+            ss_path = disk_config['dir'] + '/' + params.name
 
             uuid = randomUUIDFromName(params.current.split('/')[-1])
             op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + ss_path + ' ' + disk_config['dir']+'/'+uuid, {})
@@ -917,22 +917,22 @@ def deleteExternalSnapshot(params):
 
             result["disktype"] = params.type
             result["current"] = ss_path
-            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.snapshot + " successful."}, "data": result})
+            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
-        logger.debug("revertExternalSnapshot " + params.snapshot)
+        logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.snapshot +" on "+ params.current + ". " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.current + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("revertExternalSnapshot " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.snapshot +" on "+ params.current}, "data": {}}
+        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.current}, "data": {}}
         exit(1)
 
 def xmlToJson(xmlStr):
