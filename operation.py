@@ -618,7 +618,7 @@ def showDisk(params):
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
 
-            op = Operation('qemu-img info --output json ' + config['current'], {}, with_result=True)
+            op = Operation('qemu-img info -U --output json ' + config['current'], {}, with_result=True)
             result = op.execute()
             result["disktype"] = params.type
             result["current"] = config['current']
@@ -794,9 +794,9 @@ def showSnapshot(params):
 def createExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            disk_config = get_disk_config_by_current(params.pool, params.current)
+            disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.snapshot
-            op1 = Operation('qemu-img create -f ' + params.format + ' -b' + params.current + ' ' + ss_path, {})
+            op1 = Operation('qemu-img create -f ' + params.format + ' -b' + disk_config['current'] + ' ' + ss_path, {})
             op1.execute()
 
             with open(disk_config['dir'] + '/config.json', "r") as f:
@@ -806,7 +806,7 @@ def createExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info --output json ' + ss_path, {}, with_result=True)
+            op2 = Operation('qemu-img info -U --output json ' + ss_path, {}, with_result=True)
             result = op2.execute()
 
             result["disktype"] = params.type
@@ -819,17 +819,70 @@ def createExternalSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.snapshot +" on "+ params.current + ". " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.snapshot +" on "+ params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("createExternalSnapshot " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.snapshot +" on "+ params.current}, "data": {}}
+        print {"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.snapshot +" on "+ params.vol}, "data": {}}
         exit(1)
 
 def revertExternalSnapshot(params):
+    try:
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            disk_config = get_disk_config(params.pool, params.vol)
+            ss_path = disk_config['dir'] + '/' + params.snapshot
+
+            uuid = randomUUIDFromName(os.path.basename(disk_config['current']))
+            op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + ss_path + ' ' + disk_config['dir']+'/'+uuid, {})
+            op1.execute()
+
+            ss_to_delete = get_all_snapshot_to_delete(ss_path, disk_config['current'])
+            # print ss_to_delete
+            for ss in ss_to_delete:
+                if ss != disk_config['dir']+'/'+uuid:  # not matter
+                    op = Operation(
+                        'rm -f '+ss, {})
+                    op.execute()
+            op = Operation(
+                'mv ' + disk_config['dir']+'/'+uuid + ' ' + disk_config['current'], {})
+            op.execute()
+
+            # modify json file, make os_event_handler to modify data on api server .
+            with open(disk_config['dir'] + '/config.json', "r") as f:
+                config = load(f)
+                config['current'] = disk_config['current']
+                if 'last' in config.keys():
+                    del config['last']
+            with open(disk_config['dir'] + '/config.json', "w") as f:
+                dump(config, f)
+
+            op2 = Operation('qemu-img info -U --output json ' + disk_config['current'], {}, with_result=True)
+            result = op2.execute()
+
+            result["disktype"] = params.type
+            result["current"] = ss_path
+            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.snapshot + " successful."}, "data": result})
+        elif params.type == "uus":
+            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+    except ExecuteException, e:
+        logger.debug("revertExternalSnapshot " + params.snapshot)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.snapshot +" on "+ params.vol + ". " + e.message}, "data": {}}
+        exit(1)
+    except Exception:
+        logger.debug("revertExternalSnapshot " + params.pool)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.snapshot +" on "+ params.vol}, "data": {}}
+        exit(1)
+
+def deleteExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config_by_current(params.pool, params.current)
@@ -859,7 +912,7 @@ def revertExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info --output json ' + disk_config['current'], {}, with_result=True)
+            op2 = Operation('qemu-img info -U --output json ' + disk_config['current'], {}, with_result=True)
             result = op2.execute()
 
             result["disktype"] = params.type

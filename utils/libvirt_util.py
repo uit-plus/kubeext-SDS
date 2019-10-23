@@ -440,7 +440,7 @@ def get_disks(vm_):
             try:
                 qemu_output = runCmdRaiseException('qemu-img info -U %s' % disks[dev]['file'])
             except:
-                qemu_output = runCmdRaiseException('qemu-img info %s' % disks[dev]['file'])             
+                qemu_output = runCmdRaiseException('qemu-img info -U %s' % disks[dev]['file'])
             snapshots = False
             columns = None
             lines = qemu_output.strip().split('\n')

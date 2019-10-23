@@ -631,8 +631,8 @@ def createExternalSnapshotParser(args):
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
-    if args.current is None:
-        print {"result": {"code": 100, "msg": "less arg, current must be set"}, "data": {}}
+    if args.vol is None:
+        print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
     if args.snapshot is None:
         print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
@@ -642,10 +642,14 @@ def createExternalSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
-        if not os.path.isfile(args.current):
-            print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
+        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
+        config_path = disk_dir + '/config.json'
+        with open(config_path, "r") as f:
+            config = load(f)
+        if not os.path.isfile(config['current']):
+            print {"result": {"code": 100, "msg": "can not find vol"}, "data": {}}
             exit(3)
-        if os.path.isfile(os.path.dirname(args.current)+'/'+args.snapshot):
+        if os.path.isfile(disk_dir+'/'+args.snapshot):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}
             exit(3)
     elif args.type == "uus":
@@ -665,8 +669,8 @@ def revertExternalSnapshotParser(args):
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
-    if args.current is None:
-        print {"result": {"code": 100, "msg": "less arg, current must be set"}, "data": {}}
+    if args.vol is None:
+        print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
     if args.snapshot is None:
         print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
@@ -676,8 +680,14 @@ def revertExternalSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
-        ss_path = os.path.dirname(args.current)+'/'+args.snapshot
-        if ss_path == args.current:
+
+        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
+        config_path = disk_dir + '/config.json'
+        with open(config_path, "r") as f:
+            config = load(f)
+
+        ss_path = disk_dir+'/'+args.snapshot
+        if ss_path == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
         if not os.path.isfile(args.current):
@@ -686,6 +696,7 @@ def revertExternalSnapshotParser(args):
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
+
         # check snapshot relation
         chain = get_sn_chain(args.current)
         is_relation = False
@@ -701,6 +712,51 @@ def revertExternalSnapshotParser(args):
         exit(1)
 
     revertExternalSnapshot(args)
+
+def deleteExternalSnapshotParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+    if args.vol is None:
+        print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
+        exit(3)
+    if args.snapshot is None:
+        print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        if args.format is None:
+            print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
+            exit(3)
+        ss_path = os.path.dirname(args.current)+'/'+args.snapshot
+        if ss_path == args.current:
+            print {"result": {"code": 100, "msg": "can not delete current disk"}, "data": {}}
+            exit(3)
+        if not os.path.isfile(args.current):
+            print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
+            exit(3)
+        if not os.path.isfile(ss_path):
+            print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
+            exit(3)
+
+        config_path = os.path.dirname(args.current) + '/config.json'
+        with open(config_path, "r") as f:
+            config = load(f)
+        if config['current'] != args.current:
+            print {"result": {"code": 100, "msg": "current file not match"}, "data": {}}
+            exit(3)
+
+    elif args.type == "uus":
+        print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+        exit(1)
+
+    deleteExternalSnapshot(args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
@@ -952,7 +1008,7 @@ parser_create_ess.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
 parser_create_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
-parser_create_ess.add_argument("--current", metavar="[CURRENT]", type=str,
+parser_create_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
 # set default func
 parser_create_ess.set_defaults(func=createExternalSnapshotParser)
@@ -965,12 +1021,25 @@ parser_revert_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
 parser_revert_ess.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
                                 help="volume snapshot name to use")
-parser_revert_ess.add_argument("--current", metavar="[CURRENT]", type=str,
+parser_revert_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
 parser_revert_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
 # set default func
 parser_revert_ess.set_defaults(func=revertExternalSnapshotParser)
+
+# -------------------- add deleteExternalSnapshot cmd ----------------------------------
+parser_delete_ess = subparsers.add_parser("deleteExternalSnapshot", help="deleteExternalSnapshot help")
+parser_delete_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_delete_ess.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool to use")
+parser_delete_ess.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+                                help="volume snapshot name to use")
+parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
+                                help="disk current file to use")
+# set default func
+parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 
 # test_args = []
 #
@@ -1054,26 +1123,27 @@ parser_revert_ess.set_defaults(func=revertExternalSnapshotParser)
 
 
 try:
-    # args = parser.parse_args(
-    #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "1073741824", "--format", "qcow2"])
-    # args.func(args)
-    #
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss1", "--current", "/var/lib/libvirt/pooltest/disktest/disktest"])
-    # args.func(args)
-    #
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss2",
-    #      "--current", "/var/lib/libvirt/pooltest/disktest/ss1"])
-    # args.func(args)
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss3",
-    #      "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
-    # args.func(args)
+    args = parser.parse_args(
+        ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "1073741824", "--format", "qcow2"])
+    args.func(args)
 
     args = parser.parse_args(
-        ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--snapshot", "disktest",
-         "--current", "/var/lib/libvirt/pooltest/disktest/ss3", "--format", "qcow2"])
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss1", "--vol", "disktest"])
     args.func(args)
+
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss2",
+         "--vol", "disktest"])
+    args.func(args)
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss3",
+         "--vol", "disktest"])
+    args.func(args)
+
+    # args = parser.parse_args(
+    #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--snapshot", "disktest",
+    #      "--vol", "ss3", "--format", "qcow2"])
+    # args.func(args)
 except TypeError:
+    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
     logger.debug(traceback.format_exc())

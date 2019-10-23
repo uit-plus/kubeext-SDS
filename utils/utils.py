@@ -402,23 +402,22 @@ def get_IP():
     return myaddr
 
 def get_vol_info(vol_path):
-    return runCmdWithResult('qemu-img info --output json ' + vol_path)
+    return runCmdWithResult('qemu-img info -U --output json ' + vol_path)
 
-def get_disk_config_by_current(pool, current):
+def get_disk_config(pool, vol):
     poolInfo = get_pool_info(pool)
     pool_path = poolInfo['path']
     if not os.path.isdir(pool_path):
         raise ExecuteException('', "can not get pool " + pool + " path.")
-    for disk_dir in os.listdir(pool_path):
-        with open(pool_path + '/' + disk_dir + '/config.json', "r") as f:
-            config = load(f)
-            if config['current'] == current:
-                return config
+    config_path = pool_path + '/' + vol + '/config.json'
+    with open(config_path, "r") as f:
+        config = load(f)
+        return config
     raise ExecuteException('', 'can not get disk config by current')
 
 
 def get_sn_chain(ss_path):
-    return runCmdWithResult('qemu-img info --backing-chain --output json '+ss_path)
+    return runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)
 
 def get_all_snapshot_to_delete(ss_path, current):
     delete_sn = []
