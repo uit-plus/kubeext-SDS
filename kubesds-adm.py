@@ -990,7 +990,7 @@ parser_show_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
 parser_show_ss.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
                                 help="volume name to use")
-parser_show_ss.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+parser_show_ss.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_show_ss.add_argument("--vmname", metavar="[VMNAME]", type=str,
                                 help="virtual machine name to use")
@@ -1004,7 +1004,7 @@ parser_create_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type
                                 help="storage pool type to use")
 parser_create_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_create_ess.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+parser_create_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_create_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
@@ -1019,7 +1019,7 @@ parser_revert_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type
                                 help="storage pool type to use")
 parser_revert_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_revert_ess.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+parser_revert_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_revert_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
@@ -1034,7 +1034,7 @@ parser_delete_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type
                                 help="storage pool type to use")
 parser_delete_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
-parser_delete_ess.add_argument("--snapshot", metavar="[SNAPSHOT]", type=str,
+parser_delete_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
