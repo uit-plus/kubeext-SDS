@@ -634,8 +634,8 @@ def createExternalSnapshotParser(args):
     if args.vol is None:
         print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
-    if args.snapshot is None:
-        print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
+    if args.name is None:
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -649,7 +649,7 @@ def createExternalSnapshotParser(args):
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find vol"}, "data": {}}
             exit(3)
-        if os.path.isfile(disk_dir+'/'+args.snapshot):
+        if os.path.isfile(disk_dir+'/'+args.name):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}
             exit(3)
     elif args.type == "uus":
@@ -672,8 +672,8 @@ def revertExternalSnapshotParser(args):
     if args.vol is None:
         print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
-    if args.snapshot is None:
-        print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
+    if args.name is None:
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
@@ -686,7 +686,7 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        ss_path = disk_dir+'/'+args.snapshot
+        ss_path = disk_dir+'/'+args.name
         if ss_path == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
@@ -726,15 +726,15 @@ def deleteExternalSnapshotParser(args):
     if args.vol is None:
         print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
-    if args.snapshot is None:
-        print {"result": {"code": 100, "msg": "less arg, snapshot must be set"}, "data": {}}
+    if args.name is None:
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
-        ss_path = os.path.dirname(args.current)+'/'+args.snapshot
+        ss_path = os.path.dirname(args.current)+'/'+args.name
         if ss_path == args.current:
             print {"result": {"code": 100, "msg": "can not delete current disk"}, "data": {}}
             exit(3)
