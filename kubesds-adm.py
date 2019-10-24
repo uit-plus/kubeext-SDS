@@ -964,7 +964,7 @@ parser_show_disk.add_argument("--pool", metavar="[POOL]", type=str,
 parser_show_disk.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
 # set default func
-parser_show_disk_snapshot.set_defaults(func=showDiskParser)
+parser_show_disk.set_defaults(func=showDiskParser)
 
 # -------------------- add showDiskSnapshot cmd ----------------------------------
 parser_show_disk_snapshot = subparsers.add_parser("showDiskSnapshot", help="showDiskSnapshot help")
@@ -974,7 +974,7 @@ parser_show_disk_snapshot.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
 parser_show_disk_snapshot.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
-parser_create_ess.add_argument("--name", metavar="[NAME]", type=str,
+parser_show_disk_snapshot.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name")
 # set default func
 parser_show_disk_snapshot.set_defaults(func=showDiskSnapshotParser)
