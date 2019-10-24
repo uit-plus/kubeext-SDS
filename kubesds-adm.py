@@ -122,8 +122,8 @@ def check_virsh_disk_not_exist(pool, diskname):
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     try:
         pool_info = get_pool_info(pool)
-        if not os.path.isdir(pool_info['path']+'/'+diskname+'/'+snapshot):
-            print {"result": {"code": 209, "msg": "virsh disk " + diskname + " not exist in pool "+pool}, "data": {}}
+        if not os.path.isfile(pool_info['path']+'/'+diskname+'/'+snapshot):
+            print {"result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume "+diskname}, "data": {}}
             exit(5)
     except Exception:
         logger.debug(traceback.format_exc())
