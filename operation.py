@@ -853,7 +853,7 @@ def createExternalSnapshot(params):
             result = op2.execute()
 
             result["disktype"] = params.type
-            result["current"] = ss_path
+            result["current"] = DiskImageHelper.get_backing_file(ss_path)
             print dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
@@ -865,7 +865,7 @@ def createExternalSnapshot(params):
         print {"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("createExternalSnapshot " + params.pool)
+        logger.debug("createExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
@@ -918,7 +918,7 @@ def revertExternalSnapshot(params):
         print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("revertExternalSnapshot " + params.pool)
+        logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
@@ -964,18 +964,18 @@ def deleteExternalSnapshot(params):
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
-        logger.debug("revertExternalSnapshot " + params.name)
+        logger.debug("deleteExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.current + ". " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.current + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("revertExternalSnapshot " + params.pool)
+        logger.debug("deleteExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.current}, "data": {}}
+        print {"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.current}, "data": {}}
         exit(1)
 
 def xmlToJson(xmlStr):
