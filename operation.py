@@ -623,7 +623,7 @@ def showDisk(params):
             result["disktype"] = params.type
             result["current"] = config['current']
             print dumps(
-                {"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
+                {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol}
             op = Operation("cstor-cli vdisk-show", kv, True)
@@ -648,11 +648,54 @@ def showDisk(params):
         print {"result": {"code": 400, "msg": "error occur while show disk " + params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("showDisk " + params.vol)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {"result": {"code": 300, "msg": "error occur while show disk " + params.vol}, "data": {}}
+        exit(1)
+        
+def showDiskSnapshot(params):
+    try:
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            pool_info = get_pool_info(params.pool)
+            disk_dir = pool_info['path'] + '/' + params.vol
+            snapshot_path = disk_dir + '/' + params.name
+            op = Operation('qemu-img info -U --output json ' + snapshot_path, {}, with_result=True)
+            result = op.execute()
+            result["disktype"] = params.type
+            result["current"] = DiskImageHelper.get_backing_file(snapshot_path)
+            print dumps(
+                {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
+        elif params.type == "uus":
+            kv = {"poolname": params.pool, "name": params.vol}
+            op = Operation("cstor-cli vdisk-show", kv, True)
+            diskinfo = op.execute()
+
+            result = {
+                "disktype": "uus",
+                "name": {"text": params.vol},
+                "capacity": {"text": params.capacity},
+                "target": {"path": ""},
+                "uni": diskinfo["data"]["uni"],
+                "uuid": randomUUID()
+            }
+
+            print dumps({"result": {"code": 0,
+                                    "msg": "show disk " + params.pool + " success."}, "data": result})
+    except ExecuteException, e:
+        logger.debug("showDiskSnapshot " + params.name)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 400, "msg": "error occur while show disk snapshot " + params.name + ". " + e.message}, "data": {}}
+        exit(1)
+    except Exception:
+        logger.debug("showDiskSnapshot " + params.name)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 300, "msg": "error occur while show disk snapshot " + params.name}, "data": {}}
         exit(1)
 
 def createSnapshot(params):

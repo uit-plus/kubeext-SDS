@@ -119,6 +119,17 @@ def check_virsh_disk_not_exist(pool, diskname):
         print {"result": {"code": 208, "msg": "cant get virsh disk info"}, "data": {}}
         exit(6)
 
+def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
+    try:
+        pool_info = get_pool_info(pool)
+        if not os.path.isdir(pool_info['path']+'/'+diskname+'/'+snapshot):
+            print {"result": {"code": 209, "msg": "virsh disk " + diskname + " not exist in pool "+pool}, "data": {}}
+            exit(5)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 208, "msg": "cant get virsh disk info"}, "data": {}}
+        exit(6)
+
 def check_cstor_disk_exist(pool, diskname):
     try:
         if is_cstor_disk_exist(pool, diskname):
@@ -504,6 +515,32 @@ def showDiskParser(args):
         check_cstor_disk_not_exist(args.pool, args.vol)
 
     showDisk(args)
+    
+def showDiskSnapshotParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.pool is None:
+        print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
+        exit(3)
+    if args.vol is None:
+        print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
+        exit(3)
+    if args.name is None:
+        print {"result": {"code": 100, "msg": "less arg, \"name\" of snapshot must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
+
+    elif args.type == "uus":
+        # check cstor disk
+        check_cstor_disk_not_exist(args.pool, args.vol)
+
+    showDiskSnapshot(args)
 
 def createSnapshotParser(args):
     if args.type is None:
@@ -927,7 +964,20 @@ parser_show_disk.add_argument("--pool", metavar="[POOL]", type=str,
 parser_show_disk.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
 # set default func
-parser_show_disk.set_defaults(func=showDiskParser)
+parser_show_disk_snapshot.set_defaults(func=showDiskParser)
+
+# -------------------- add showDiskSnapshot cmd ----------------------------------
+parser_show_disk_snapshot = subparsers.add_parser("showDiskSnapshot", help="showDiskSnapshot help")
+parser_show_disk_snapshot.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_show_disk_snapshot.add_argument("--pool", metavar="[POOL]", type=str,
+                                help="storage pool to use")
+parser_show_disk_snapshot.add_argument("--vol", metavar="[VOL]", type=str,
+                                help="volume name to use")
+parser_create_ess.add_argument("--name", metavar="[NAME]", type=str,
+                                help="volume snapshot name")
+# set default func
+parser_show_disk_snapshot.set_defaults(func=showDiskSnapshotParser)
 
 
 # -------------------- add createSnapshot cmd ----------------------------------

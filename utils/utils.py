@@ -429,6 +429,40 @@ def get_all_snapshot_to_delete(ss_path, current):
             break
     return delete_sn
 
+class DiskImageHelper(object):
+    @staticmethod
+    def get_backing_file(file, raise_it=False):
+        """ Gets backing file for disk image """
+        get_backing_file_cmd = "qemu-img info %s" % file
+        try:
+            out = runCmdRaiseException(get_backing_file_cmd, use_read=True)
+        except Exception, e:
+            if raise_it:
+                raise e
+            get_backing_file_cmd = "qemu-img info -U %s" % file
+            out = runCmdRaiseException(get_backing_file_cmd, use_read=True)
+        lines = out.decode('utf-8').split('\n')
+        for line in lines:
+            if re.search("backing file:", line):
+                return str(line.strip().split()[2])
+        return None
+
+    @staticmethod
+    def get_backing_files_tree(file):
+        """ Gets all backing files (snapshot tree) for disk image """
+        backing_files = []
+        backing_file = DiskImageHelper.get_backing_file(file)
+        while backing_file is not None:
+            backing_files.append(backing_file)
+            backing_file = DiskImageHelper.get_backing_file(backing_file)
+        return backing_files
+
+    @staticmethod
+    def set_backing_file(backing_file, file):
+        """ Sets backing file for disk image """
+        set_backing_file_cmd = "qemu-img rebase -u -b %s %s" % (backing_file, file)
+        runCmdRaiseException(set_backing_file_cmd)
+
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 
 # print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
