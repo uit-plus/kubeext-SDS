@@ -148,6 +148,27 @@ def runCmd(cmd):
         p.stdout.close()
         p.stderr.close()
 
+def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
+    print(cmd)
+    std_err = None
+    if not cmd:
+        return
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        if use_read:
+            std_out = p.stdout.read()
+            std_err = p.stderr.read()
+        else:
+            std_out = p.stdout.readlines()
+            std_err = p.stderr.readlines()
+        if std_err:
+            print(std_err)
+            raise ExecuteException(head, std_err)
+        return std_out
+    finally:
+        p.stdout.close()
+        p.stderr.close()
+
 host = get_docker0_IP()
 port = '19999'
 
