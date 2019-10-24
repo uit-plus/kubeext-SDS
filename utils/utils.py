@@ -4,6 +4,7 @@ Run back-end command in subprocess.
 import atexit
 import fcntl
 import os
+import re
 import random
 import signal
 import socket
