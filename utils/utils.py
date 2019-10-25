@@ -493,6 +493,8 @@ class DiskImageHelper(object):
         set_backing_file_cmd = "qemu-img rebase -u -b %s %s" % (backing_file, file)
         runCmdRaiseException(set_backing_file_cmd)
 
+
+
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 
 # print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')

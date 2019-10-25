@@ -661,8 +661,9 @@ def showDiskSnapshot(params):
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
             snapshot_path = disk_dir + '/' + params.name
-            op = Operation('qemu-img info -U --output json ' + snapshot_path, {}, with_result=True)
-            result = op.execute()
+
+            result = get_disk_info(snapshot_path)
+            result['disk'] = params.vol
             result["disktype"] = params.type
             result["current"] = DiskImageHelper.get_backing_file(snapshot_path)
             print dumps(
@@ -849,9 +850,7 @@ def createExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info -U --output json ' + ss_path, {}, with_result=True)
-            result = op2.execute()
-
+            result = get_disk_info(ss_path)
             result['disk'] = config['name']
             result["disktype"] = params.type
             result["current"] = DiskImageHelper.get_backing_file(ss_path)
@@ -904,9 +903,7 @@ def revertExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info -U --output json ' + config['current'], {}, with_result=True)
-            result = op2.execute()
-
+            result = get_disk_info(config['current'])
             result['disk'] = config['name']
             result["disktype"] = params.type
             result["current"] = ss_path
@@ -953,9 +950,7 @@ def deleteExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info -U --output json ' + ss_path, {}, with_result=True)
-            result = op2.execute()
-
+            result = get_disk_info(ss_path)
             result["disktype"] = params.type
             result["current"] = ss_path
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
@@ -982,3 +977,8 @@ def xmlToJson(xmlStr):
         "interface", "_interface").replace("transient", "_transient").replace(
         "nested-hv", "nested_hv").replace("suspend-to-mem", "suspend_to_mem").replace("suspend-to-disk",
                                                                                       "suspend_to_disk")
+def get_disk_info(path):
+    op = Operation('qemu-img info -U --output json ' + path, {}, with_result=True)
+    disk_json = op.execute()
+    json_str = dumps(disk_json)
+    return loads(json_str.replace('-', '_'))
