@@ -727,7 +727,7 @@ def revertExternalSnapshotParser(args):
         if ss_path == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
-        if not os.path.isfile(args.current):
+        if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
             exit(3)
         if not os.path.isfile(ss_path):
@@ -735,7 +735,7 @@ def revertExternalSnapshotParser(args):
             exit(3)
 
         # check snapshot relation
-        chain = get_sn_chain(args.current)
+        chain = get_sn_chain(config['current'])
         is_relation = False
         for info in chain:
             if 'backing-filename' in info.keys() and info['backing-filename'] == ss_path:
@@ -768,25 +768,10 @@ def deleteExternalSnapshotParser(args):
         exit(3)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
-        if args.format is None:
-            print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
-            exit(3)
-        ss_path = os.path.dirname(args.current)+'/'+args.name
-        if ss_path == args.current:
-            print {"result": {"code": 100, "msg": "can not delete current disk"}, "data": {}}
-            exit(3)
-        if not os.path.isfile(args.current):
-            print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
-            exit(3)
+        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
+        ss_path = disk_dir+'/'+args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
-            exit(3)
-
-        config_path = os.path.dirname(args.current) + '/config.json'
-        with open(config_path, "r") as f:
-            config = load(f)
-        if config['current'] != args.current:
-            print {"result": {"code": 100, "msg": "current file not match"}, "data": {}}
             exit(3)
 
     elif args.type == "uus":
@@ -1173,27 +1158,32 @@ except TypeError:
 
 
 # try:
+    # args = parser.parse_args(
+    #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "1073741824", "--format", "qcow2"])
+    # args.func(args)
+    #
+    # args = parser.parse_args(
+    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1", "--vol", "disktest"])
+    # args.func(args)
+    #
+    # args = parser.parse_args(
+    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
+    #      "--vol", "disktest"])
+    # args.func(args)
+    # args = parser.parse_args(
+    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss3",
+    #      "--vol", "disktest"])
+    # args.func(args)
+
+    # args = parser.parse_args(
+    #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+    #      "--vol", "disktest", "--format", "qcow2"])
+    # args.func(args)
+
 #     args = parser.parse_args(
-#         ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "1073741824", "--format", "qcow2"])
-#     args.func(args)
-# 
-#     args = parser.parse_args(
-#         ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss1", "--vol", "disktest"])
-#     args.func(args)
-# 
-#     args = parser.parse_args(
-#         ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss2",
+#         ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "disktest",
 #          "--vol", "disktest"])
 #     args.func(args)
-#     args = parser.parse_args(
-#         ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--snapshot", "ss3",
-#          "--vol", "disktest"])
-#     args.func(args)
-# 
-#     # args = parser.parse_args(
-#     #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--snapshot", "disktest",
-#     #      "--vol", "ss3", "--format", "qcow2"])
-#     # args.func(args)
 # except TypeError:
 #     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
 #     logger.debug(traceback.format_exc())

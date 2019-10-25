@@ -730,7 +730,7 @@ def createSnapshot(params):
         print {"result": {"code": 400, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("createSnapshot " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
@@ -872,6 +872,7 @@ def createExternalSnapshot(params):
         print {"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
         exit(1)
 
+# create snapshot on params.name, then rename snapshot to current
 def revertExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
@@ -928,22 +929,21 @@ def revertExternalSnapshot(params):
 def deleteExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            disk_config = get_disk_config_by_current(params.pool, params.current)
+            disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.name
 
-            uuid = randomUUIDFromName(params.current.split('/')[-1])
-            op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + ss_path + ' ' + disk_config['dir']+'/'+uuid, {})
-            op1.execute()
+            op = Operation('qemu-img commit -b ' + ss_path + ' -d ' + disk_config['current'], {})
+            op.execute()
 
             ss_to_delete = get_all_snapshot_to_delete(ss_path, disk_config['current'])
             # print ss_to_delete
             for ss in ss_to_delete:
-                if ss != disk_config['dir']+'/'+uuid:  # not matter
-                    op = Operation(
-                        'rm -f '+ss, {})
-                    op.execute()
+                op = Operation(
+                    'rm -f ' + ss, {})
+                op.execute()
+
             op = Operation(
-                'mv ' + disk_config['dir']+'/'+uuid + ' ' + disk_config['current'], {})
+                'mv ' + ss_path + ' ' + disk_config['current'], {})
             op.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
@@ -960,7 +960,7 @@ def deleteExternalSnapshot(params):
 
             result["disktype"] = params.type
             result["current"] = ss_path
-            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
+            print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
@@ -968,14 +968,14 @@ def deleteExternalSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.current + ". " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
         exit(1)
     except Exception:
         logger.debug("deleteExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.current}, "data": {}}
+        print {"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
         exit(1)
 
 def xmlToJson(xmlStr):

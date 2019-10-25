@@ -245,6 +245,7 @@ def randomUUID():
                      "%02x" * 6]) % tuple(u)
 
 def randomUUIDFromName(name):
+    name = str(name)
     namespace = uuid.NAMESPACE_URL
 
     return str(uuid.uuid5(namespace, name))
