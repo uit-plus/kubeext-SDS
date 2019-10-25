@@ -1181,15 +1181,15 @@ parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
 #         logger.debug(traceback.format_exc())
 
 
-# try:
-#     args = parser.parse_args()
-#     args.func(args)
-# except TypeError:
-#     # print "argument number not enough"
-#     logger.debug(traceback.format_exc())
-
-
 try:
+    args = parser.parse_args()
+    args.func(args)
+except TypeError:
+    # print "argument number not enough"
+    logger.debug(traceback.format_exc())
+
+
+# try:
     # args = parser.parse_args(
     #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
@@ -1216,9 +1216,9 @@ try:
     #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
     #      "--vol", "disktest"])
     # args.func(args)
-    args = parser.parse_args(
-        ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
-    args.func(args)
-except TypeError:
-    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-    logger.debug(traceback.format_exc())
+#     args = parser.parse_args(
+#         ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
+#     args.func(args)
+# except TypeError:
+#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+#     logger.debug(traceback.format_exc())
