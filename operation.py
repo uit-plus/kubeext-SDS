@@ -852,6 +852,7 @@ def createExternalSnapshot(params):
             op2 = Operation('qemu-img info -U --output json ' + ss_path, {}, with_result=True)
             result = op2.execute()
 
+            result['disk'] = config['name']
             result["disktype"] = params.type
             result["current"] = DiskImageHelper.get_backing_file(ss_path)
             print dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."}, "data": result})
@@ -906,6 +907,7 @@ def revertExternalSnapshot(params):
             op2 = Operation('qemu-img info -U --output json ' + config['current'], {}, with_result=True)
             result = op2.execute()
 
+            result['disk'] = config['name']
             result["disktype"] = params.type
             result["current"] = ss_path
             print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
@@ -942,20 +944,16 @@ def deleteExternalSnapshot(params):
                     'rm -f ' + ss, {})
                 op.execute()
 
-            op = Operation(
-                'mv ' + ss_path + ' ' + disk_config['current'], {})
-            op.execute()
-
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
-                config['current'] = disk_config['current']
+                config['current'] = ss_path
                 if 'last' in config.keys():
                     del config['last']
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info -U --output json ' + disk_config['current'], {}, with_result=True)
+            op2 = Operation('qemu-img info -U --output json ' + ss_path, {}, with_result=True)
             result = op2.execute()
 
             result["disktype"] = params.type

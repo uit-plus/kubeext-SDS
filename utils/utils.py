@@ -438,6 +438,13 @@ def get_disk_config(pool, vol):
         return config
     raise ExecuteException('', 'can not get disk config by current')
 
+def get_disk_snapshots(ss_path):
+    ss_chain = get_sn_chain(ss_path)
+    snapshots = []
+    for disk_info in ss_chain:
+        if disk_info['filename'] != ss_path:
+            snapshots.append(disk_info['filename'])
+    return snapshots
 
 def get_sn_chain(ss_path):
     return runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)
@@ -489,3 +496,5 @@ class DiskImageHelper(object):
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 
 # print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
+
+# print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
