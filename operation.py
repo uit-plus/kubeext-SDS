@@ -840,7 +840,7 @@ def createExternalSnapshot(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.name
-            op1 = Operation('qemu-img create -f ' + params.format + ' -b' + disk_config['current'] + ' ' + ss_path, {})
+            op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + disk_config['current'] + ' ' + ss_path, {})
             op1.execute()
 
             with open(disk_config['dir'] + '/config.json', "r") as f:
