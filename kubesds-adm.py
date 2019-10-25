@@ -780,6 +780,29 @@ def deleteExternalSnapshotParser(args):
 
     deleteExternalSnapshot(args)
 
+def updateDiskCurrentParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.current is None:
+        print {"result": {"code": 100, "msg": "less arg, current must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
+        for current in args.current:
+            if not os.path.isfile(current):
+                print {"result": {"code": 100, "msg": "current" + current + " file not exist"}, "data": {}}
+                exit(3)
+
+    elif args.type == "uus":
+        print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+        exit(1)
+
+    updateDiskCurrent(args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1076,6 +1099,15 @@ parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
 # set default func
 parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 
+# -------------------- add updateDiskCurrent cmd ----------------------------------
+parser_upodate_current = subparsers.add_parser("updateDiskCurrent", help="updateDiskCurrent help")
+parser_upodate_current.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+                                help="storage pool type to use")
+parser_upodate_current.add_argument("--current", metavar="[CURRENT]", type=str, nargs='*',
+                                help="disk current file to use")
+# set default func
+parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
+
 # test_args = []
 #
 # dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--target", "/var/lib/libvirt/pooldir"])
@@ -1149,15 +1181,15 @@ parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 #         logger.debug(traceback.format_exc())
 
 
-try:
-    args = parser.parse_args()
-    args.func(args)
-except TypeError:
-    # print "argument number not enough"
-    logger.debug(traceback.format_exc())
-
-
 # try:
+#     args = parser.parse_args()
+#     args.func(args)
+# except TypeError:
+#     # print "argument number not enough"
+#     logger.debug(traceback.format_exc())
+
+
+try:
     # args = parser.parse_args(
     #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
@@ -1174,16 +1206,19 @@ except TypeError:
     #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss3",
     #      "--vol", "disktest"])
     # args.func(args)
-
+    #
     # args = parser.parse_args(
     #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
     #      "--vol", "disktest", "--format", "qcow2"])
     # args.func(args)
-
-#     args = parser.parse_args(
-#         ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
-#          "--vol", "disktest"])
-#     args.func(args)
-# except TypeError:
-#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-#     logger.debug(traceback.format_exc())
+    #
+    # args = parser.parse_args(
+    #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+    #      "--vol", "disktest"])
+    # args.func(args)
+    args = parser.parse_args(
+        ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
+    args.func(args)
+except TypeError:
+    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+    logger.debug(traceback.format_exc())

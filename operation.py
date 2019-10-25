@@ -971,6 +971,36 @@ def deleteExternalSnapshot(params):
         print {"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
         exit(1)
 
+
+def updateDiskCurrent(params):
+    try:
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+            for current in params.current:
+                config_path = os.path.dirname(current) + '/config.json'
+                with open(config_path, "r") as f:
+                    config = load(f)
+                    config['last'] = config['current']
+                    config['current'] = current
+                with open(config_path, "w") as f:
+                    dump(config, f)
+                print dumps({"result": {"code": 0, "msg": "updateDiskCurrent successful."}, "data": {}})
+        elif params.type == "uus":
+            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
+    except ExecuteException, e:
+        logger.debug("updateDiskCurrent")
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 400, "msg": "error occur while updateDiskCurrent. " + e.message}, "data": {}}
+        exit(1)
+    except Exception:
+        logger.debug("updateDiskCurrent " + params.name)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 300, "msg": "error occur while updateDiskCurrent."}, "data": {}}
+        exit(1)
+
 def xmlToJson(xmlStr):
     json = dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
     return json.replace("@", "_").replace("$", "text").replace(
