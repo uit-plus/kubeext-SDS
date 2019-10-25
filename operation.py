@@ -879,7 +879,7 @@ def revertExternalSnapshot(params):
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.name
 
-            uuid = randomUUIDFromName(os.path.basename(disk_config['current']))
+            uuid = randomUUID()
             op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + ss_path + ' ' + disk_config['dir']+'/'+uuid, {})
             op1.execute()
 
@@ -890,20 +890,20 @@ def revertExternalSnapshot(params):
                     op = Operation(
                         'rm -f '+ss, {})
                     op.execute()
-            op = Operation(
-                'mv ' + disk_config['dir']+'/'+uuid + ' ' + disk_config['current'], {})
-            op.execute()
+            # op = Operation(
+            #     'mv ' + disk_config['dir']+'/'+uuid + ' ' + disk_config['current'], {})
+            # op.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
-                config['current'] = disk_config['current']
+                config['current'] = disk_config['dir'] + '/' + uuid
                 if 'last' in config.keys():
                     del config['last']
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            op2 = Operation('qemu-img info -U --output json ' + disk_config['current'], {}, with_result=True)
+            op2 = Operation('qemu-img info -U --output json ' + config['current'], {}, with_result=True)
             result = op2.execute()
 
             result["disktype"] = params.type

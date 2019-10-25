@@ -1159,7 +1159,7 @@ except TypeError:
 
 # try:
     # args = parser.parse_args(
-    #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "1073741824", "--format", "qcow2"])
+    #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
     #
     # args = parser.parse_args(
@@ -1174,12 +1174,12 @@ except TypeError:
     #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss3",
     #      "--vol", "disktest"])
     # args.func(args)
-
+    #
     # args = parser.parse_args(
     #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
     #      "--vol", "disktest", "--format", "qcow2"])
     # args.func(args)
-
+    #
 #     args = parser.parse_args(
 #         ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "disktest",
 #          "--vol", "disktest"])
