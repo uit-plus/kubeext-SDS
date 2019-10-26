@@ -853,7 +853,7 @@ def createExternalSnapshot(params):
             result = get_disk_info(ss_path)
             result['disk'] = config['name']
             result["disktype"] = params.type
-            result["current"] = DiskImageHelper.get_backing_file(ss_path)
+            # result["current"] = DiskImageHelper.get_backing_file(ss_path)
             print dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
@@ -903,10 +903,10 @@ def revertExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            result = get_disk_info(config['current'])
+            result = get_disk_info(ss_path)
             result['disk'] = config['name']
             result["disktype"] = params.type
-            result["current"] = ss_path
+            # result["current"] = config['current']
             print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
@@ -952,7 +952,7 @@ def deleteExternalSnapshot(params):
 
             result = get_disk_info(ss_path)
             result["disktype"] = params.type
-            result["current"] = ss_path
+            # result["current"] = ss_path
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
