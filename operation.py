@@ -665,7 +665,8 @@ def showDiskSnapshot(params):
             result = get_disk_info(snapshot_path)
             result['disk'] = params.vol
             result["disktype"] = params.type
-            result["current"] = DiskImageHelper.get_backing_file(snapshot_path)
+            result["pool"] = params.pool
+            # result["current"] = DiskImageHelper.get_backing_file(snapshot_path)
             print dumps(
                 {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
@@ -853,6 +854,7 @@ def createExternalSnapshot(params):
             result = get_disk_info(ss_path)
             result['disk'] = config['name']
             result["disktype"] = params.type
+            result["pool"] = params.pool
             # result["current"] = DiskImageHelper.get_backing_file(ss_path)
             print dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
@@ -903,9 +905,10 @@ def revertExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            result = get_disk_info(ss_path)
+            result = get_disk_info(config['current'])
             result['disk'] = config['name']
             result["disktype"] = params.type
+            result["pool"] = params.pool
             # result["current"] = config['current']
             print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
