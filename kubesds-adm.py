@@ -1181,44 +1181,44 @@ parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
 #         logger.debug(traceback.format_exc())
 
 
-# try:
-#     args = parser.parse_args()
-#     args.func(args)
-# except TypeError:
-#     # print "argument number not enough"
-#     logger.debug(traceback.format_exc())
-
-
 try:
-    args = parser.parse_args(
-        ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
+    args = parser.parse_args()
     args.func(args)
-
-    args = parser.parse_args(
-        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1", "--vol", "disktest"])
-    args.func(args)
-
-    args = parser.parse_args(
-        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
-         "--vol", "disktest"])
-    args.func(args)
-    args = parser.parse_args(
-        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss3",
-         "--vol", "disktest"])
-    args.func(args)
-
-    args = parser.parse_args(
-        ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
-         "--vol", "disktest", "--format", "qcow2"])
-    args.func(args)
-
-    # args = parser.parse_args(
-    #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
-    #      "--vol", "disktest"])
-    # args.func(args)
-    # args = parser.parse_args(
-    #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
-    # args.func(args)
 except TypeError:
-    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+    # print "argument number not enough"
     logger.debug(traceback.format_exc())
+
+
+# try:
+#     args = parser.parse_args(
+#         ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
+#     args.func(args)
+#
+#     args = parser.parse_args(
+#         ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1", "--vol", "disktest"])
+#     args.func(args)
+#
+#     args = parser.parse_args(
+#         ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
+#          "--vol", "disktest"])
+#     args.func(args)
+#     args = parser.parse_args(
+#         ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss3",
+#          "--vol", "disktest"])
+#     args.func(args)
+#
+#     args = parser.parse_args(
+#         ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+#          "--vol", "disktest", "--format", "qcow2"])
+#     args.func(args)
+#
+#     # args = parser.parse_args(
+#     #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+#     #      "--vol", "disktest"])
+#     # args.func(args)
+#     # args = parser.parse_args(
+#     #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
+#     # args.func(args)
+# except TypeError:
+#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+#     logger.debug(traceback.format_exc())
