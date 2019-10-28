@@ -101,8 +101,13 @@ def createPool(params):
         elif params.type == "uus":
             # {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "used": 1000, "pool": "pool1", "url": "uus_://192.168.3.10:7000", "proto": "uus", "free": 2000, "disktype": "uus_", "export-mode": "3", "maintain": "normal", "total": 3000}, "obj":"pooladd"}
             kv = {"poolname": params.pool, "url": params.url}
-            op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
-            uus_poolinfo = op.execute()
+            if params.url.find('uus-dev') >= 0:
+                op = Operation("cstor-cli pooladd-uraid", kv, with_result=True)
+                uus_poolinfo = op.execute()
+            else:
+                op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
+                uus_poolinfo = op.execute()
+
             result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID()}
         elif params.type == "nfs":
             kv = {"poolname": params.pool, "url": params.url, "path": params.target}
