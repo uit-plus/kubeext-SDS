@@ -83,7 +83,7 @@ def runCmdAndTransferXmlToJson(cmd):
     dic = dic.replace('@', '').replace('#', '')
     return loads(dic)
 
-def runCmdAndTransferKvToJson(cmd):
+def runCmdAndSplitKvToJson(cmd):
     if not cmd:
         #         logger.debug('No CMD to execute.')
         return
@@ -98,7 +98,8 @@ def runCmdAndTransferKvToJson(cmd):
                     continue
                 line = str.strip(line)
                 kv = line.replace(':', '').split()
-                result[kv[0].lower()] = kv[1]
+                if len(kv) == 2:
+                    result[kv[0].lower()] = kv[1]
             return result
         if std_err:
             error_msg = ''
@@ -533,29 +534,9 @@ def get_pool_info(pool_):
     if 'available' in result.keys():
         del result['available']
 
-    lines = ''
-    if is_pool_started(pool_):
-        pool = _get_pool(pool_)
-        try:
-            pool.refresh()
-        except:
-            pass
-        lines = pool.XMLDesc()
-    if is_pool_defined(pool_):
-        pool = _get_defined_pool(pool_)
-        # try:
-        #     pool.refresh()
-        # except:
-        #     pass
-        lines = pool.XMLDesc()
-    for line in lines.splitlines():
-        if line.find("path") >= 0:
-            result['path'] = line.replace('<path>', '').replace('</path>', '').strip()
-            break
-    for line in lines.splitlines():
-        if line.find("capacity") >= 0:
-            result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', '').strip())
-            break
+    xml_dict = rpcCallAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
+    result['capacity'] = xml_dict['pool']['capacity']['text']
+    result['path'] = xml_dict['pool']['target']['path']
     return result
 
 def get_vol_info(vol_path):
@@ -635,4 +616,4 @@ class DiskImageHelper(object):
 
 # print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
 
-# print runCmdAndTransferKvToJson('virsh pool-info test1')
+print get_pool_info('test1')

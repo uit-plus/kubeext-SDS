@@ -19,7 +19,7 @@ sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
 from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndGetOutput, runCmd, runCmdAndTransferXmlToJson, \
-    runCmdAndTransferKvToJson
+    runCmdAndSplitKvToJson
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -59,7 +59,7 @@ class Operation(object):
         elif self.xml_to_json:
             return runCmdAndTransferXmlToJson(cmd)
         elif self.kv_to_json:
-            return runCmdAndTransferKvToJson(cmd)
+            return runCmdAndSplitKvToJson(cmd)
         else:
             return runCmd(cmd)
 
