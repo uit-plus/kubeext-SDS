@@ -616,4 +616,4 @@ class DiskImageHelper(object):
 
 # print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
 
-print get_pool_info('test1')
+# print get_pool_info('test1')
