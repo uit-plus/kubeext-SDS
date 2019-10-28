@@ -488,7 +488,9 @@ def deleteDisk(params):
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
             for file in os.listdir(disk_dir):
-                if config['current'] != file:
+                if config['current'] == file or disk_dir + '/config.json' == file:
+                    continue
+                else:
                     raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
 
             op = Operation("rm -rf " + disk_dir, {})
@@ -626,8 +628,9 @@ def showDisk(params):
 
             op = Operation('qemu-img info -U --output json ' + config['current'], {}, with_result=True)
             result = op.execute()
+            result['disk'] = params.vol
             result["disktype"] = params.type
-            result["current"] = config['current']
+            result["pool"] = params.pool
             print dumps(
                 {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
