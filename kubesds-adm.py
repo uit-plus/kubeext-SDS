@@ -96,7 +96,6 @@ def check_cstor_pool_not_exist(pool):
         print {"result": {"code": 205, "msg": "cant get cstor pool info"}, "data": {}}
         exit(8)
 
-
 def check_virsh_disk_exist(pool, diskname):
     try:
         pool_info = get_pool_info(pool)
@@ -267,6 +266,9 @@ def startPoolParser(args):
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
+
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_pool_not_exist(args.pool)
         # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
@@ -288,6 +290,9 @@ def autoStartPoolParser(args):
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_pool_not_exist(args.pool)
@@ -332,6 +337,9 @@ def stopPoolParser(args):
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_pool_not_exist(args.pool)
@@ -381,6 +389,9 @@ def createDiskParser(args):
         print {"result": {"code": 100, "msg": "less arg, vol must be set"}, "data": {}}
         exit(3)
 
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
+
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.capacity is None:
             print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
@@ -392,17 +403,6 @@ def createDiskParser(args):
         check_virsh_disk_exist(args.pool, args.vol)
         check_pool_type(args.pool, args.type)
 
-        if args.backing_vol is not None:
-            check_virsh_disk_not_exist(args.pool, args.backing_vol)
-            if args.backing_vol_format is None:
-                print {"result": {"code": 100, "msg": "less arg, backing_vol_format must be set"}, "data": {}}
-                exit(4)
-            else:
-                vol_xml = get_volume_xml(args.pool, args.backing_vol)
-                volume = loads(xmlToJson(vol_xml))['volume']
-                if volume['target']['format']['_type'] != args.backing_vol_format:
-                    print {"result": {"code": 100, "msg": "backing_vol_format can not match, plz set right value"}, "data": {}}
-                    exit(4)
     elif args.type == "uus":
         if args.capacity is None:
             print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
@@ -426,6 +426,9 @@ def deleteDiskParser(args):
     if args.vol is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
@@ -455,6 +458,9 @@ def resizeDiskParser(args):
         print {"result": {"code": 100, "msg": "less arg, capacity must be set"}, "data": {}}
         exit(3)
 
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
+
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_size(args.pool, args.vol, args.capacity)
@@ -481,6 +487,12 @@ def cloneDiskParser(args):
     if args.newname is None:
         print {"result": {"code": 100, "msg": "less arg, newname must be set"}, "data": {}}
         exit(3)
+    if args.format is None:
+        print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
+        exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
@@ -507,6 +519,9 @@ def showDiskParser(args):
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
+
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_not_exist(args.pool, args.vol)
 
@@ -532,6 +547,9 @@ def showDiskSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, \"name\" of snapshot must be set"}, "data": {}}
         exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
@@ -675,6 +693,9 @@ def createExternalSnapshotParser(args):
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
+
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
@@ -695,7 +716,6 @@ def createExternalSnapshotParser(args):
 
     createExternalSnapshot(args)
 
-
 def revertExternalSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
@@ -712,6 +732,9 @@ def revertExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         if args.format is None:
@@ -766,6 +789,9 @@ def deleteExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
@@ -914,10 +940,10 @@ parser_create_disk.add_argument("--capacity", metavar="[CAPACITY]", type=str,
 parser_create_disk.add_argument("--format", metavar="[raw|bochs|qcow|qcow2|vmdk|qed]", type=str,
                                 help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed.")
 
-parser_create_disk.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
-                                help="disk backing vol to use")
-parser_create_disk.add_argument("--backing_vol_format", metavar="[BSCKING_VOL_FORMAT]", type=str,
-                                help="disk backing vol format to use")
+# parser_create_disk.add_argument("--backing_vol", metavar="[BACKING_VOL]", type=str,
+#                                 help="disk backing vol to use")
+# parser_create_disk.add_argument("--backing_vol_format", metavar="[BSCKING_VOL_FORMAT]", type=str,
+#                                 help="disk backing vol format to use")
 
 # set default func
 parser_create_disk.set_defaults(func=createDiskParser)
@@ -960,6 +986,8 @@ parser_clone_disk.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
 parser_clone_disk.add_argument("--newname", metavar="[NEWNAME]", type=str,
                                 help="new volume name to use")
+parser_clone_disk.add_argument("--format", metavar="[FORMAT]", type=str,
+                                help="format to use")
 # set default func
 parser_clone_disk.set_defaults(func=cloneDiskParser)
 

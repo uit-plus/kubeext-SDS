@@ -199,7 +199,6 @@ def createPool(params):
         print dumps({"result": {"code": 300, "msg": "error occur while create pool " + params.pool + "."}, "data": {}})
         exit(1)
 
-
 def deletePool(params):
     result = None
     try:
@@ -221,12 +220,14 @@ def deletePool(params):
                 raise ExecuteException('RunCmdError', 'pool ' + params.pool + ' still active, plz stop it first.')
             #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
             #     op1.execute()
+
+            op = Operation("cstor-cli pool-remove", {"poolname": params.pool}, with_result=True)
+            result = op.execute()
+
             if is_pool_defined(params.pool):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
                 op2.execute()
 
-            op = Operation("cstor-cli pool-remove", {"poolname": params.pool}, with_result=True)
-            result = op.execute()
             # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "pool"}
         print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": result})
     except ExecuteException, e:
@@ -415,14 +416,16 @@ def createDisk(params):
             config['name'] = params.vol
             config['dir'] = disk_dir
             config['current'] = disk_path
+
             with open(disk_dir + '/config.json', "w") as f:
                 dump(config, f)
 
             result = get_vol_info(disk_path)
             # vol_xml = get_volume_xml(params.pool, params.vol)
 
+            result['disk'] = params.vol
             result["disktype"] = params.type
-            result["current"] = disk_path
+            result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol, "size": params.capacity}
@@ -448,12 +451,12 @@ def createDisk(params):
             else:
                 result = {
                     "disktype": "uus",
-                    "_type": "clouddisk",
-                    "name": {"text": params.vol},
-                    "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": {"text": prepareInfo["data"]["path"]}},
+                    "disk": params.vol,
+                    "pool": params.pool,
+                    "virtual_size": params.capacity,
+                    "filename": prepareInfo["data"]["path"],
                     "uni": diskinfo["data"]["uni"],
-                    "uuid": randomUUID()
+                    "uuid": randomUUID(),
                 }
                 print dumps({"result": {"code": 0,
                                         "msg": "create disk "+params.pool+" success."}, "data": result})
@@ -475,7 +478,15 @@ def createDisk(params):
 def deleteDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("virsh vol-delete", {"pool": params.pool, "vol": params.vol})
+            pool_info = get_pool_info(params.pool)
+            disk_dir = pool_info['path'] + '/' + params.vol
+            with open(disk_dir + '/config.json', "r") as f:
+                config = load(f)
+            for file in os.listdir(disk_dir):
+                if config['current'] != file:
+                    raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
+
+            op = Operation("rm -rf " + disk_dir, {})
             op.execute()
             print dumps({"result": {"code": 0, "msg": "delete volume "+params.vol+" success."}, "data": {}})
         elif params.type == "uus":
@@ -498,14 +509,14 @@ def deleteDisk(params):
             result = op.execute()
             print dumps(result)
     except ExecuteException, e:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("deleteDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {"result": {"code": 400, "msg": "error occur while delete disk " + params.vol + ". "+e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("deletePool " + params.pool)
+        logger.debug("deleteDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
@@ -513,34 +524,28 @@ def deleteDisk(params):
         exit(1)
 
 def resizeDisk(params):
-    result = None
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("virsh vol-resize", {"pool": params.pool, "vol": params.vol, "capacity": params.capacity})
+            pool_info = get_pool_info(params.pool)
+            disk_dir = pool_info['path'] + '/' + params.vol
+            with open(disk_dir + '/config.json', "r") as f:
+                config = load(f)
+
+            disk_info = get_vol_info(config['current'])
+            size = int(params.capacity) - int(disk_info['virtual-size'])
+            op = Operation("qemu-img resize " + config['current'] + " +" + str(size), {})
             op.execute()
-            vol_xml = get_volume_xml(params.pool, params.vol)
-            result = loads(xmlToJson(vol_xml))['volume']
+
+            result = get_vol_info(config['current'])
+
+            result['disk'] = params.vol
+            result["disktype"] = params.type
+            result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
 
         elif params.type == "uus":
-            kv = {"poolname": params.pool, "name": params.vol, "size": params.capacity}
-            op = Operation("cstor-cli vdisk-expand", kv, True)
-            diskinfo = op.execute()
+            raise ExecuteException("", "not support operation for uus.")
 
-            if diskinfo["result"]["code"] == 0:
-                result = {
-                    "disktype": "uus",
-                    "_type": "clouddisk",
-                    "name": {"text": params.vol},
-                    "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": {"text": diskinfo["data"]["path"]}},
-                    "uni": diskinfo["data"]["uni"],
-                    "uuid": randomUUID()
-                }
-                print dumps({"result": {"code": 0,
-                                        "msg": "resize disk " + params.pool + " success."}, "data": result})
-            else:
-                print dumps(diskinfo)
     except ExecuteException, e:
         logger.debug("resizeDisk " + params.pool)
         logger.debug(params.type)
@@ -559,50 +564,38 @@ def resizeDisk(params):
 def cloneDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("virsh vol-clone", {"pool": params.pool, "vol": params.vol, "newname": params.newname})
-            op.execute()
+            pool_info = get_pool_info(params.pool)
+            # create disk dir and create disk in dir.
+            disk_dir = pool_info['path'] + '/' + params.vol
+            clone_disk_dir = pool_info['path'] + '/' + params.newname
+            clone_disk_path = clone_disk_dir + '/' + params.newname
+            os.makedirs(clone_disk_dir)
 
-            vol_xml = get_volume_xml(params.pool, params.newname)
-            result = loads(xmlToJson(vol_xml))['volume']
-            print dumps(
-                {"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
+            with open(disk_dir + '/config.json', "r") as f:
+                config = load(f)
+
+            op1 = Operation('cp ' + config['current'] + ' ' + clone_disk_path, {})
+            op1.execute()
+            op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -u', {})
+            op2.execute()
+
+            config = {}
+            config['name'] = params.newname
+            config['dir'] = clone_disk_dir
+            config['current'] = clone_disk_path
+
+            with open(clone_disk_dir + '/config.json', "w") as f:
+                dump(config, f)
+
+            result = get_vol_info(clone_disk_path)
+            # vol_xml = get_volume_xml(params.pool, params.vol)
+
+            result['disk'] = params.newname
+            result["disktype"] = params.type
+            result["pool"] = params.pool
+            print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
-            kv = {"poolname": params.pool, "name": params.vol, "clonename": params.newname}
-            op = Operation("cstor-cli vdisk-clone", kv, True)
-            diskinfo = op.execute()
-            if diskinfo["result"]["code"] != 0:
-                print dumps(diskinfo)
-                exit(1)
-
-            kv = {"poolname": params.pool, "name": params.vol, "uni": diskinfo["data"]["uni"]}
-            op2 = Operation("cstor-cli vdisk-prepare", kv, with_result=True)
-            prepareInfo = op2.execute()
-            # delete the disk
-            if prepareInfo["result"]["code"] != 0:
-                kv = {"poolname": params.pool, "name": params.vol}
-                op3 = Operation("cstor-cli vdisk-remove", kv, with_result=True)
-                rmDiskInfo = op3.execute()
-                if rmDiskInfo["result"]["code"] == 0:
-                    print dumps({"result": {"code": 1,
-                                            "msg": "error: clone disk success but can not prepare disk" + params.vol + "."},
-                                 "data": {}})
-                else:
-                    print dumps({"result": {"code": 1,
-                                            "msg": "error: can not prepare disk and roll back fail(can not delete the disk)" + params.vol + ". "},
-                                 "data": {}})
-                exit(1)
-            else:
-                result = {
-                    "disktype": "uus",
-                    "_type": "clouddisk",
-                    "name": {"text": params.newname},
-                    "capacity": {"_unit": "bytes", "text": params.capacity},
-                    "target": {"format": {"_type": "uus"}, "path": {"text": prepareInfo["data"]["path"]}},
-                    "uni": diskinfo["data"]["uni"],
-                    "uuid": randomUUID()
-                }
-                print dumps({"result": {"code": 0,
-                                        "msg": "clone disk " + params.pool + " success."}, "data": result})
+            raise ExecuteException("", "not support operation for uus.")
     except ExecuteException, e:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
@@ -639,11 +632,12 @@ def showDisk(params):
 
             result = {
                 "disktype": "uus",
-                "name": {"text": params.vol},
-                "capacity": {"text": params.capacity},
-                "target": {"path": ""},
+                "disk": params.vol,
+                "pool": params.pool,
+                "virtual_size": params.capacity,
+                "filename": diskinfo["data"]["path"],
                 "uni": diskinfo["data"]["uni"],
-                "uuid": randomUUID()
+                "uuid": randomUUID(),
             }
 
             print dumps({"result": {"code": 0,
@@ -662,7 +656,7 @@ def showDisk(params):
         logger.debug(traceback.format_exc())
         print {"result": {"code": 300, "msg": "error occur while show disk " + params.vol}, "data": {}}
         exit(1)
-        
+
 def showDiskSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
@@ -674,7 +668,6 @@ def showDiskSnapshot(params):
             result['disk'] = params.vol
             result["disktype"] = params.type
             result["pool"] = params.pool
-            # result["current"] = DiskImageHelper.get_backing_file(snapshot_path)
             print dumps(
                 {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus":
