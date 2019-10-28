@@ -92,6 +92,7 @@ def createPool(params):
             op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
+            time.sleep(0.5)
             result = get_pool_info(params.pool)
             result["pooltype"] = "dir"
             if is_pool_started(params.pool):
@@ -140,6 +141,7 @@ def createPool(params):
             op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
+            time.sleep(0.5)
             result = get_pool_info(params.pool)
             result["pooltype"] = "nfs"
             if is_pool_started(params.pool):
@@ -174,6 +176,7 @@ def createPool(params):
             op4 = Operation("virsh pool-start", {"pool": params.pool})
             op4.execute()
 
+            time.sleep(0.5)
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
             if is_pool_started(params.pool):

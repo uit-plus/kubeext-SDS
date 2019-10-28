@@ -891,15 +891,6 @@ def runCmdWithResult(cmd):
     try:
         std_out = p.stdout.readlines()
         std_err = p.stderr.readlines()
-        if std_err:
-            error_msg = ''
-            for index, line in enumerate(std_err):
-                if not str.strip(line):
-                    continue
-                else:
-                    error_msg = error_msg + str.strip(line)
-            error_msg = str.strip(error_msg)
-            raise Exception(error_msg)
         if std_out:
             result = {}
             for index, line in enumerate(std_out):
@@ -909,6 +900,15 @@ def runCmdWithResult(cmd):
                 kv = line.replace(':', '').split()
                 result[kv[0].lower()] = kv[1]
             return result
+        if std_err:
+            error_msg = ''
+            for index, line in enumerate(std_err):
+                if not str.strip(line):
+                    continue
+                else:
+                    error_msg = error_msg + str.strip(line)
+            error_msg = str.strip(error_msg)
+            raise Exception(error_msg)
     finally:
         p.stdout.close()
         p.stderr.close()
@@ -936,7 +936,7 @@ if __name__ == '__main__':
     # pool = _get_pool('pooltest')
     # lines = pool.XMLDesc()
     # print lines
-    print get_pool_info('pooltest2')
+    print get_pool_info('node35-pool3')
     # print list_defined_pools()
     # print list_volumes('vmdi')
 #     print(list_volumes('volumes'))
