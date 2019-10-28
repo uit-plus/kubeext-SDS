@@ -4,6 +4,8 @@
     service CmdCall {
         rpc Call (CallRequest) returns (CallResponse) {}
         rpc CallWithResult (CallRequest) returns (CallResponse) {}
+        rpc CallAndTransferXmlToJson (CallRequest) returns (CallResponse) {}
+        rpc CallAndSplitKVToJson (CallRequest) returns (CallResponse) {}
     }
 
     message CallRequest {

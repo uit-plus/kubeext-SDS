@@ -7,7 +7,6 @@ Copyright (2019, ) Institute of Software, Chinese Academy of Sciences
 '''
 from json import loads
 
-
 '''
 Import python libs
 '''
@@ -98,43 +97,6 @@ def _get_all_pool_path():
     except Exception, e:
         pass
     return paths
-
-def get_pool_info(pool_):
-    result = runCmdWithResult('virsh pool-info ' + pool_)
-    # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
-    # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
-    # result['code'] = 0
-    # result['capacity'] = int(1024 * 1024 * 1024 * float(result['capacity']))
-    if 'allocation' in result.keys():
-        del result['allocation']
-        del result['available']
-    if 'available' in result.keys():
-        del result['available']
-
-    lines = ''
-    if is_pool_started(pool_):
-        pool = _get_pool(pool_)
-        try:
-            pool.refresh()
-        except:
-            pass
-        lines = pool.XMLDesc()
-    if is_pool_defined(pool_):
-        pool = _get_defined_pool(pool_)
-        # try:
-        #     pool.refresh()
-        # except:
-        #     pass
-        lines = pool.XMLDesc()
-    for line in lines.splitlines():
-        if line.find("path") >= 0:
-            result['path'] = line.replace('<path>', '').replace('</path>', '').strip()
-            break
-    for line in lines.splitlines():
-        if line.find("capacity") >= 0:
-            result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', '').strip())
-            break
-    return result
 
 
 def _get_vol(pool_, vol_):

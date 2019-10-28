@@ -24,6 +24,16 @@ class CmdCallStub(object):
         request_serializer=cmdcall__pb2.CallRequest.SerializeToString,
         response_deserializer=cmdcall__pb2.CallResponse.FromString,
         )
+    self.CallAndTransferXmlToJson = channel.unary_unary(
+        '/cmdcall.CmdCall/CallAndTransferXmlToJson',
+        request_serializer=cmdcall__pb2.CallRequest.SerializeToString,
+        response_deserializer=cmdcall__pb2.CallResponse.FromString,
+        )
+    self.CallAndSplitKVToJson = channel.unary_unary(
+        '/cmdcall.CmdCall/CallAndSplitKVToJson',
+        request_serializer=cmdcall__pb2.CallRequest.SerializeToString,
+        response_deserializer=cmdcall__pb2.CallResponse.FromString,
+        )
 
 
 class CmdCallServicer(object):
@@ -44,6 +54,20 @@ class CmdCallServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def CallAndTransferXmlToJson(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def CallAndSplitKVToJson(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_CmdCallServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -54,6 +78,16 @@ def add_CmdCallServicer_to_server(servicer, server):
       ),
       'CallWithResult': grpc.unary_unary_rpc_method_handler(
           servicer.CallWithResult,
+          request_deserializer=cmdcall__pb2.CallRequest.FromString,
+          response_serializer=cmdcall__pb2.CallResponse.SerializeToString,
+      ),
+      'CallAndTransferXmlToJson': grpc.unary_unary_rpc_method_handler(
+          servicer.CallAndTransferXmlToJson,
+          request_deserializer=cmdcall__pb2.CallRequest.FromString,
+          response_serializer=cmdcall__pb2.CallResponse.SerializeToString,
+      ),
+      'CallAndSplitKVToJson': grpc.unary_unary_rpc_method_handler(
+          servicer.CallAndSplitKVToJson,
           request_deserializer=cmdcall__pb2.CallRequest.FromString,
           response_serializer=cmdcall__pb2.CallResponse.SerializeToString,
       ),

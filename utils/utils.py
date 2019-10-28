@@ -17,13 +17,15 @@ from functools import wraps
 from json import loads, dumps, load, dump
 
 import grpc
+import xmltodict
+from ovs import json
 
 import cmdcall_pb2
 import cmdcall_pb2_grpc
 import logger
 from exception import ExecuteException
 from netutils import get_docker0_IP
-from libvirt_util import get_pool_info
+from libvirt_util import is_pool_started, _get_pool, is_pool_defined, _get_defined_pool
 
 LOG = '/var/log/kubesds.log'
 
@@ -74,6 +76,43 @@ def runCmdWithResult(cmd):
         p.stdout.close()
         p.stderr.close()
 
+def runCmdAndTransferXmlToJson(cmd):
+    xml_str = runCmdAndGetOutput(cmd)
+    dic = xmltodict.parse(xml_str, encoding='utf-8')
+    dic = dumps(dic)
+    dic = dic.replace('@', '').replace('#', '')
+    return loads(dic)
+
+def runCmdAndTransferKvToJson(cmd):
+    if not cmd:
+        #         logger.debug('No CMD to execute.')
+        return
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        std_out = p.stdout.readlines()
+        std_err = p.stderr.readlines()
+        if std_out:
+            result = {}
+            for index, line in enumerate(std_out):
+                if not str.strip(line):
+                    continue
+                line = str.strip(line)
+                kv = line.replace(':', '').split()
+                result[kv[0].lower()] = kv[1]
+            return result
+        if std_err:
+            error_msg = ''
+            for index, line in enumerate(std_err):
+                if not str.strip(line):
+                    continue
+                else:
+                    error_msg = error_msg + str.strip(line)
+            error_msg = str.strip(error_msg)
+            raise Exception(error_msg)
+    finally:
+        p.stdout.close()
+        p.stderr.close()
+
 def runCmdAndGetOutput(cmd):
     if not cmd:
         return
@@ -83,11 +122,8 @@ def runCmdAndGetOutput(cmd):
         std_err = p.stderr.readlines()
         if std_out:
             msg = ''
-            for index, line in enumerate(std_out):
-                if not str.strip(line):
-                    continue
-                msg = msg + str.strip(line)
-            msg = str.strip(msg)
+            for line in std_out:
+                msg = msg + line
             return msg
         if std_err:
             msg = ''
@@ -106,6 +142,7 @@ def runCmdAndGetOutput(cmd):
     finally:
         p.stdout.close()
         p.stderr.close()
+
 
 
 '''
@@ -213,6 +250,66 @@ def rpcCallWithResult(cmd):
     try:
         # ideally, you should have try catch block here too
         response = client.CallWithResult(cmdcall_pb2.CallRequest(cmd=cmd))
+        result = loads(str(response.json))
+        return result
+    except grpc.RpcError, e:
+        logger.debug(traceback.format_exc())
+        # ouch!
+        # lets print the gRPC error message
+        # which is "Length of `Name` cannot be more than 10 characters"
+        logger.debug(e.details())
+        # lets access the error code, which is `INVALID_ARGUMENT`
+        # `type` of `status_code` is `grpc.StatusCode`
+        status_code = e.code()
+        # should print `INVALID_ARGUMENT`
+        logger.debug(status_code.name)
+        # should print `(3, 'invalid argument')`
+        logger.debug(status_code.value)
+        # want to do some specific action based on the error?
+        if grpc.StatusCode.INVALID_ARGUMENT == status_code:
+            # do your stuff here
+            pass
+        raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
+
+
+def rpcCallAndTransferXmlToJson(cmd):
+    logger.debug(cmd)
+    try:
+        # ideally, you should have try catch block here too
+        response = client.CallAndTransferXmlToJson(cmdcall_pb2.CallRequest(cmd=cmd))
+        result = loads(str(response.json))
+        return result
+    except grpc.RpcError, e:
+        logger.debug(traceback.format_exc())
+        # ouch!
+        # lets print the gRPC error message
+        # which is "Length of `Name` cannot be more than 10 characters"
+        logger.debug(e.details())
+        # lets access the error code, which is `INVALID_ARGUMENT`
+        # `type` of `status_code` is `grpc.StatusCode`
+        status_code = e.code()
+        # should print `INVALID_ARGUMENT`
+        logger.debug(status_code.name)
+        # should print `(3, 'invalid argument')`
+        logger.debug(status_code.value)
+        # want to do some specific action based on the error?
+        if grpc.StatusCode.INVALID_ARGUMENT == status_code:
+            # do your stuff here
+            pass
+        raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
+
+
+def rpcCallAndTransferKvToJson(cmd):
+    logger.debug(cmd)
+    try:
+        # ideally, you should have try catch block here too
+        response = client.CallAndSplitKVToJson(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
         return result
     except grpc.RpcError, e:
@@ -424,6 +521,43 @@ def get_IP():
     myaddr = socket.gethostbyname(myname)
     return myaddr
 
+def get_pool_info(pool_):
+    result = rpcCallAndTransferKvToJson('virsh pool-info ' + pool_)
+    # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
+    # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
+    # result['code'] = 0
+    # result['capacity'] = int(1024 * 1024 * 1024 * float(result['capacity']))
+    if 'allocation' in result.keys():
+        del result['allocation']
+        del result['available']
+    if 'available' in result.keys():
+        del result['available']
+
+    lines = ''
+    if is_pool_started(pool_):
+        pool = _get_pool(pool_)
+        try:
+            pool.refresh()
+        except:
+            pass
+        lines = pool.XMLDesc()
+    if is_pool_defined(pool_):
+        pool = _get_defined_pool(pool_)
+        # try:
+        #     pool.refresh()
+        # except:
+        #     pass
+        lines = pool.XMLDesc()
+    for line in lines.splitlines():
+        if line.find("path") >= 0:
+            result['path'] = line.replace('<path>', '').replace('</path>', '').strip()
+            break
+    for line in lines.splitlines():
+        if line.find("capacity") >= 0:
+            result['capacity'] = int(line.replace("<capacity unit='bytes'>", '').replace('</capacity>', '').strip())
+            break
+    return result
+
 def get_vol_info(vol_path):
     return runCmdWithResult('qemu-img info -U --output json ' + vol_path)
 
@@ -500,3 +634,5 @@ class DiskImageHelper(object):
 # print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
 
 # print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
+
+# print runCmdAndTransferKvToJson('virsh pool-info test1')

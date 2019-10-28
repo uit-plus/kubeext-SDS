@@ -18,7 +18,8 @@ from utils.exception import ExecuteException
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
-from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndGetOutput, runCmd
+from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndGetOutput, runCmd, runCmdAndTransferXmlToJson, \
+    runCmdAndTransferKvToJson
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -30,7 +31,7 @@ DEFAULT_PORT = '19999'
 
 
 class Operation(object):
-    def __init__(self, cmd, params, with_result=False):
+    def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False):
         if cmd is None or cmd == "":
             raise Exception("plz give me right cmd.")
         if not isinstance(params, dict):
@@ -40,6 +41,8 @@ class Operation(object):
         self.cmd = cmd
         self.params = params
         self.with_result = with_result
+        self.xml_to_json = xml_to_json
+        self.kv_to_json = kv_to_json
 
     def get_cmd(self):
         cmd = self.cmd
@@ -53,6 +56,10 @@ class Operation(object):
 
         if self.with_result:
             return runCmdWithResult(cmd)
+        elif self.xml_to_json:
+            return runCmdAndTransferXmlToJson(cmd)
+        elif self.kv_to_json:
+            return runCmdAndTransferKvToJson(cmd)
         else:
             return runCmd(cmd)
 
@@ -78,7 +85,6 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
 
     def CallWithResult(self, request, context):
-        jsonstr = ''
         try:
             cmd = str(request.cmd)
             logger.debug(cmd)
@@ -96,6 +102,41 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
 
+    def CallAndTransferXmlToJson(self, request, context):
+        try:
+            cmd = str(request.cmd)
+            logger.debug(cmd)
+
+            op = Operation(cmd, {}, xml_to_json=True)
+            result = op.execute()
+            logger.debug(request)
+            logger.debug(result)
+            return cmdcall_pb2.CallResponse(json=dumps(result))
+        except ExecuteException:
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
+        except Exception:
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
+
+    def CallAndSplitKVToJson(self, request, context):
+        try:
+            cmd = str(request.cmd)
+            logger.debug(cmd)
+
+            op = Operation(cmd, {}, kv_to_json=True)
+            result = op.execute()
+            logger.debug(request)
+            logger.debug(result)
+            return cmdcall_pb2.CallResponse(json=dumps(result))
+        except ExecuteException:
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
+        except Exception:
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
 
 def run_server():
     # 多线程服务器

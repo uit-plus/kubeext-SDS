@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='cmdcall',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\rcmdcall.proto\x12\x07\x63mdcall\"\x1a\n\x0b\x43\x61llRequest\x12\x0b\n\x03\x63md\x18\x01 \x01(\t\"\x1c\n\x0c\x43\x61llResponse\x12\x0c\n\x04json\x18\x01 \x01(\t2\x81\x01\n\x07\x43mdCall\x12\x35\n\x04\x43\x61ll\x12\x14.cmdcall.CallRequest\x1a\x15.cmdcall.CallResponse\"\x00\x12?\n\x0e\x43\x61llWithResult\x12\x14.cmdcall.CallRequest\x1a\x15.cmdcall.CallResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\rcmdcall.proto\x12\x07\x63mdcall\"\x1a\n\x0b\x43\x61llRequest\x12\x0b\n\x03\x63md\x18\x01 \x01(\t\"\x1c\n\x0c\x43\x61llResponse\x12\x0c\n\x04json\x18\x01 \x01(\t2\x93\x02\n\x07\x43mdCall\x12\x35\n\x04\x43\x61ll\x12\x14.cmdcall.CallRequest\x1a\x15.cmdcall.CallResponse\"\x00\x12?\n\x0e\x43\x61llWithResult\x12\x14.cmdcall.CallRequest\x1a\x15.cmdcall.CallResponse\"\x00\x12I\n\x18\x43\x61llAndTransferXmlToJson\x12\x14.cmdcall.CallRequest\x1a\x15.cmdcall.CallResponse\"\x00\x12\x45\n\x14\x43\x61llAndSplitKVToJson\x12\x14.cmdcall.CallRequest\x1a\x15.cmdcall.CallResponse\"\x00\x62\x06proto3')
 )
 
 
@@ -114,7 +114,7 @@ _CMDCALL = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   serialized_start=85,
-  serialized_end=214,
+  serialized_end=360,
   methods=[
   _descriptor.MethodDescriptor(
     name='Call',
@@ -129,6 +129,24 @@ _CMDCALL = _descriptor.ServiceDescriptor(
     name='CallWithResult',
     full_name='cmdcall.CmdCall.CallWithResult',
     index=1,
+    containing_service=None,
+    input_type=_CALLREQUEST,
+    output_type=_CALLRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='CallAndTransferXmlToJson',
+    full_name='cmdcall.CmdCall.CallAndTransferXmlToJson',
+    index=2,
+    containing_service=None,
+    input_type=_CALLREQUEST,
+    output_type=_CALLRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='CallAndSplitKVToJson',
+    full_name='cmdcall.CmdCall.CallAndSplitKVToJson',
+    index=3,
     containing_service=None,
     input_type=_CALLREQUEST,
     output_type=_CALLRESPONSE,

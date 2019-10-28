@@ -7,8 +7,7 @@ from json import dumps, loads
 from sys import exit
 
 from utils.exception import *
-from utils.libvirt_util import get_pool_info, get_volume_xml, get_volume_path, get_volume_snapshots, is_pool_started, \
-    is_pool_defined
+from utils.libvirt_util import get_volume_xml
 from utils.utils import *
 from utils import logger
 
@@ -18,7 +17,7 @@ LOG = "/var/log/kubesds.log"
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 class Operation(object):
-    def __init__(self, cmd, params, with_result=False):
+    def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False):
         if cmd is None or cmd == "":
             raise Exception("plz give me right cmd.")
         if not isinstance(params, dict):
@@ -28,6 +27,8 @@ class Operation(object):
         self.cmd = cmd
         self.params = params
         self.with_result = with_result
+        self.xml_to_json = xml_to_json
+        self.kv_to_json = kv_to_json
 
     def get_cmd(self):
         cmd = self.cmd
@@ -41,6 +42,10 @@ class Operation(object):
 
         if self.with_result:
             return rpcCallWithResult(cmd)
+        elif self.xml_to_json:
+            return rpcCallAndTransferXmlToJson(cmd)
+        elif self.kv_to_json:
+            return rpcCallAndTransferKvToJson(cmd)
         else:
             return rpcCall(cmd)
 
