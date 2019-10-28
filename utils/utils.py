@@ -535,7 +535,7 @@ def get_pool_info(pool_):
         del result['available']
 
     xml_dict = rpcCallAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
-    result['capacity'] = xml_dict['pool']['capacity']['text']
+    result['capacity'] = int(xml_dict['pool']['capacity']['text'])
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
