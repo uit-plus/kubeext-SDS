@@ -12,4 +12,4 @@ namespace = uuid.NAMESPACE_URL
 # print uuid.uuid3(namespace,name)
 # print uuid.uuid4()
 print uuid.uuid5(namespace,name)
-# print randomUUID()
+print randomUUID()
