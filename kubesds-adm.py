@@ -829,6 +829,19 @@ def updateDiskCurrentParser(args):
 
     updateDiskCurrent(args)
 
+def customizeParser(args):
+    if args.add is None:
+        print {"result": {"code": 100, "msg": "less arg, add must be set"}, "data": {}}
+        exit(3)
+    if args.user is None:
+        print {"result": {"code": 100, "msg": "less arg, user must be set"}, "data": {}}
+        exit(3)
+    if args.password is None:
+        print {"result": {"code": 100, "msg": "less arg, password must be set"}, "data": {}}
+        exit(3)
+
+    customize(args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1135,6 +1148,17 @@ parser_upodate_current.add_argument("--current", metavar="[CURRENT]", type=str, 
                                 help="disk current file to use")
 # set default func
 parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
+
+# -------------------- add customize cmd ----------------------------------
+parser_customize_current = subparsers.add_parser("customize", help="customize help")
+parser_customize_current.add_argument("--add", metavar="[ADD]", type=str,
+                                help="storage pool type to use")
+parser_customize_current.add_argument("--user", metavar="[USER]", type=str, nargs='*',
+                                help="disk current file to use")
+parser_customize_current.add_argument("--password", metavar="[PASSWORD]", type=str, nargs='*',
+                                help="disk current file to use")
+# set default func
+parser_customize_current.set_defaults(func=customizeParser)
 
 # test_args = []
 #
