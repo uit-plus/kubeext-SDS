@@ -521,7 +521,7 @@ subparsers = parser.add_subparsers(help="sub-command help")
 
 # -------------------- add createPool cmd ----------------------------------
 parser_create_pool = subparsers.add_parser("createPool", help="createPool help")
-parser_create_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_create_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 
 parser_create_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -544,7 +544,7 @@ parser_create_pool.set_defaults(func=createPoolParser)
 
 # -------------------- add deletePool cmd ----------------------------------
 parser_delete_pool = subparsers.add_parser("deletePool", help="deletePool help")
-parser_delete_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_delete_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 
 parser_delete_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -554,7 +554,7 @@ parser_delete_pool.set_defaults(func=deletePoolParser)
 
 # -------------------- add showPool cmd ----------------------------------
 parser_show_pool = subparsers.add_parser("showPool", help="showPool help")
-parser_show_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_show_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 
 parser_show_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -564,7 +564,7 @@ parser_show_pool.set_defaults(func=showPoolParser)
 
 # -------------------- add createDisk cmd ----------------------------------
 parser_create_disk = subparsers.add_parser("createDisk", help="createDisk help")
-parser_create_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_create_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="disk type to use")
 parser_create_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -583,7 +583,7 @@ parser_create_disk.set_defaults(func=createDiskParser)
 
 # -------------------- add deleteDisk cmd ----------------------------------
 parser_delete_disk = subparsers.add_parser("deleteDisk", help="deleteDisk help")
-parser_delete_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_delete_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_delete_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -595,7 +595,7 @@ parser_delete_disk.set_defaults(func=deleteDiskParser)
 
 # -------------------- add resizeDisk cmd ----------------------------------
 parser_resize_disk = subparsers.add_parser("resizeDisk", help="resizeDisk help")
-parser_resize_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_resize_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_resize_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -611,7 +611,7 @@ parser_resize_disk.set_defaults(func=resizeDiskParser)
 
 # -------------------- add cloneDisk cmd ----------------------------------
 parser_clone_disk = subparsers.add_parser("cloneDisk", help="cloneDisk help")
-parser_clone_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_clone_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_clone_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -624,7 +624,7 @@ parser_clone_disk.set_defaults(func=cloneDiskParser)
 
 # -------------------- add showDisk cmd ----------------------------------
 parser_show_disk = subparsers.add_parser("showDisk", help="showDisk help")
-parser_show_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_show_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_show_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -636,7 +636,7 @@ parser_show_disk.set_defaults(func=showDiskParser)
 
 # -------------------- add createSnapshot cmd ----------------------------------
 parser_create_ss = subparsers.add_parser("createSnapshot", help="createSnapshot help")
-parser_create_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_create_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_create_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -657,7 +657,7 @@ parser_create_ss.set_defaults(func=createSnapshotParser)
 
 # -------------------- add deleteSnapshot cmd ----------------------------------
 parser_delete_ss = subparsers.add_parser("deleteSnapshot", help="deleteSnapshot help")
-parser_delete_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_delete_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_delete_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -673,7 +673,7 @@ parser_delete_ss.set_defaults(func=deleteSnapshotParser)
 
 # -------------------- add recoverySnapshot cmd ----------------------------------
 parser_recovery_ss = subparsers.add_parser("recoverySnapshot", help="recoverySnapshot help")
-parser_recovery_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_recovery_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_recovery_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -688,7 +688,7 @@ parser_recovery_ss.set_defaults(func=recoverySnapshotParser)
 
 # -------------------- add showSnapshot cmd ----------------------------------
 parser_show_ss = subparsers.add_parser("showSnapshot", help="showSnapshot help")
-parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs]", type=str,
+parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
                                 help="storage pool type to use")
 parser_show_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
