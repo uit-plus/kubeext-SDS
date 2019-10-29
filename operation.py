@@ -76,11 +76,11 @@ def createPool(params):
     result = None
     try:
         if params.type == "dir":
-            op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool, 'name': params.vol,
-                                                       'size': params.capacity}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            # op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
+            #                                            'url': params.url}, with_result=True)
+            # cstor = op.execute()
+            # if cstor['result']['code'] != 0:
+            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             POOL_PATH = params.target
             if not os.path.isdir(POOL_PATH):
