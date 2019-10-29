@@ -538,7 +538,7 @@ def deleteDisk(params):
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
             for file in os.listdir(disk_dir):
-                if config['current'] == file or disk_dir + '/config.json' == file:
+                if os.path.basename(config['current']) == file or 'config.json' == file:
                     continue
                 else:
                     raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
