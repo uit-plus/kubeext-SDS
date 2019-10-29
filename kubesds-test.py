@@ -1285,8 +1285,12 @@ parser_customize_current.set_defaults(func=customizeParser)
 #     logger.debug(traceback.format_exc())
 
 try:
-    args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir12", "--target", "/var/lib/libvirt/pooldir12"
+    args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir13", "--target", "/var/lib/libvirt/pooldir13"
                               , "--content", "vmd"])
+    args.func(args)
+
+    args = parser.parse_args(
+        ["showPool", "--type", "dir", "--pool", "pooldir13"])
     args.func(args)
 
     # args = parser.parse_args(

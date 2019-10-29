@@ -407,7 +407,12 @@ def showPool(params):
             # if cstor['result']['code'] != 0:
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
+            pool_info = get_pool_info(params.pool)
+            with open(pool_info['path'] +'/content', 'r') as f:
+                content = f.read()
+
             result = get_pool_info(params.pool)
+            result['content'] = content
             result["pooltype"] = params.type
             if is_pool_started(params.pool):
                 result["state"] = "active"
