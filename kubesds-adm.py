@@ -1152,9 +1152,9 @@ parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
 parser_customize_current = subparsers.add_parser("customize", help="customize help")
 parser_customize_current.add_argument("--add", metavar="[ADD]", type=str,
                                 help="storage pool type to use")
-parser_customize_current.add_argument("--user", metavar="[USER]", type=str, nargs='*',
+parser_customize_current.add_argument("--user", metavar="[USER]", type=str,
                                 help="disk current file to use")
-parser_customize_current.add_argument("--password", metavar="[PASSWORD]", type=str, nargs='*',
+parser_customize_current.add_argument("--password", metavar="[PASSWORD]", type=str,
                                 help="disk current file to use")
 # set default func
 parser_customize_current.set_defaults(func=customizeParser)
