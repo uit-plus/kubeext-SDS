@@ -898,8 +898,9 @@ if __name__ == '__main__':
     # pool = _get_pool('pooltest')
     # lines = pool.XMLDesc()
     # print lines
-    print get_pool_info('node35-pool3')
+    # print get_pool_info('node35-pool3')
     # print list_defined_pools()
     # print list_volumes('vmdi')
 #     print(list_volumes('volumes'))
 #     print(get_volume_xml('volumes', 'ddd.qcow2'))
+    pass
