@@ -76,9 +76,7 @@ def createPool(params):
     result = None
     try:
         if params.type == "dir":
-            # op = Operation('cstor-cli pool-list --url localfs:all', {}, with_result=True)
-            # cstor = op.execute()
-
+            #  {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "mountpath": "/Disk240", "proto": "localfs", "url": "/dev/sdb1", "poolname": "pool1", "free": 223363817472, "disktype": "file", "maintain": "normal", "used": 768970752, "total": 236152303616}, "obj":"pooladd"}
             # op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
             #                                            'url': params.url}, with_result=True)
             # cstor = op.execute()
@@ -106,7 +104,11 @@ def createPool(params):
             op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
+            with open(POOL_PATH +'/content', 'w') as f:
+                f.write(params.content)
+
             result = get_pool_info(params.pool)
+            result['content'] = params.content
             result["pooltype"] = "dir"
             if is_pool_started(params.pool):
                 result["state"] = "active"
@@ -118,7 +120,8 @@ def createPool(params):
             op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
             uus_poolinfo = op.execute()
 
-            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"], "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID()}
+            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"],
+                      "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID(), "content": 'vmd'}
         elif params.type == "nfs":
             kv = {"poolname": params.pool, "url": params.url, "path": params.target}
             if params.opt is not None:
@@ -150,9 +153,12 @@ def createPool(params):
             op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
-            time.sleep(0.5)
+            with open(poolinfo["data"]["mountpath"] + '/' + params.pool + '/content', 'w') as f:
+                f.write(params.content)
+
             result = get_pool_info(params.pool)
             result["pooltype"] = "nfs"
+            result['content'] = params.content
             if is_pool_started(params.pool):
                 result["state"] = "active"
             else:
@@ -185,8 +191,12 @@ def createPool(params):
             op4 = Operation("virsh pool-start", {"pool": params.pool})
             op4.execute()
 
+            with open(poolinfo["data"]["mountpath"] + '/' + params.pool + '/content', 'w') as f:
+                f.write(params.content)
+
             result = get_pool_info(params.pool)
             result["pooltype"] = "glusterfs"
+            result['content'] = params.content
             if is_pool_started(params.pool):
                 result["state"] = "active"
             else:
@@ -197,7 +207,8 @@ def createPool(params):
             uraid_poolinfo = op.execute()
 
             result = {"name": params.pool, "pooltype": "uus", "capacity": uraid_poolinfo["data"]["total"],
-                      "autostart": "yes", "path": uraid_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID()}
+                      "autostart": "yes", "path": uraid_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID(),
+                      "content": "vmd"}
 
         print dumps({"result": {"code": 0, "msg": "create pool "+params.pool+" successful."}, "data": result})
     except ExecuteException, e:
@@ -428,11 +439,11 @@ def showPool(params):
 def createDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'size': params.capacity}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
+                                                       'size': params.capacity}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             pool_info = get_pool_info(params.pool)
             if not os.path.isdir(pool_info['path']):

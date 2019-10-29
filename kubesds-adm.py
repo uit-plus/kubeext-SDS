@@ -202,6 +202,12 @@ def createPoolParser(args):
         if args.url is None:
             print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
             exit(9)
+    if args.content is None:
+        print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
+        exit(9)
+    if args.content not in ["vmd", "vmdi", "iso"]:
+        print {"result": {"code": 100, "msg": "less arg, content just can be vmd, vmdi, iso"}, "data": {}}
+        exit(9)
 
     if args.type == "dir":
         check_virsh_pool_exist(args.pool)
@@ -864,6 +870,10 @@ parser_create_pool.add_argument("--target", metavar="[TARGET]", type=str,
 # set autostart
 parser_create_pool.add_argument("--autostart", metavar="[AUTOSTART]", type=bool, nargs='?', const=True,
                                 help="if autostart, pool will set autostart yes after create pool")
+
+# set content
+parser_create_pool.add_argument("--content", metavar="[CONTENT]", type=str,
+                                help="pool content")
 
 # nfs only
 parser_create_pool.add_argument("--opt", metavar="[OPT]", type=str,
