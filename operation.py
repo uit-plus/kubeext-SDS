@@ -234,10 +234,10 @@ def deletePool(params):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
             #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
             #     op1.execute()
-            op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            # op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
+            # cstor = op.execute()
+            # if cstor['result']['code'] != 0:
+            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             if is_pool_defined(params.pool):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
@@ -439,11 +439,11 @@ def showPool(params):
 def createDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
-                                                       'size': params.capacity}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            # op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
+            #                                            'size': params.capacity}, with_result=True)
+            # cstor = op.execute()
+            # if cstor['result']['code'] != 0:
+            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             pool_info = get_pool_info(params.pool)
             if not os.path.isdir(pool_info['path']):
