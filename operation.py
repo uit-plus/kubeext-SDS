@@ -77,18 +77,15 @@ def createPool(params):
     try:
         if params.type == "dir":
             #  {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "mountpath": "/Disk240", "proto": "localfs", "url": "/dev/sdb1", "poolname": "pool1", "free": 223363817472, "disktype": "file", "maintain": "normal", "used": 768970752, "total": 236152303616}, "obj":"pooladd"}
-            # op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
-            #                                            'url': params.url}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
+                                                       'url': params.url}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
-            POOL_PATH = params.target
-            if not os.path.isdir(POOL_PATH):
-                os.makedirs(POOL_PATH)
-
+            POOL_PATH = cstor['data']['mountpath'] + '/' + params.pool
             # step1 define pool
-            op1 = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": params.target})
+            op1 = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": POOL_PATH})
             op1.execute()
 
             # step2 autostart pool
@@ -232,8 +229,12 @@ def deletePool(params):
         if params.type == "dir":
             if is_pool_started(params.pool):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
-            #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-            #     op1.execute()
+            pool_path = get_pool_info(params.pool)['path']
+            files = os.listdir(pool_path)
+            if len(files) == 1 and 'content' in files:
+                op = Operation('rm -f %s/content' % pool_path, {})
+                op.execute()
+
             op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
@@ -407,7 +408,11 @@ def showPool(params):
             # if cstor['result']['code'] != 0:
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
+            pool_info = get_pool_info(params.pool)
+            with open(pool_info['path'] +'/content', 'r') as f:
+                content = f.read()
             result = get_pool_info(params.pool)
+            result['content'] = content
             result["pooltype"] = params.type
             if is_pool_started(params.pool):
                 result["state"] = "active"
@@ -523,17 +528,16 @@ def createDisk(params):
 def deleteDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-remove ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'size': params.capacity}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-remove ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
             for file in os.listdir(disk_dir):
-                if config['current'] == file or disk_dir + '/config.json' == file:
+                if os.path.basename(config['current']) == file or 'config.json' == file:
                     continue
                 else:
                     raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
@@ -578,11 +582,11 @@ def deleteDisk(params):
 def resizeDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-expand ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'size': params.capacity}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-expand ', {'poolname': params.pool, 'name': params.vol,
+                                                       'size': params.capacity}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
@@ -622,11 +626,11 @@ def resizeDisk(params):
 def cloneDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-clone ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'size': params.capacity}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-clone ', {'poolname': params.pool, 'name': params.vol,
+                                                       'clonename': params.newname}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             pool_info = get_pool_info(params.pool)
             # create disk dir and create disk in dir.
@@ -678,11 +682,10 @@ def cloneDisk(params):
 def showDisk(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'size': params.capacity}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
             with open(disk_dir + '/config.json', "r") as f:
@@ -901,11 +904,11 @@ def showSnapshot(params):
 def createExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-add-ss ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'sname': params.name}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-add-ss ', {'poolname': params.pool, 'name': params.vol,
+                                                       'sname': params.name}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.name
@@ -946,11 +949,11 @@ def createExternalSnapshot(params):
 def revertExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': params.pool, 'name': params.vol,
-            #                                            'sname': params.name}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': params.pool, 'name': params.vol,
+                                                       'sname': params.name}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.name
@@ -966,9 +969,6 @@ def revertExternalSnapshot(params):
                     op = Operation(
                         'rm -f '+ss, {})
                     op.execute()
-            # op = Operation(
-            #     'mv ' + disk_config['dir']+'/'+uuid + ' ' + disk_config['current'], {})
-            # op.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
@@ -1005,11 +1005,11 @@ def revertExternalSnapshot(params):
 def deleteExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': params.pool, 'name': params.vol,
-            #                                           'sname': params.name}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+            op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': params.pool, 'name': params.vol,
+                                                      'sname': params.name}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/' + params.name

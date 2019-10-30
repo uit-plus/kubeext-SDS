@@ -23,7 +23,7 @@ def get_cstor_pool_info(pool):
 def check_pool_type(pool, type):
     poolInfo = get_cstor_pool_info(pool)
     if type == "dir":
-        if poolInfo['result']['code'] == 0:
+        if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
             print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
             exit(3)
     else:
@@ -1204,16 +1204,22 @@ parser_customize_current.add_argument("--password", metavar="[PASSWORD]", type=s
 # set default func
 parser_customize_current.set_defaults(func=customizeParser)
 
-# test_args = []
+test_args = []
+
+dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--target", "/var/lib/libvirt/pooldir", "--url", "localfs:///dev/sdb1:/pool", "--content", "vmd"])
+dir2 = parser.parse_args(["createDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "1073741824", "--format", "qcow2"])
+dir3 = parser.parse_args(["resizeDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "2147483648"])
+dir4 = parser.parse_args(["cloneDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--newname", "diskdirclone", "--format", "qcow2"])
+dir5 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
+dir6 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.2", "--format", "qcow2"])
+dir7 = parser.parse_args(["revertExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
+dir8 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.3", "--format", "qcow2"])
+dir9 = parser.parse_args(["deleteExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir"])
+dir10 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdirclone"])
+dir11 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir"])
+dir12 = parser.parse_args(["stopPool", "--type", "dir", "--pool", "pooldir"])
+dir13 = parser.parse_args(["deletePool", "--type", "dir", "--pool", "pooldir"])
 #
-# dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--target", "/var/lib/libvirt/pooldir"])
-# dir2 = parser.parse_args(["createDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "1073741824", "--format", "qcow2"])
-# dir3 = parser.parse_args(["resizeDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "2147483648"])
-# dir4 = parser.parse_args(["cloneDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--newname", "diskdirclone"])
-# dir5 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdirclone"])
-# dir6 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir"])
-# dir7 = parser.parse_args(["deletePool", "--type", "dir", "--pool", "pooldir"])
-# #
 # uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "uus-iscsi-independent://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/3"])
 # uus2 = parser.parse_args(["createDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "1073741824"])
 # # uus3 = parser.parse_args(["resizeDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "2147483648"])
@@ -1236,16 +1242,21 @@ parser_customize_current.set_defaults(func=customizeParser)
 # gfs5 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfsclone"])
 # gfs6 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs"])
 # gfs7 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolglusterfs"])
-#
-#
-# test_args.append(dir1)
-# test_args.append(dir2)
-# test_args.append(dir3)
-# test_args.append(dir4)
-# test_args.append(dir5)
-# test_args.append(dir6)
-# test_args.append(dir7)
-#
+
+test_args.append(dir1)
+test_args.append(dir2)
+test_args.append(dir3)
+test_args.append(dir4)
+test_args.append(dir5)
+test_args.append(dir6)
+test_args.append(dir7)
+test_args.append(dir8)
+test_args.append(dir9)
+test_args.append(dir10)
+test_args.append(dir11)
+test_args.append(dir12)
+test_args.append(dir13)
+
 # test_args.append(uus1)
 # test_args.append(uus2)
 # # test_args.append(uus3)
@@ -1268,13 +1279,13 @@ parser_customize_current.set_defaults(func=customizeParser)
 # test_args.append(gfs5)
 # test_args.append(gfs6)
 # test_args.append(gfs7)
-#
-#
-# for args in test_args:
-#     try:
-#         args.func(args)
-#     except TypeError:
-#         logger.debug(traceback.format_exc())
+
+
+for args in test_args:
+    try:
+        args.func(args)
+    except TypeError:
+        logger.debug(traceback.format_exc())
 
 
 # try:
@@ -1284,10 +1295,10 @@ parser_customize_current.set_defaults(func=customizeParser)
 #     # print "argument number not enough"
 #     logger.debug(traceback.format_exc())
 
-try:
-    args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir12", "--target", "/var/lib/libvirt/pooldir12"
-                              , "--content", "vmd"])
-    args.func(args)
+# try:
+#     args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir12", "--target", "/var/lib/libvirt/pooldir12"
+#                               , "--content", "vmd"])
+#     args.func(args)
 
     # args = parser.parse_args(
     #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
@@ -1318,6 +1329,6 @@ try:
     # args = parser.parse_args(
     #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
     # args.func(args)
-except TypeError:
-    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-    logger.debug(traceback.format_exc())
+# except TypeError:
+#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+#     logger.debug(traceback.format_exc())

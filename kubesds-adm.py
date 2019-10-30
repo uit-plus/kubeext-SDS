@@ -22,7 +22,7 @@ def get_cstor_pool_info(pool):
 def check_pool_type(pool, type):
     poolInfo = get_cstor_pool_info(pool)
     if type == "dir":
-        if poolInfo['result']['code'] == 0:
+        if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
             print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
             exit(3)
     else:
@@ -198,10 +198,10 @@ def createPoolParser(args):
         if args.target is None:
             print {"result": {"code": 100, "msg": "less arg, target must be set"}, "data": {}}
             exit(9)
-    if args.type == "uus" or args.type == "nfs" or args.type == "glusterfs":
-        if args.url is None:
-            print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
-            exit(9)
+    if args.url is None:
+        print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
+        exit(9)
+
     if args.content is None:
         print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
         exit(9)
