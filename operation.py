@@ -226,7 +226,7 @@ def createPool(params):
 def deletePool(params):
     result = None
     try:
-        if params.type == "dir":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             if is_pool_started(params.pool):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
             pool_path = get_pool_info(params.pool)['path']
@@ -248,22 +248,6 @@ def deletePool(params):
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             result = op.execute()
-        elif params.type == "nfs" or params.type == "glusterfs":
-            if is_pool_started(params.pool):
-                raise ExecuteException('RunCmdError', 'pool ' + params.pool + ' still active, plz stop it first.')
-            #     op1 = Operation("virsh pool-destroy", {"pool": params.pool})
-            #     op1.execute()
-
-            op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
-
-            if is_pool_defined(params.pool):
-                op2 = Operation("virsh pool-undefine", {"pool": params.pool})
-                op2.execute()
-
-            # {"result": {"code": 0, "msg": "success"}, "data": {}, "obj": "pool"}
         print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": result})
     except ExecuteException, e:
         logger.debug("deletePool " + params.pool)
