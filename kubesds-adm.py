@@ -763,13 +763,8 @@ def revertExternalSnapshotParser(args):
             exit(3)
 
         # check snapshot relation
-        chain = get_sn_chain(config['current'])
-        is_relation = False
-        for info in chain:
-            if 'backing-filename' in info.keys() and info['backing-filename'] == ss_path:
-                is_relation = True
-                break
-        if not is_relation:
+        path = get_sn_chain_path(config['current'])
+        if ss_path not in path:
             print {"result": {"code": 100, "msg": "snapshot is not related to current or snapshot is not current's right snapshot, plz check"}, "data": {}}
             exit(3)
     elif args.type == "uus" or args.type == "uraid":

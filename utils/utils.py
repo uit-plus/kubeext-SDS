@@ -539,8 +539,6 @@ def get_pool_info(pool_):
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
-def get_vol_info(vol_path):
-    return runCmdWithResult('qemu-img info -U --output json ' + vol_path)
 
 def get_disk_config(pool, vol):
     poolInfo = get_pool_info(pool)
@@ -563,6 +561,14 @@ def get_disk_snapshots(ss_path):
 
 def get_sn_chain(ss_path):
     return runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)
+
+def get_sn_chain_path(ss_path):
+    paths = set()
+    chain = get_sn_chain(ss_path)
+    for info in chain:
+        if 'backing-filename' in info.keys():
+            paths.add(info['backing-filename'])
+    return list(paths)
 
 def get_all_snapshot_to_delete(ss_path, current):
     delete_sn = []
@@ -617,3 +623,5 @@ class DiskImageHelper(object):
 # print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
 
 # print get_pool_info('test1')
+
+print get_sn_chain_path('/var/lib/libvirt/pooltest/disktest/0e8e48d9-b6ab-4477-999d-0e57b521a51b')
