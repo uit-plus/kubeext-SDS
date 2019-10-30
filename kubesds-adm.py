@@ -198,15 +198,14 @@ def createPoolParser(args):
         if args.target is None:
             print {"result": {"code": 100, "msg": "less arg, target must be set"}, "data": {}}
             exit(9)
+        if args.content is None:
+            print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
+            exit(9)
+        if args.content not in ["vmd", "vmdi", "iso"]:
+            print {"result": {"code": 100, "msg": "less arg, content just can be vmd, vmdi, iso"}, "data": {}}
+            exit(9)
     if args.url is None:
         print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
-        exit(9)
-
-    if args.content is None:
-        print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
-        exit(9)
-    if args.content not in ["vmd", "vmdi", "iso"]:
-        print {"result": {"code": 100, "msg": "less arg, content just can be vmd, vmdi, iso"}, "data": {}}
         exit(9)
 
     if args.type == "dir":
