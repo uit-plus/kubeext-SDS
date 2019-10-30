@@ -1283,8 +1283,8 @@ gfs7 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolgl
 # test_args.append(nfs8)
 # test_args.append(nfs9)
 # test_args.append(nfs10)
-test_args.append(nfs11)
-test_args.append(nfs12)
+# test_args.append(nfs11)
+# test_args.append(nfs12)
 test_args.append(nfs13)
 #
 # test_args.append(gfs1)
