@@ -765,11 +765,6 @@ def revertExternalSnapshotParser(args):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
 
-        # check snapshot relation
-        path = get_sn_chain_path(config['current'])
-        if ss_path not in path:
-            print {"result": {"code": 100, "msg": "snapshot is not related to current or snapshot is not current's right snapshot, plz check"}, "data": {}}
-            exit(3)
     elif args.type == "uus" or args.type == "uraid":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
