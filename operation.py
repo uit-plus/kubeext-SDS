@@ -1041,7 +1041,7 @@ def deleteExternalSnapshot(params):
                 dump(config, f)
 
             result = {'delete_ss': snapshots_to_delete, 'disk': params.vol, "disktype": params.type,
-                      "pool": params.pool}
+                      'need_to_modify': config['current'], "pool": params.pool}
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus" or params.type == "uraid":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid."}, "data": {}})
