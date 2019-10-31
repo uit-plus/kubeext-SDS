@@ -834,7 +834,7 @@ def deleteExternalSnapshotParser(args):
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        ss_path = disk_dir + '/' + args.name
+        ss_path = disk_dir + '/snapshots/' + args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
@@ -1288,39 +1288,43 @@ try:
     #     ["showPool", "--type", "dir", "--pool", "pooldir13"])
     # args.func(args)
 
-    # args = parser.parse_args(
-    #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
-    # args.func(args)
-
     args = parser.parse_args(
-        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1", "--vol", "disktest"])
+        ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
     args.func(args)
 
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
-    #      "--vol", "disktest"])
-    # args.func(args)
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss3",
-    #      "--vol", "disktest"])
-    # args.func(args)
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "s1", "--vol", "disktest"])
+    args.func(args)
+
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "s2",
+         "--vol", "disktest"])
+    args.func(args)
+    args = parser.parse_args(
+        ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "s1",
+         "--vol", "disktest", "--format", "qcow2"])
+    args.func(args)
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1",
+         "--vol", "disktest"])
+    args.func(args)
+
+    args = parser.parse_args(
+        ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "s2",
+         "--vol", "disktest"])
+    args.func(args)
+
+    args = parser.parse_args(
+        ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+         "--vol", "disktest"])
+    args.func(args)
     #
     # args = parser.parse_args(
-    #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
-    #      "--vol", "disktest", "--format", "qcow2"])
+    #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/s2"])
     # args.func(args)
 
     # args = parser.parse_args(
-    #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ad37651c-9a7c-4179-97ed-4677d7a0744e",
-    #      "--vol", "disktest"])
-    # args.func(args)
-    #
-    # args = parser.parse_args(
-    #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
-    # args.func(args)
-
-    # args = parser.parse_args(
-    #     ["showDiskSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+    #     ["showDiskSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "s1",
     #      "--vol", "disktest"])
     # args.func(args)
 except TypeError:

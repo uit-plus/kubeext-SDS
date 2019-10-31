@@ -795,7 +795,7 @@ def deleteExternalSnapshotParser(args):
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        ss_path = disk_dir+'/'+args.name
+        ss_path = disk_dir + '/snapshots/' + args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)

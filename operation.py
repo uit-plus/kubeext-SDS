@@ -645,7 +645,7 @@ def cloneDisk(params):
 
             op1 = Operation('cp ' + config['current'] + ' ' + clone_disk_path, {})
             op1.execute()
-            op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -u', {})
+            op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -b ""', {})
             op2.execute()
 
             config = {}
@@ -917,7 +917,7 @@ def createExternalSnapshot(params):
                 os.makedirs(ss_dir)
             ss_path = ss_dir + '/' + params.name
 
-            op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + disk_config['current'] + ' ' + ss_path, {})
+            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, ss_path, disk_config['current']), {})
             op1.execute()
 
             with open(disk_config['dir'] + '/config.json', "r") as f:
@@ -955,8 +955,11 @@ def revertExternalSnapshot(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/snapshots/' + params.name
+            backing_file = DiskImageHelper.get_backing_file(ss_path)
+            if ss_path is None:
+                raise ExecuteException('', 'error: can not get snapshot backing file.')
             uuid = randomUUID()
-            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, disk_config['dir']+'/'+uuid, ss_path), {})
+            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, disk_config['dir']+'/'+uuid, backing_file), {})
             op1.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
@@ -999,36 +1002,43 @@ def deleteExternalSnapshot(params):
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             disk_config = get_disk_config(params.pool, params.vol)
-            ss_path = disk_config['dir'] + '/' + params.name
+            ss_path = disk_config['dir'] + '/snapshots/' + params.name
 
+            # delete snaoshot's backing_file
             backing_file = DiskImageHelper.get_backing_file(ss_path)
             if backing_file is None:
-                raise ExecuteException("", "can not delete head.")
-            op = Operation('qemu-img commit -b %s -d %s' % (backing_file, disk_config['current']), {})
-            op.execute()
-
-            files_to_delete = []
-            files = os.listdir(disk_config['dir'])
-            for df in files:
-                if df == os.path.basename(backing_file) or df == 'config.json':
-                    continue
-                paths = get_sn_chain_path(disk_config['dir']+'/'+df)
-                if backing_file in paths:
-                    files_to_delete.append(df)
-            for df in files_to_delete:
-                op = Operation('rm -f %s' % disk_config['dir'] + '/' + df, {})
+                raise ExecuteException("", "can not delete snaoshot's backing_file.")
+            paths = get_sn_chain_path(disk_config['current'])
+            if backing_file in paths:
+                # effect current, rabse current to itself
+                op = Operation('qemu-img rebase -b "" %s' % disk_config['current'], {})
                 op.execute()
+
+            snapshots_to_delete = []
+            files = os.listdir(disk_config['dir'] + '/snapshots')
+            for df in files:
+                try:
+                    bf_paths = get_sn_chain_path(disk_config['dir'] + '/snapshots/' + df)
+                    if backing_file in bf_paths:
+                        snapshots_to_delete.append(df)
+                except:
+                    continue
+            # delete backing file
+            op = Operation('rm -f %s' % backing_file, {})
+            op.execute()
+            # for df in snapshots_to_delete:
+            #     op = Operation('rm -f %s' % df, {})
+            #     op.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
-                config['current'] = backing_file
+                config['current'] = config['current']
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            result = get_disk_info(backing_file)
-            result["disktype"] = params.type
-            # result["current"] = ss_path
+            result = {'delete_ss': snapshots_to_delete, 'disk': params.vol, "disktype": params.type,
+                      "pool": params.pool}
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
         elif params.type == "uus" or params.type == "uraid":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid."}, "data": {}})
