@@ -957,7 +957,7 @@ def revertExternalSnapshot(params):
             ss_path = disk_config['dir'] + '/snapshots/' + params.name
             if ss_path is None:
                 raise ExecuteException('', 'error: can not get snapshot backing file.')
-            uuid = randomUUID()
+            uuid = randomUUID().replace('-', '')
             new_file_path = os.path.dirname(params.backing_file)+'/'+uuid
             op1 = Operation('qemu-img create -f %s %s -b %s' %
                             (params.format, new_file_path, params.backing_file), {})
