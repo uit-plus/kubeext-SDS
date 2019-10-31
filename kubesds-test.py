@@ -1287,13 +1287,13 @@ parser_customize_current.set_defaults(func=customizeParser)
 #     logger.debug(traceback.format_exc())
 
 try:
-    args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir13", "--target", "/var/lib/libvirt/pooldir13"
-                              , "--content", "vmd"])
-    args.func(args)
+    # args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir13", "--target", "/var/lib/libvirt/pooldir13"
+    #                           , "--content", "vmd"])
+    # args.func(args)
 
-    args = parser.parse_args(
-        ["showPool", "--type", "dir", "--pool", "pooldir13"])
-    args.func(args)
+    # args = parser.parse_args(
+    #     ["showPool", "--type", "dir", "--pool", "pooldir13"])
+    # args.func(args)
 
     # args = parser.parse_args(
     #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
@@ -1317,10 +1317,11 @@ try:
     #      "--vol", "disktest", "--format", "qcow2"])
     # args.func(args)
     #
-    # args = parser.parse_args(
-    #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
-    #      "--vol", "disktest"])
-    # args.func(args)
+    args = parser.parse_args(
+        ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+         "--vol", "disktest"])
+    args.func(args)
+    #
     # args = parser.parse_args(
     #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
     # args.func(args)

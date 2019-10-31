@@ -953,7 +953,7 @@ def revertExternalSnapshot(params):
             ss_path = disk_config['dir'] + '/' + params.name
 
             uuid = randomUUID()
-            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, ss_path, disk_config['dir']+'/'+uuid), {})
+            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, disk_config['dir']+'/'+uuid, ss_path), {})
             op1.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
@@ -1004,13 +1004,17 @@ def deleteExternalSnapshot(params):
             op = Operation('qemu-img commit -b %s -d %s' % (backing_file, disk_config['current']), {})
             op.execute()
 
-            for file in os.listdir(disk_config['dir']):
-                if file == backing_file or file == 'config.json':
+            files_to_delete = []
+            files = os.listdir(disk_config['dir'])
+            for df in files:
+                if df == os.path.basename(backing_file) or df == 'config.json':
                     continue
-                paths = get_sn_chain_path(disk_config['dir']+'/'+file)
+                paths = get_sn_chain_path(disk_config['dir']+'/'+df)
                 if backing_file in paths:
-                    op = Operation('rm -f %s' % disk_config['dir']+'/'+file, {})
-                    op.execute()
+                    files_to_delete.append(df)
+            for df in files_to_delete:
+                op = Operation('rm -f %s' % disk_config['dir'] + '/' + df, {})
+                op.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
