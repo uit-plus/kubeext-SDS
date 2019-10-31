@@ -737,6 +737,9 @@ def revertExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+    if args.backing_file is None:
+        print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
+        exit(3)
 
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
@@ -760,6 +763,9 @@ def revertExternalSnapshotParser(args):
             exit(3)
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
+            exit(3)
+        if not os.path.isfile(args.backing_file):
+            print {"result": {"code": 100, "msg": "backing_file file not exist"}, "data": {}}
             exit(3)
 
         # check snapshot relation
@@ -789,6 +795,9 @@ def deleteExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+    if args.backing_file is None:
+        print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
+        exit(3)
 
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
@@ -798,6 +807,9 @@ def deleteExternalSnapshotParser(args):
         ss_path = disk_dir + '/snapshots/' + args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
+            exit(3)
+        if not os.path.isfile(args.backing_file):
+            print {"result": {"code": 100, "msg": "backing_file file not exist"}, "data": {}}
             exit(3)
 
     elif args.type == "uus" or args.type == "uraid":
@@ -1126,6 +1138,8 @@ parser_revert_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_revert_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
+parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+                                help="backing_file from k8s")
 parser_revert_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
 # set default func
@@ -1141,6 +1155,8 @@ parser_delete_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
+parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+                                help="backing_file from k8s")
 # set default func
 parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 

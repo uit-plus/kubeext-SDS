@@ -955,11 +955,10 @@ def revertExternalSnapshot(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/snapshots/' + params.name
-            backing_file = DiskImageHelper.get_backing_file(ss_path)
             if ss_path is None:
                 raise ExecuteException('', 'error: can not get snapshot backing file.')
             uuid = randomUUID()
-            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, disk_config['dir']+'/'+uuid, backing_file), {})
+            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, disk_config['dir']+'/'+uuid, params.backing_file), {})
             op1.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
@@ -1002,29 +1001,31 @@ def deleteExternalSnapshot(params):
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             disk_config = get_disk_config(params.pool, params.vol)
-            ss_path = disk_config['dir'] + '/snapshots/' + params.name
 
             # delete snaoshot's backing_file
-            backing_file = DiskImageHelper.get_backing_file(ss_path)
-            if backing_file is None:
-                raise ExecuteException("", "can not delete snaoshot's backing_file.")
             paths = get_sn_chain_path(disk_config['current'])
-            if backing_file in paths:
-                # effect current, rabse current to itself
-                op = Operation('qemu-img rebase -b "" %s' % disk_config['current'], {})
-                op.execute()
+            if params.backing_file in paths:
+                bf_bf_path = DiskImageHelper.get_backing_file(params.backing_file)
+                if bf_bf_path is None:
+                    # effect current and backing file is head, rabse current to itself
+                    op = Operation('qemu-img rebase -b "" %s' % disk_config['current'], {})
+                    op.execute()
+                else:
+                    # effect current and backing file is not head, rabse current to reconnect
+                    op = Operation('qemu-img rebase -b %s %s' % (bf_bf_path, disk_config['current']), {})
+                    op.execute()
 
             snapshots_to_delete = []
             files = os.listdir(disk_config['dir'] + '/snapshots')
             for df in files:
                 try:
                     bf_paths = get_sn_chain_path(disk_config['dir'] + '/snapshots/' + df)
-                    if backing_file in bf_paths:
+                    if params.backing_file in bf_paths:
                         snapshots_to_delete.append(df)
                 except:
                     continue
             # delete backing file
-            op = Operation('rm -f %s' % backing_file, {})
+            op = Operation('rm -f %s' % params.backing_file, {})
             op.execute()
             # for df in snapshots_to_delete:
             #     op = Operation('rm -f %s' % df, {})
