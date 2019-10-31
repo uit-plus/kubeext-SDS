@@ -1155,7 +1155,7 @@ parser_delete_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
-parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+parser_delete_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
                                 help="backing_file from k8s")
 # set default func
 parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
