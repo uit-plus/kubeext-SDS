@@ -755,18 +755,14 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        ss_path = disk_dir+'/snapshots/'+args.name
-        if ss_path == config['current']:
+        if args.backing_file == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
             exit(3)
-        if not os.path.isfile(ss_path):
-            print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
-            exit(3)
         if not os.path.isfile(args.backing_file):
-            print {"result": {"code": 100, "msg": "backing_file file not exist"}, "data": {}}
+            print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
 
         # check snapshot relation
@@ -804,11 +800,6 @@ def deleteExternalSnapshotParser(args):
         check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
-        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        ss_path = disk_dir + '/snapshots/' + args.name
-        if not os.path.isfile(ss_path):
-            print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
-            exit(3)
         if not os.path.isfile(args.backing_file):
             print {"result": {"code": 100, "msg": "backing_file file not exist"}, "data": {}}
             exit(3)
