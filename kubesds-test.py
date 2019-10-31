@@ -133,7 +133,7 @@ def check_virsh_disk_not_exist(pool, diskname):
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     try:
         pool_info = get_pool_info(pool)
-        if not os.path.exists(pool_info['path'] + '/' + diskname + '/' + snapshot):
+        if not os.path.exists(pool_info['path'] + '/' + diskname + '/snapshots/' + snapshot):
             print {
                 "result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume " + diskname},
                 "data": {}}
@@ -789,7 +789,7 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        ss_path = disk_dir + '/' + args.name
+        ss_path = disk_dir+'/snapshots/'+args.name
         if ss_path == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
@@ -801,16 +801,9 @@ def revertExternalSnapshotParser(args):
             exit(3)
 
         # check snapshot relation
-        chain = get_sn_chain(config['current'])
-        is_relation = False
-        for info in chain:
-            if 'backing-filename' in info.keys() and info['backing-filename'] == ss_path:
-                is_relation = True
-                break
-        if not is_relation:
-            print {"result": {"code": 100,
-                              "msg": "snapshot is not related to current or snapshot is not current's right snapshot, plz check"},
-                   "data": {}}
+        path = get_sn_chain_path(config['current'])
+        if ss_path not in path:
+            print {"result": {"code": 100, "msg": "snapshot is not related to current or snapshot is not current's right snapshot, plz check"}, "data": {}}
             exit(3)
     elif args.type == "uus" or args.type == "uraid":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
@@ -1298,11 +1291,11 @@ try:
     # args = parser.parse_args(
     #     ["createDisk", "--type", "dir", "--pool", "pooltest", "--vol", "disktest", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
-    #
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1", "--vol", "disktest"])
-    # args.func(args)
-    #
+
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss1", "--vol", "disktest"])
+    args.func(args)
+
     # args = parser.parse_args(
     #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
     #      "--vol", "disktest"])
@@ -1317,13 +1310,18 @@ try:
     #      "--vol", "disktest", "--format", "qcow2"])
     # args.func(args)
 
-    args = parser.parse_args(
-        ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ad37651c-9a7c-4179-97ed-4677d7a0744e",
-         "--vol", "disktest"])
-    args.func(args)
+    # args = parser.parse_args(
+    #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ad37651c-9a7c-4179-97ed-4677d7a0744e",
+    #      "--vol", "disktest"])
+    # args.func(args)
     #
     # args = parser.parse_args(
     #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
+    # args.func(args)
+
+    # args = parser.parse_args(
+    #     ["showDiskSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+    #      "--vol", "disktest"])
     # args.func(args)
 except TypeError:
     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})

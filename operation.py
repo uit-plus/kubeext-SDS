@@ -741,7 +741,7 @@ def showDiskSnapshot(params):
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
-            snapshot_path = disk_dir + '/' + params.name
+            snapshot_path = disk_dir + '/snapshots/' + params.name
 
             result = get_disk_info(snapshot_path)
             result['disk'] = params.vol
@@ -912,7 +912,11 @@ def createExternalSnapshot(params):
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             disk_config = get_disk_config(params.pool, params.vol)
-            ss_path = disk_config['dir'] + '/' + params.name
+            ss_dir = disk_config['dir'] + '/snapshots'
+            if not os.path.exists(ss_dir):
+                os.makedirs(ss_dir)
+            ss_path = ss_dir + '/' + params.name
+
             op1 = Operation('qemu-img create -f ' + params.format + ' -b ' + disk_config['current'] + ' ' + ss_path, {})
             op1.execute()
 
@@ -950,8 +954,7 @@ def revertExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             disk_config = get_disk_config(params.pool, params.vol)
-            ss_path = disk_config['dir'] + '/' + params.name
-
+            ss_path = disk_config['dir'] + '/snapshots/' + params.name
             uuid = randomUUID()
             op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, disk_config['dir']+'/'+uuid, ss_path), {})
             op1.execute()
@@ -1044,7 +1047,6 @@ def deleteExternalSnapshot(params):
         print {"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
         exit(1)
 
-
 def updateDiskCurrent(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
@@ -1072,7 +1074,6 @@ def updateDiskCurrent(params):
         logger.debug(traceback.format_exc())
         print {"result": {"code": 300, "msg": "error occur while updateDiskCurrent."}, "data": {}}
         exit(1)
-
 
 def customize(params):
     try:

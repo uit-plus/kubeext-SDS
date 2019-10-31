@@ -120,7 +120,7 @@ def check_virsh_disk_not_exist(pool, diskname):
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     try:
         pool_info = get_pool_info(pool)
-        if not os.path.exists(pool_info['path']+'/'+diskname+'/'+snapshot):
+        if not os.path.exists(pool_info['path'] + '/' + diskname + '/snapshots/' + snapshot):
             print {"result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume "+diskname}, "data": {}}
             exit(5)
     except Exception:
@@ -751,7 +751,7 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        ss_path = disk_dir+'/'+args.name
+        ss_path = disk_dir+'/snapshots/'+args.name
         if ss_path == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
