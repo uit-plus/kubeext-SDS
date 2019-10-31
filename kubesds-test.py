@@ -1316,9 +1316,9 @@ try:
     #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
     #      "--vol", "disktest", "--format", "qcow2"])
     # args.func(args)
-    #
+
     args = parser.parse_args(
-        ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ss1",
+        ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--name", "ad37651c-9a7c-4179-97ed-4677d7a0744e",
          "--vol", "disktest"])
     args.func(args)
     #
