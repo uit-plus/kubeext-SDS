@@ -917,7 +917,8 @@ def createExternalSnapshot(params):
                 os.makedirs(ss_dir)
             ss_path = ss_dir + '/' + params.name
 
-            op1 = Operation('qemu-img create -f %s %s -b %s' % (params.format, ss_path, disk_config['current']), {})
+            op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
+                            (params.format, disk_config['current'], params.format, ss_path), {})
             op1.execute()
 
             with open(disk_config['dir'] + '/config.json', "r") as f:
@@ -959,8 +960,8 @@ def revertExternalSnapshot(params):
                 raise ExecuteException('', 'error: can not get snapshot backing file.')
             uuid = randomUUID().replace('-', '')
             new_file_path = os.path.dirname(params.backing_file)+'/'+uuid
-            op1 = Operation('qemu-img create -f %s %s -b %s' %
-                            (params.format, new_file_path, params.backing_file), {})
+            op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
+                            (params.format, params.backing_file, params.format, new_file_path), {})
             op1.execute()
 
             # modify json file, make os_event_handler to modify data on api server .
