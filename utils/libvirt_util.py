@@ -83,6 +83,16 @@ def _get_defined_pool(pool_):
     pool = conn.storagePoolLookupByName(pool_)
     return pool
 
+def get_disks_spec(vm_):
+    disks = get_disks(vm_)
+    retv = {}
+    if disks:
+        for disk_dev, disk_info in disks.items():
+            retv[disk_dev.encode('utf-8')] = disk_info['file'].encode('utf-8')
+        return retv
+    else:
+        raise Exception('VM %s has no disks.' % vm_)
+
 def _get_all_pool_path():
     paths = {}
     try:

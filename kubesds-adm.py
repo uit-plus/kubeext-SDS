@@ -1112,6 +1112,8 @@ parser_create_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
 parser_create_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
+parser_create_ess.add_argument("--domain", metavar="[domain]", type=str,
+                                help="domain")
 # set default func
 parser_create_ess.set_defaults(func=createExternalSnapshotParser)
 
@@ -1144,6 +1146,8 @@ parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
 parser_delete_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
                                 help="backing_file from k8s")
+parser_delete_ess.add_argument("--domain", metavar="[domain]", type=str,
+                                help="domain")
 # set default func
 parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 
