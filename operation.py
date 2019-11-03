@@ -748,7 +748,7 @@ def showDiskSnapshot(params):
             else:
                 disk_dir = get_pool_info(params.pool)['path'] + '/' + params.vol
                 disk = params.vol
-                
+
             snapshot_path = disk_dir + '/snapshots/' + params.name
 
             result = get_disk_info(snapshot_path)
