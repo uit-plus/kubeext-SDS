@@ -1080,6 +1080,9 @@ def deleteExternalSnapshot(params):
                     op = Operation('virsh blockpull --domain %s --path %s --wait' %
                                    (params.domain, disk_config['current']), {})
                     op.execute()
+                # delete backing file
+                op = Operation('rm -f %s' % params.backing_file, {})
+                op.execute()
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
