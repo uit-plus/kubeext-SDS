@@ -1046,6 +1046,11 @@ def deleteExternalSnapshot(params):
                         snapshots_to_delete.append(df)
                 except:
                     continue
+            
+            # if snapshot to delete is current, delelte vmsn from server.
+            if params.name not in snapshots_to_delete:
+                snapshots_to_delete.append(params.name)
+
             if params.domain is None:
                 # delete snaoshot's backing_file
                 paths = get_sn_chain_path(disk_config['current'])
