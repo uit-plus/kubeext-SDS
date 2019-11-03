@@ -733,12 +733,26 @@ def showDiskSnapshot(params):
             # cstor = op.execute()
             # if cstor['result']['code'] != 0:
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
-            pool_info = get_pool_info(params.pool)
-            disk_dir = pool_info['path'] + '/' + params.vol
+            if params.domain:
+                specs = get_disks_spec(params.domain)
+                if params.vol in specs.keys():
+                    current_path = specs[params.vol]
+                    if current_path.find('snapshots') > 0:
+                        disk_dir = os.path.dirname(os.path.dirname(current_path))
+                        disk = os.path.basename(disk_dir)
+                    else:
+                        disk_dir = os.path.dirname(current_path)
+                        disk = os.path.basename(disk_dir)
+                else:
+                    raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
+            else:
+                disk_dir = get_pool_info(params.pool)['path'] + '/' + params.vol
+                disk = params.vol
+                
             snapshot_path = disk_dir + '/snapshots/' + params.name
 
             result = get_disk_info(snapshot_path)
-            result['disk'] = params.vol
+            result['disk'] = disk
             result["pool"] = params.pool
             print dumps(
                 {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
@@ -1028,19 +1042,22 @@ def revertExternalSnapshot(params):
 def deleteExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            specs = get_disks_spec(params.domain)
-            if params.vol in specs.keys():
-                current_path = specs[params.vol]
-                if current_path.find('snapshots') > 0:
-                    disk_dir = os.path.dirname(os.path.dirname(current_path))
-                    disk = os.path.basename(disk_dir)
+            if params.domain:
+                specs = get_disks_spec(params.domain)
+                if params.vol in specs.keys():
+                    current_path = specs[params.vol]
+                    if current_path.find('snapshots') > 0:
+                        disk_dir = os.path.dirname(os.path.dirname(current_path))
+                        disk = os.path.basename(disk_dir)
+                    else:
+                        disk_dir = os.path.dirname(current_path)
+                        disk = os.path.basename(disk_dir)
                 else:
-                    disk_dir = os.path.dirname(current_path)
-                    disk = os.path.basename(disk_dir)
+                    raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
+                disk_config = get_disk_config(params.pool, disk)
             else:
-                raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
+                disk_config = get_disk_config(params.pool, params.vol)
 
-            disk_config = get_disk_config(params.pool, disk)
             # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
             snapshots_to_delete = []
             files = os.listdir(disk_config['dir'] + '/snapshots')
@@ -1083,7 +1100,7 @@ def deleteExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            result = {'delete_ss': snapshots_to_delete, 'disk': params.vol,
+            result = {'delete_ss': snapshots_to_delete, 'disk': disk,
                       'need_to_modify': config['current'], "pool": params.pool}
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
 

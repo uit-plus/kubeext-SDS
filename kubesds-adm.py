@@ -1054,6 +1054,8 @@ parser_show_disk_snapshot.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
 parser_show_disk_snapshot.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name")
+parser_show_disk_snapshot.add_argument("--domain", metavar="[domain]", type=str,
+                                help="vm domain to use")
 # set default func
 parser_show_disk_snapshot.set_defaults(func=showDiskSnapshotParser)
 
