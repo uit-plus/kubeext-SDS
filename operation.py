@@ -474,7 +474,6 @@ def createDisk(params):
             # vol_xml = get_volume_xml(params.pool, params.vol)
 
             result['disk'] = params.vol
-            result["disktype"] = params.type
             result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
         elif params.type == "uus" or params.type == "uraid":
@@ -500,7 +499,6 @@ def createDisk(params):
                 exit(1)
             else:
                 result = {
-                    "disktype": "uus",
                     "disk": params.vol,
                     "pool": params.pool,
                     "virtual_size": params.capacity,
@@ -602,7 +600,6 @@ def resizeDisk(params):
             result = get_disk_info(config['current'])
 
             result['disk'] = params.vol
-            result["disktype"] = params.type
             result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
 
@@ -660,7 +657,6 @@ def cloneDisk(params):
             # vol_xml = get_volume_xml(params.pool, params.vol)
 
             result['disk'] = params.newname
-            result["disktype"] = params.type
             result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus" or params.type == "uraid":
@@ -695,7 +691,6 @@ def showDisk(params):
 
             result = get_disk_info(config['current'])
             result['disk'] = params.vol
-            result["disktype"] = params.type
             result["pool"] = params.pool
             print dumps(
                 {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
@@ -705,7 +700,6 @@ def showDisk(params):
             diskinfo = op.execute()
 
             result = {
-                "disktype": "uus",
                 "disk": params.vol,
                 "pool": params.pool,
                 "virtual_size": params.capacity,
@@ -745,7 +739,6 @@ def showDiskSnapshot(params):
 
             result = get_disk_info(snapshot_path)
             result['disk'] = params.vol
-            result["disktype"] = params.type
             result["pool"] = params.pool
             print dumps(
                 {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
@@ -929,7 +922,6 @@ def createExternalSnapshot(params):
 
                 result = get_disk_info(ss_path)
                 result['disk'] = config['name']
-                result["disktype"] = params.type
                 result["pool"] = params.pool
                 # result["current"] = DiskImageHelper.get_backing_file(ss_path)
                 print dumps(
@@ -940,20 +932,37 @@ def createExternalSnapshot(params):
                 if params.vol in specs.keys():
                     current_path = specs[params.vol]
                     if current_path.find('snapshots') > 0:
-                        snapshot_path = os.path.dirname(current_path) + '/' + params.name
+                        ss_path = os.path.dirname(current_path) + '/' + params.name
+                        ss_dir = os.path.dirname(current_path)
                     else:
-                        snapshot_path = os.path.dirname(current_path) + '/snapshots/' + params.name
+                        ss_path = os.path.dirname(current_path) + '/snapshots/' + params.name
+                        ss_dir = os.path.dirname(current_path) + '/snapshots'
+                    if not os.path.exists(ss_dir):
+                        os.makedirs(ss_dir)
                     not_need_snapshot_spec = ''
                     for disk in specs.keys():
                         if disk == params.vol:
                             continue
-                        not_need_snapshot_spec = not_need_snapshot_spec + '--diskspec %s,snapshot=no ' + disk
+                        not_need_snapshot_spec = not_need_snapshot_spec + '--diskspec %s,snapshot=no ' % disk
                         # '/var/lib/libvirt/pooltest3/wyw123/snapshots/wyw123.6'
                         # 'vdb,snapshot=no'
                     op = Operation('virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata '
                                    '--diskspec %s,snapshot=external,file=%s,driver=%s %s' %
-                                   (params.domain, params.name, params.vol, snapshot_path, params.format, not_need_snapshot_spec),  {})
+                                   (params.domain, params.name, params.vol, ss_path, params.format, not_need_snapshot_spec),  {})
                     op.execute()
+                    config_path = os.path.dirname(ss_dir) + '/config.json'
+                    with open(config_path, "r") as f:
+                        config = load(f)
+                        config['current'] = ss_path
+                    with open(config_path, "w") as f:
+                        dump(config, f)
+                    result = get_disk_info(ss_path)
+                    result['disk'] = config['name']
+                    result["pool"] = params.pool
+                    # result["current"] = DiskImageHelper.get_backing_file(ss_path)
+                    print dumps(
+                        {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
+                         "data": result})
                 else:
                     raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
         elif params.type == "uus" or params.type == "uraid":
@@ -996,7 +1005,6 @@ def revertExternalSnapshot(params):
 
             result = get_disk_info(config['current'])
             result['disk'] = config['name']
-            result["disktype"] = params.type
             result["pool"] = params.pool
 
             print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
@@ -1020,7 +1028,19 @@ def revertExternalSnapshot(params):
 def deleteExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            disk_config = get_disk_config(params.pool, params.vol)
+            specs = get_disks_spec(params.domain)
+            if params.vol in specs.keys():
+                current_path = specs[params.vol]
+                if current_path.find('snapshots') > 0:
+                    disk_dir = os.path.dirname(os.path.dirname(current_path))
+                    disk = os.path.basename(disk_dir)
+                else:
+                    disk_dir = os.path.dirname(current_path)
+                    disk = os.path.basename(disk_dir)
+            else:
+                raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
+
+            disk_config = get_disk_config(params.pool, disk)
             # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
             snapshots_to_delete = []
             files = os.listdir(disk_config['dir'] + '/snapshots')
@@ -1063,7 +1083,7 @@ def deleteExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            result = {'delete_ss': snapshots_to_delete, 'disk': params.vol, "disktype": params.type,
+            result = {'delete_ss': snapshots_to_delete, 'disk': params.vol,
                       'need_to_modify': config['current'], "pool": params.pool}
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
 
