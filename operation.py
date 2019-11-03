@@ -1066,9 +1066,15 @@ def deleteExternalSnapshot(params):
                 #     op = Operation('rm -f %s' % df, {})
                 #     op.execute()
             else:
-                op = Operation('virsh blockpull --domain %s --path %s --base %s --wait' %
-                               (params.domain, disk_config['current'], params.backing_file), {})
-                op.execute()
+                bf_bf_path = DiskImageHelper.get_backing_file(params.backing_file)
+                if bf_bf_path:
+                    op = Operation('virsh blockpull --domain %s --path %s --base %s --wait' %
+                                   (params.domain, disk_config['current'], params.backing_file), {})
+                    op.execute()
+                else:
+                    op = Operation('virsh blockpull --domain %s --path %s --wait' %
+                                   (params.domain, disk_config['current']), {})
+                    op.execute()
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
