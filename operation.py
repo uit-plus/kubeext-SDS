@@ -733,26 +733,12 @@ def showDiskSnapshot(params):
             # cstor = op.execute()
             # if cstor['result']['code'] != 0:
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
-            if params.domain:
-                specs = get_disks_spec(params.domain)
-                if params.vol in specs.keys():
-                    current_path = specs[params.vol]
-                    if current_path.find('snapshots') > 0:
-                        disk_dir = os.path.dirname(os.path.dirname(current_path))
-                        disk = os.path.basename(disk_dir)
-                    else:
-                        disk_dir = os.path.dirname(current_path)
-                        disk = os.path.basename(disk_dir)
-                else:
-                    raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
-            else:
-                disk_dir = get_pool_info(params.pool)['path'] + '/' + params.vol
-                disk = params.vol
 
-            snapshot_path = disk_dir + '/snapshots/' + params.name
+            disk_config = get_disk_config(params.pool, params.vol)
+            snapshot_path = disk_config['dir'] + '/snapshots/' + params.name
 
             result = get_disk_info(snapshot_path)
-            result['disk'] = disk
+            result['disk'] = params.vol
             result["pool"] = params.pool
             print dumps(
                 {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
@@ -943,42 +929,40 @@ def createExternalSnapshot(params):
                      "data": result})
             else:
                 specs = get_disks_spec(params.domain)
-                if params.vol in specs.keys():
-                    current_path = specs[params.vol]
-                    if current_path.find('snapshots') > 0:
-                        ss_path = os.path.dirname(current_path) + '/' + params.name
-                        ss_dir = os.path.dirname(current_path)
-                    else:
-                        ss_path = os.path.dirname(current_path) + '/snapshots/' + params.name
-                        ss_dir = os.path.dirname(current_path) + '/snapshots'
-                    if not os.path.exists(ss_dir):
-                        os.makedirs(ss_dir)
-                    not_need_snapshot_spec = ''
-                    for disk in specs.keys():
-                        if disk == params.vol:
-                            continue
-                        not_need_snapshot_spec = not_need_snapshot_spec + '--diskspec %s,snapshot=no ' % disk
-                        # '/var/lib/libvirt/pooltest3/wyw123/snapshots/wyw123.6'
-                        # 'vdb,snapshot=no'
-                    op = Operation('virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata '
-                                   '--diskspec %s,snapshot=external,file=%s,driver=%s %s' %
-                                   (params.domain, params.name, params.vol, ss_path, params.format, not_need_snapshot_spec),  {})
-                    op.execute()
-                    config_path = os.path.dirname(ss_dir) + '/config.json'
-                    with open(config_path, "r") as f:
-                        config = load(f)
-                        config['current'] = ss_path
-                    with open(config_path, "w") as f:
-                        dump(config, f)
-                    result = get_disk_info(ss_path)
-                    result['disk'] = config['name']
-                    result["pool"] = params.pool
-                    # result["current"] = DiskImageHelper.get_backing_file(ss_path)
-                    print dumps(
-                        {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
-                         "data": result})
-                else:
+                disk_config = get_disk_config(params.pool, params.vol)
+                if disk_config['current'] not in specs.keys():
                     raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
+
+                vm_disk = specs[disk_config['current']]
+                ss_path = disk_config['dir'] + '/snapshots/' + params.name
+                ss_dir = disk_config['dir'] + '/snapshots'
+                if not os.path.exists(ss_dir):
+                    os.makedirs(ss_dir)
+                not_need_snapshot_spec = ''
+                for disk_path in specs.keys():
+                    if disk_path == disk_config['current']:
+                        continue
+                    not_need_snapshot_spec = not_need_snapshot_spec + '--diskspec %s,snapshot=no ' % specs[disk_path]
+                    # '/var/lib/libvirt/pooltest3/wyw123/snapshots/wyw123.6'
+                    # 'vdb,snapshot=no'
+
+                op = Operation('virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata '
+                               '--diskspec %s,snapshot=external,file=%s,driver=%s %s' %
+                               (params.domain, params.name, vm_disk, ss_path, params.format, not_need_snapshot_spec),
+                               {})
+                op.execute()
+                config_path = os.path.dirname(ss_dir) + '/config.json'
+                with open(config_path, "r") as f:
+                    config = load(f)
+                    config['current'] = ss_path
+                with open(config_path, "w") as f:
+                    dump(config, f)
+                result = get_disk_info(ss_path)
+                result['disk'] = config['name']
+                result["pool"] = params.pool
+                print dumps(
+                    {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
+                     "data": result})
         elif params.type == "uus" or params.type == "uraid":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}})
     except ExecuteException, e:
@@ -1044,19 +1028,11 @@ def deleteExternalSnapshot(params):
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
             if params.domain:
                 specs = get_disks_spec(params.domain)
-                if params.vol in specs.keys():
-                    current_path = specs[params.vol]
-                    if current_path.find('snapshots') > 0:
-                        disk_dir = os.path.dirname(os.path.dirname(current_path))
-                        disk = os.path.basename(disk_dir)
-                    else:
-                        disk_dir = os.path.dirname(current_path)
-                        disk = os.path.basename(disk_dir)
-                else:
-                    raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
-                disk_config = get_disk_config(params.pool, disk)
-            else:
                 disk_config = get_disk_config(params.pool, params.vol)
+                if disk_config['current'] not in specs.keys():
+                    raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
+
+            disk_config = get_disk_config(params.pool, params.vol)
 
             # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
             snapshots_to_delete = []
@@ -1100,7 +1076,7 @@ def deleteExternalSnapshot(params):
             with open(disk_config['dir'] + '/config.json', "w") as f:
                 dump(config, f)
 
-            result = {'delete_ss': snapshots_to_delete, 'disk': disk,
+            result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
                       'need_to_modify': config['current'], "pool": params.pool}
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
 

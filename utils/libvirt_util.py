@@ -88,7 +88,7 @@ def get_disks_spec(vm_):
     retv = {}
     if disks:
         for disk_dev, disk_info in disks.items():
-            retv[disk_dev.encode('utf-8')] = disk_info['file'].encode('utf-8')
+            retv[disk_info['file'].encode('utf-8')] = disk_dev.encode('utf-8')
         return retv
     else:
         raise Exception('VM %s has no disks.' % vm_)

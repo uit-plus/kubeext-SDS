@@ -706,23 +706,8 @@ def createExternalSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
-        if args.domain:
-            specs = get_disks_spec(args.domain)
-            if args.vol in specs.keys():
-                current_path = specs[args.vol]
-                if current_path.find('snapshots') > 0:
-                    disk_dir = os.path.dirname(os.path.dirname(current_path))
-                    disk = os.path.basename(disk_dir)
-                else:
-                    disk_dir = os.path.dirname(current_path)
-                    disk = os.path.basename(disk_dir)
-            else:
-                print {"result": {"code": 100, "msg": "domain %s not has disk %s" % (args.domain, args.vol)},
-                       "data": {}}
-                exit(3)
-            disk_dir = get_pool_info(args.pool)['path'] + '/' + disk
-        else:
-            disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
+
+        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
         config_path = disk_dir + '/config.json'
         with open(config_path, "r") as f:
             config = load(f)
@@ -811,23 +796,8 @@ def deleteExternalSnapshotParser(args):
         check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
-        if args.domain:
-            specs = get_disks_spec(args.domain)
-            if args.vol in specs.keys():
-                current_path = specs[args.vol]
-                if current_path.find('snapshots') > 0:
-                    disk_dir = os.path.dirname(os.path.dirname(current_path))
-                    disk = os.path.basename(disk_dir)
-                else:
-                    disk_dir = os.path.dirname(current_path)
-                    disk = os.path.basename(disk_dir)
-            else:
-                print {"result": {"code": 100, "msg": "domain %s not has disk %s" % (args.domain, args.vol)},
-                       "data": {}}
-                exit(3)
-            disk_dir = get_pool_info(args.pool)['path'] + '/' + disk
-        else:
-            disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
+
+        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
         ss_path = disk_dir + '/snapshots/' + args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
@@ -1062,8 +1032,6 @@ parser_show_disk_snapshot.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="volume name to use")
 parser_show_disk_snapshot.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name")
-parser_show_disk_snapshot.add_argument("--domain", metavar="[domain]", type=str,
-                                help="vm domain to use")
 # set default func
 parser_show_disk_snapshot.set_defaults(func=showDiskSnapshotParser)
 
