@@ -637,15 +637,30 @@ def cloneDisk(params):
             disk_dir = pool_info['path'] + '/' + params.vol
             clone_disk_dir = pool_info['path'] + '/' + params.newname
             clone_disk_path = clone_disk_dir + '/' + params.newname
-            os.makedirs(clone_disk_dir)
+            if not os.path.exists(clone_disk_dir):
+                os.makedirs(clone_disk_dir)
+            if os.path.exists(clone_disk_path):
+                raise ExecuteException('', 'disk already exists, aborting clone.')
 
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
 
-            op1 = Operation('cp ' + config['current'] + ' ' + clone_disk_path, {})
-            op1.execute()
-            op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -b ""', {})
-            op2.execute()
+            try:
+                op1 = Operation('cp -f %s %s' % (config['current'], clone_disk_path), {})
+                op1.execute()
+            except:
+                if os.path.exists(clone_disk_dir):
+                    op3 = Operation('rm -rf %s' % clone_disk_dir, {})
+                    op3.execute()
+                raise ExecuteException('', 'Copy %s to %s failed!, aborting clone.' % (config['current'], clone_disk_path))
+            try:
+                op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -b ""', {})
+                op2.execute()
+            except:
+                if os.path.exists(clone_disk_dir):
+                    op3 = Operation('rm -rf %s' % clone_disk_dir, {})
+                    op3.execute()
+                raise ExecuteException('', 'Execute "qemu-img rebase -f qcow2 %s" failed!, aborting clone.' % clone_disk_path )
 
             config = {}
             config['name'] = params.newname

@@ -714,7 +714,7 @@ def createExternalSnapshotParser(args):
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find vol"}, "data": {}}
             exit(3)
-        if os.path.isfile(disk_dir + '/' + args.name):
+        if os.path.isfile(disk_dir + '/snapshots/' + args.name):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}
             exit(3)
     elif args.type == "uus" or args.type == "uraid":
