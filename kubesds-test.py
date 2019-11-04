@@ -1246,7 +1246,7 @@ nfs11 = parser.parse_args(["deleteDisk", "--type", "nfs", "--pool", "poolnfs", "
 nfs12 = parser.parse_args(["stopPool", "--type", "nfs", "--pool", "poolnfs"])
 nfs13 = parser.parse_args(["deletePool", "--type", "nfs", "--pool", "poolnfs"])
 
-gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "glusterfs://192.168.3.93:nfsvol", "--target", "poolnfs", "--opt", "nolock", "--content", "vmd"])
+gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "glusterfs://192.168.3.93:nfsvol", "--target", "poolglusterfs", "--opt", "nolock", "--content", "vmd"])
 gfs2 = parser.parse_args(["createDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--capacity", "1073741824", "--format", "qcow2"])
 gfs3 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2"])
 gfs4 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.2", "--format", "qcow2"])
