@@ -133,7 +133,8 @@ def check_virsh_disk_not_exist(pool, diskname):
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     try:
         pool_info = get_pool_info(pool)
-        if not os.path.exists(pool_info['path'] + '/' + diskname + '/' + snapshot):
+        if not os.path.exists(pool_info['path'] + '/' + diskname + '/snapshots/' + snapshot) and \
+                not os.path.exists(pool_info['path'] + '/' + diskname + '/' + snapshot):
             print {
                 "result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume " + diskname},
                 "data": {}}
@@ -225,10 +226,9 @@ def createPoolParser(args):
         if args.content not in ["vmd", "vmdi", "iso"]:
             print {"result": {"code": 100, "msg": "less arg, content just can be vmd, vmdi, iso"}, "data": {}}
             exit(9)
-    if args.type == "uus" or args.type == "nfs" or args.type == "glusterfs":
-        if args.url is None:
-            print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
-            exit(9)
+    if args.url is None:
+        print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
+        exit(9)
 
     if args.type == "dir":
         check_virsh_pool_exist(args.pool)
@@ -742,6 +742,7 @@ def createExternalSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
+
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
         config_path = disk_dir + '/config.json'
         with open(config_path, "r") as f:
@@ -749,7 +750,7 @@ def createExternalSnapshotParser(args):
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find vol"}, "data": {}}
             exit(3)
-        if os.path.isfile(disk_dir + '/' + args.name):
+        if os.path.isfile(disk_dir + '/snapshots/' + args.name):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}
             exit(3)
     elif args.type == "uus" or args.type == "uraid":
@@ -775,6 +776,9 @@ def revertExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+    if args.backing_file is None:
+        print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
+        exit(3)
 
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
@@ -789,29 +793,16 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        ss_path = disk_dir + '/' + args.name
-        if ss_path == config['current']:
+        if args.backing_file == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
             exit(3)
-        if not os.path.isfile(ss_path):
+        if not os.path.isfile(args.backing_file):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
 
-        # check snapshot relation
-        chain = get_sn_chain(config['current'])
-        is_relation = False
-        for info in chain:
-            if 'backing-filename' in info.keys() and info['backing-filename'] == ss_path:
-                is_relation = True
-                break
-        if not is_relation:
-            print {"result": {"code": 100,
-                              "msg": "snapshot is not related to current or snapshot is not current's right snapshot, plz check"},
-                   "data": {}}
-            exit(3)
     elif args.type == "uus" or args.type == "uraid":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
@@ -835,13 +826,16 @@ def deleteExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+    if args.backing_file is None:
+        print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
+        exit(3)
 
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        ss_path = disk_dir + '/' + args.name
+        ss_path = disk_dir + '/snapshots/' + args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
@@ -914,6 +908,7 @@ parser_create_pool.add_argument("--target", metavar="[TARGET]", type=str,
 # set autostart
 parser_create_pool.add_argument("--autostart", metavar="[AUTOSTART]", type=bool, nargs='?', const=True,
                                 help="if autostart, pool will set autostart yes after create pool")
+
 # set content
 parser_create_pool.add_argument("--content", metavar="[CONTENT]", type=str,
                                 help="pool content")
@@ -1155,6 +1150,8 @@ parser_create_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                help="disk format to use")
 parser_create_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                help="disk current file to use")
+parser_create_ess.add_argument("--domain", metavar="[domain]", type=str,
+                               help="domain")
 # set default func
 parser_create_ess.set_defaults(func=createExternalSnapshotParser)
 
@@ -1168,6 +1165,8 @@ parser_revert_ess.add_argument("--name", metavar="[NAME]", type=str,
                                help="volume snapshot name to use")
 parser_revert_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                help="disk current file to use")
+parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+                               help="backing_file from k8s")
 parser_revert_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                help="disk format to use")
 # set default func
@@ -1183,6 +1182,10 @@ parser_delete_ess.add_argument("--name", metavar="[NAME]", type=str,
                                help="volume snapshot name to use")
 parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                help="disk current file to use")
+parser_delete_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+                               help="backing_file from k8s")
+parser_delete_ess.add_argument("--domain", metavar="[domain]", type=str,
+                               help="domain")
 # set default func
 parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 
@@ -1212,9 +1215,9 @@ dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "-
 dir2 = parser.parse_args(["createDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "1073741824", "--format", "qcow2"])
 dir3 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
 dir4 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.2", "--format", "qcow2"])
-dir5 = parser.parse_args(["revertExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
+dir5 = parser.parse_args(["revertExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2", "--backing_file", "/pool/pooldir/diskdir/diskdir"])
 dir6 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.3", "--format", "qcow2"])
-dir7 = parser.parse_args(["deleteExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir"])
+dir7 = parser.parse_args(["deleteExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--backing_file", "/pool/pooldir/diskdir/diskdir"])
 dir8 = parser.parse_args(["resizeDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "2147483648"])
 dir9 = parser.parse_args(["cloneDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--newname", "diskdirclone", "--format", "qcow2"])
 dir10 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdirclone"])
@@ -1257,19 +1260,19 @@ gfs11 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolg
 gfs12 = parser.parse_args(["stopPool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 
-# test_args.append(dir1)
-# test_args.append(dir2)
-# test_args.append(dir3)
-# test_args.append(dir4)
-# test_args.append(dir5)
-# test_args.append(dir6)
-# test_args.append(dir7)
-# test_args.append(dir8)
-# test_args.append(dir9)
-# test_args.append(dir10)
-# test_args.append(dir11)
-# test_args.append(dir12)
-# test_args.append(dir13)
+test_args.append(dir1)
+test_args.append(dir2)
+test_args.append(dir3)
+test_args.append(dir4)
+test_args.append(dir5)
+test_args.append(dir6)
+test_args.append(dir7)
+test_args.append(dir8)
+test_args.append(dir9)
+test_args.append(dir10)
+test_args.append(dir11)
+test_args.append(dir12)
+test_args.append(dir13)
 
 # test_args.append(uus1)
 # test_args.append(uus2)
@@ -1292,19 +1295,19 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(nfs12)
 # test_args.append(nfs13)
 
-test_args.append(gfs1)
-test_args.append(gfs2)
-test_args.append(gfs3)
-test_args.append(gfs4)
-test_args.append(gfs5)
-test_args.append(gfs6)
-test_args.append(gfs7)
-test_args.append(gfs8)
-test_args.append(gfs9)
-test_args.append(gfs10)
-test_args.append(gfs11)
-test_args.append(gfs12)
-test_args.append(gfs13)
+# test_args.append(gfs1)
+# test_args.append(gfs2)
+# test_args.append(gfs3)
+# test_args.append(gfs4)
+# test_args.append(gfs5)
+# test_args.append(gfs6)
+# test_args.append(gfs7)
+# test_args.append(gfs8)
+# test_args.append(gfs9)
+# test_args.append(gfs10)
+# test_args.append(gfs11)
+# test_args.append(gfs12)
+# test_args.append(gfs13)
 
 
 for args in test_args:

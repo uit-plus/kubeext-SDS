@@ -519,13 +519,20 @@ def deleteDisk(params):
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
+            snapshots_path = disk_dir + '/snapshots'
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
-            for file in os.listdir(disk_dir):
-                if os.path.basename(config['current']) == file or 'config.json' == file:
-                    continue
-                else:
-                    raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
+            if os.path.exists(snapshots_path):
+                for file in os.listdir(snapshots_path):
+                    if snapshots_path + '/' + file == config['current']:
+                        continue
+                    else:
+                        try:
+                            # if success, disk has right snapshot, raise ExecuteException
+                            chain = get_sn_chain_path(snapshots_path + '/' + file)
+                        except:
+                            continue
+                        raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
 
             op = Operation("rm -rf " + disk_dir, {})
             op.execute()
@@ -640,13 +647,15 @@ def cloneDisk(params):
                     op3.execute()
                 raise ExecuteException('', 'Copy %s to %s failed!, aborting clone.' % (config['current'], clone_disk_path))
             try:
-                op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -b ""', {})
-                op2.execute()
+                backing_file = DiskImageHelper.get_backing_file(clone_disk_path)
+                if backing_file:
+                    op2 = Operation('qemu-img rebase -f %s -b "" %s' % (params.format, clone_disk_path), {})
+                    op2.execute()
             except:
                 if os.path.exists(clone_disk_dir):
                     op3 = Operation('rm -rf %s' % clone_disk_dir, {})
                     op3.execute()
-                raise ExecuteException('', 'Execute "qemu-img rebase -f qcow2 %s" failed!, aborting clone.' % clone_disk_path )
+                raise ExecuteException('', 'Execute "qemu-img rebase %s" failed!, aborting clone.' % clone_disk_path )
 
             config = {}
             config['name'] = params.newname
