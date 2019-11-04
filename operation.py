@@ -534,22 +534,22 @@ def deleteDisk(params):
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
             snapshots_path = disk_dir + '/snapshots'
-            with open(disk_dir + '/config.json', "r") as f:
-                config = load(f)
-            if os.path.exists(snapshots_path):
-                for file in os.listdir(snapshots_path):
-                    if snapshots_path + '/' + file == config['current']:
-                        continue
-                    else:
-                        try:
-                            # if success, disk has right snapshot, raise ExecuteException
-                            chain = get_sn_chain_path(snapshots_path + '/' + file)
-                        except:
-                            continue
-                        raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
-
-            op = Operation("rm -rf " + disk_dir, {})
-            op.execute()
+            # with open(disk_dir + '/config.json', "r") as f:
+            #     config = load(f)
+            # if os.path.exists(snapshots_path):
+            #     for file in os.listdir(snapshots_path):
+            #         if snapshots_path + '/' + file == config['current']:
+            #             continue
+            #         else:
+            #             try:
+            #                 # if success, disk has right snapshot, raise ExecuteException
+            #                 chain = get_sn_chain_path(snapshots_path + '/' + file)
+            #             except:
+            #                 continue
+            #             raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
+            #
+            # op = Operation("rm -rf " + disk_dir, {})
+            # op.execute()
             print dumps({"result": {"code": 0, "msg": "delete volume " + params.vol + " success."}, "data": {}})
         elif params.type == "uus" or params.type == "uraid":
             kv = {"poolname": params.pool, "name": params.vol}
