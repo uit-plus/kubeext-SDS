@@ -120,7 +120,8 @@ def check_virsh_disk_not_exist(pool, diskname):
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     try:
         pool_info = get_pool_info(pool)
-        if not os.path.exists(pool_info['path']+'/'+diskname+'/'+snapshot):
+        if not os.path.exists(pool_info['path'] + '/' + diskname + '/snapshots/' + snapshot) and \
+                not os.path.exists(pool_info['path'] + '/' + diskname + '/' + snapshot):
             print {"result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume "+diskname}, "data": {}}
             exit(5)
     except Exception:
@@ -704,6 +705,7 @@ def createExternalSnapshotParser(args):
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
+
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
         config_path = disk_dir + '/config.json'
         with open(config_path, "r") as f:
@@ -711,7 +713,7 @@ def createExternalSnapshotParser(args):
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find vol"}, "data": {}}
             exit(3)
-        if os.path.isfile(disk_dir+'/'+args.name):
+        if os.path.isfile(disk_dir + '/snapshots/' + args.name):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}
             exit(3)
     elif args.type == "uus" or args.type == "uraid":
@@ -736,6 +738,9 @@ def revertExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+    if args.backing_file is None:
+        print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
+        exit(3)
 
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
@@ -750,27 +755,16 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        ss_path = disk_dir+'/'+args.name
-        if ss_path == config['current']:
+        if args.backing_file == config['current']:
             print {"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}}
             exit(3)
         if not os.path.isfile(config['current']):
             print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
             exit(3)
-        if not os.path.isfile(ss_path):
+        if not os.path.isfile(args.backing_file):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
 
-        # check snapshot relation
-        chain = get_sn_chain(config['current'])
-        is_relation = False
-        for info in chain:
-            if 'backing-filename' in info.keys() and info['backing-filename'] == ss_path:
-                is_relation = True
-                break
-        if not is_relation:
-            print {"result": {"code": 100, "msg": "snapshot is not related to current or snapshot is not current's right snapshot, plz check"}, "data": {}}
-            exit(3)
     elif args.type == "uus" or args.type == "uraid":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
@@ -793,13 +787,16 @@ def deleteExternalSnapshotParser(args):
     if args.name is None:
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
+    if args.backing_file is None:
+        print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
+        exit(3)
 
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
 
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        ss_path = disk_dir+'/'+args.name
+        ss_path = disk_dir + '/snapshots/' + args.name
         if not os.path.isfile(ss_path):
             print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
             exit(3)
@@ -1117,6 +1114,8 @@ parser_create_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
 parser_create_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
+parser_create_ess.add_argument("--domain", metavar="[domain]", type=str,
+                                help="domain")
 # set default func
 parser_create_ess.set_defaults(func=createExternalSnapshotParser)
 
@@ -1130,6 +1129,8 @@ parser_revert_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_revert_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
+parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+                                help="backing_file from k8s")
 parser_revert_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                 help="disk format to use")
 # set default func
@@ -1145,6 +1146,10 @@ parser_delete_ess.add_argument("--name", metavar="[NAME]", type=str,
                                 help="volume snapshot name to use")
 parser_delete_ess.add_argument("--vol", metavar="[VOL]", type=str,
                                 help="disk current file to use")
+parser_delete_ess.add_argument("--backing_file", metavar="[backing_file]", type=str,
+                                help="backing_file from k8s")
+parser_delete_ess.add_argument("--domain", metavar="[domain]", type=str,
+                                help="domain")
 # set default func
 parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 
