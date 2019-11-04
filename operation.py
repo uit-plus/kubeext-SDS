@@ -533,17 +533,24 @@ def deleteDisk(params):
             #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
+            snapshots_path = disk_dir + '/snapshots'
             with open(disk_dir + '/config.json', "r") as f:
                 config = load(f)
-            for file in os.listdir(disk_dir):
-                if os.path.basename(config['current']) == file or 'config.json' == file:
-                    continue
-                else:
-                    raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
+            if os.path.exists(snapshots_path):
+                for file in os.listdir(snapshots_path):
+                    if snapshots_path + '/' + file == config['current']:
+                        continue
+                    else:
+                        try:
+                            # if success, disk has right snapshot, raise ExecuteException
+                            chain = get_sn_chain_path(snapshots_path + '/' + file)
+                        except:
+                            continue
+                        raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
 
             op = Operation("rm -rf " + disk_dir, {})
             op.execute()
-            print dumps({"result": {"code": 0, "msg": "delete volume "+params.vol+" success."}, "data": {}})
+            print dumps({"result": {"code": 0, "msg": "delete volume " + params.vol + " success."}, "data": {}})
         elif params.type == "uus" or params.type == "uraid":
             kv = {"poolname": params.pool, "name": params.vol}
             op1 = Operation("cstor-cli vdisk-show", kv, with_result=True)
@@ -654,7 +661,7 @@ def cloneDisk(params):
                     op3.execute()
                 raise ExecuteException('', 'Copy %s to %s failed!, aborting clone.' % (config['current'], clone_disk_path))
             try:
-                op2 = Operation('qemu-img rebase -f ' + params.format + ' ' + clone_disk_path + ' -b ""', {})
+                op2 = Operation('qemu-img rebase -b "" %s' % clone_disk_path, {})
                 op2.execute()
             except:
                 if os.path.exists(clone_disk_dir):
