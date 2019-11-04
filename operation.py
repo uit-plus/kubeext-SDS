@@ -597,6 +597,8 @@ def resizeDisk(params):
             op = Operation("qemu-img resize " + config['current'] + " +" + str(size), {})
             op.execute()
 
+            with open(disk_dir + '/config.json', "w") as f:
+                dump(config, f)
             result = get_disk_info(config['current'])
 
             result['disk'] = params.vol
