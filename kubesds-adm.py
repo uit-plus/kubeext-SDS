@@ -860,9 +860,9 @@ parser_create_pool.add_argument("--pool", metavar="[POOL]", type=str,
 parser_create_pool.add_argument("--url", metavar="[URL]", type=str,
                                 help="storage pool create location, only for uus")
 
-# dir, nfs and glusterfs only, target will transfer to path in nfs and glusterfs
-parser_create_pool.add_argument("--target", metavar="[TARGET]", type=str,
-                                help="storage pool create location, only for dir, nfs and glusterfs")
+# # dir, nfs and glusterfs only, target will transfer to path in nfs and glusterfs
+# parser_create_pool.add_argument("--target", metavar="[TARGET]", type=str,
+#                                 help="storage pool create location, only for dir, nfs and glusterfs")
 # set autostart
 parser_create_pool.add_argument("--autostart", metavar="[AUTOSTART]", type=bool, nargs='?', const=True,
                                 help="if autostart, pool will set autostart yes after create pool")
