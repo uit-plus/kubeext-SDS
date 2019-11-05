@@ -1110,7 +1110,7 @@ def deleteExternalSnapshot(params):
                 #     op.execute()
             for df in snapshots_to_delete:
                 if df != os.path.basename(disk_config['current']):
-                    op = Operation('rm -f %s/snapshots/%s' % (disk_config['current'], df), {})
+                    op = Operation('rm -f %s/snapshots/%s' % (disk_config['dir'], df), {})
                     op.execute()
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
