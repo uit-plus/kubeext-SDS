@@ -217,9 +217,9 @@ def createPoolParser(args):
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
     if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs":
-        if args.target is None:
-            print {"result": {"code": 100, "msg": "less arg, target must be set"}, "data": {}}
-            exit(9)
+        # if args.target is None:
+        #     print {"result": {"code": 100, "msg": "less arg, target must be set"}, "data": {}}
+        #     exit(9)
         if args.content is None:
             print {"result": {"code": 100, "msg": "less arg, content must be set"}, "data": {}}
             exit(9)
@@ -1211,7 +1211,7 @@ parser_customize_current.set_defaults(func=customizeParser)
 
 test_args = []
 
-dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--target", "/var/lib/libvirt/pooldir", "--url", "localfs:///dev/sdb1:/pool", "--content", "vmd"])
+dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--url", "localfs:///dev/sdb1:/pool", "--content", "vmd"])
 dir2 = parser.parse_args(["createDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "1073741824", "--format", "qcow2"])
 dir3 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
 dir4 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.2", "--format", "qcow2"])
