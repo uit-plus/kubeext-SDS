@@ -1089,10 +1089,10 @@ def deleteExternalSnapshot(params):
                         # effect current and backing file is not head, rabse current to reconnect
                         op = Operation('qemu-img rebase -b %s %s' % (bf_bf_path, disk_config['current']), {})
                         op.execute()
-                # if the snapshot to delete is not current, delete snapshot's backing file
-                if current_backing_file != params.backing_file:
-                    op = Operation('rm -f %s' % params.backing_file, {})
-                    op.execute()
+                # # if the snapshot to delete is not current, delete snapshot's backing file
+                # if current_backing_file != params.backing_file:
+                #     op = Operation('rm -f %s' % params.backing_file, {})
+                #     op.execute()
                 # for df in snapshots_to_delete:
                 #     op = Operation('rm -f %s' % df, {})
                 #     op.execute()
@@ -1109,10 +1109,10 @@ def deleteExternalSnapshot(params):
                                    (params.domain, disk_config['current']), {})
                     op.execute()
 
-                # if the snapshot to delete is not current, delete snapshot's backing file
-                if current_backing_file != params.backing_file:
-                    op = Operation('rm -f %s' % params.backing_file, {})
-                    op.execute()
+                # # if the snapshot to delete is not current, delete snapshot's backing file
+                # if current_backing_file != params.backing_file:
+                #     op = Operation('rm -f %s' % params.backing_file, {})
+                #     op.execute()
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
