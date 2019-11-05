@@ -206,7 +206,7 @@ def createPool(params):
             op = Operation("cstor-cli pooladd-uraid", kv, with_result=True)
             uraid_poolinfo = op.execute()
 
-            result = {"name": params.pool, "pooltype": "uus", "capacity": uraid_poolinfo["data"]["total"],
+            result = {"name": params.pool, "pooltype": "uraid", "capacity": uraid_poolinfo["data"]["total"],
                       "autostart": "yes", "path": uraid_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID(),
                       "content": "vmd"}
 
@@ -411,7 +411,7 @@ def showPool(params):
             op = Operation("cstor-cli pool-show", kv, with_result=True)
             uus_poolinfo = op.execute()
 
-            result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"],
+            result = {"name": params.pool, "pooltype": uus_poolinfo['data']['pooltype'], "capacity": uus_poolinfo["data"]["total"],
                       "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID()}
         print dumps({"result": {"code": 0, "msg": "show pool "+params.pool+" successful."}, "data": result})
     except ExecuteException, e:
