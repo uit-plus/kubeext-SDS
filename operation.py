@@ -1073,7 +1073,7 @@ def deleteExternalSnapshot(params):
             if params.name not in snapshots_to_delete:
                 snapshots_to_delete.append(params.name)
 
-            if params.domain is None:
+            if params.domain:
                 current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
                 # reconnect the snapshot chain
                 bf_bf_path = DiskImageHelper.get_backing_file(params.backing_file)
