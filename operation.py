@@ -84,6 +84,7 @@ def createPool(params):
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             POOL_PATH = cstor['data']['mountpath'] + '/' + params.pool
+            logger.debug(POOL_PATH)
             if not os.path.isdir(POOL_PATH):
                 raise ExecuteException('', 'cant not get pooladd-localfs mount path')
             # step1 define pool
