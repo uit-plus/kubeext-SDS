@@ -1091,9 +1091,6 @@ def deleteExternalSnapshot(params):
                 # if current_backing_file != params.backing_file:
                 #     op = Operation('rm -f %s' % params.backing_file, {})
                 #     op.execute()
-                # for df in snapshots_to_delete:
-                #     op = Operation('rm -f %s' % df, {})
-                #     op.execute()
             else:
                 current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
                 # reconnect the snapshot chain
@@ -1111,6 +1108,10 @@ def deleteExternalSnapshot(params):
                 # if current_backing_file != params.backing_file:
                 #     op = Operation('rm -f %s' % params.backing_file, {})
                 #     op.execute()
+            for df in snapshots_to_delete:
+                if df != os.path.basename(disk_config['current']):
+                    op = Operation('rm -f %s' % df, {})
+                    op.execute()
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
