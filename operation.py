@@ -1062,8 +1062,6 @@ def deleteExternalSnapshot(params):
             snapshots_to_delete = []
             files = os.listdir(disk_config['dir'] + '/snapshots')
             for df in files:
-                if df == os.path.basename(disk_config['current']):
-                    continue
                 try:
                     bf_paths = get_sn_chain_path(disk_config['dir'] + '/snapshots/' + df)
                     if params.backing_file in bf_paths:
