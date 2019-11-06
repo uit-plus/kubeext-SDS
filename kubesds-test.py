@@ -441,7 +441,8 @@ def createDiskParser(args):
             exit(4)
         # check cstor disk
         check_cstor_pool_not_exist(args.pool)
-        check_cstor_disk_exist(args.pool, args.vol)
+        if args.type == "uus":
+            check_cstor_disk_exist(args.pool, args.vol)
 
     createDisk(args)
 

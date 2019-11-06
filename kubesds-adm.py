@@ -132,7 +132,7 @@ def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
 def check_cstor_disk_exist(pool, diskname):
     try:
         if is_cstor_disk_exist(pool, diskname):
-            print {"result": {"code": 210, "msg": "cstor disk " + pool + " has exist in pool "+pool}, "data": {}}
+            print {"result": {"code": 210, "msg": "cstor disk " + diskname + " has exist in pool "+pool}, "data": {}}
             exit(15)
     except Exception:
         logger.debug(traceback.format_exc())
@@ -414,7 +414,8 @@ def createDiskParser(args):
             exit(4)
         # check cstor disk
         check_cstor_pool_not_exist(args.pool)
-        check_cstor_disk_exist(args.pool, args.vol)
+        if args.type == "uus":
+            check_cstor_disk_exist(args.pool, args.vol)
 
     createDisk(args)
 
