@@ -559,8 +559,14 @@ def get_disk_snapshots(ss_path):
     return snapshots
 
 def get_sn_chain(ss_path):
-    return runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)
-
+    try:
+        result = runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)
+    except:
+        try:
+            result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
+        except:
+            return None
+    return result
 def get_sn_chain_path(ss_path):
     paths = set()
     chain = get_sn_chain(ss_path)
