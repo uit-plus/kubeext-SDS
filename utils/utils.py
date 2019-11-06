@@ -18,7 +18,6 @@ from json import loads, dumps, load, dump
 
 import grpc
 import xmltodict
-from ovs import json
 
 import cmdcall_pb2
 import cmdcall_pb2_grpc
