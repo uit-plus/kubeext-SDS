@@ -716,6 +716,7 @@ def showDisk(params):
             result = get_disk_info(config['current'])
             result['disk'] = params.vol
             result["pool"] = params.pool
+            result["current"] = config["current"]
             print dumps(
                 {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
@@ -730,6 +731,7 @@ def showDisk(params):
                 "filename": diskinfo["data"]["path"],
                 "uni": diskinfo["data"]["uni"],
                 "uuid": randomUUID(),
+                "current": diskinfo["data"]["path"]
             }
 
             print dumps({"result": {"code": 0,
