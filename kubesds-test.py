@@ -790,7 +790,7 @@ def revertExternalSnapshotParser(args):
             print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
             exit(3)
         if not os.path.isfile(args.backing_file):
-            print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
+            print {"result": {"code": 100, "msg": "snapshot file %s not exist" % args.backing_file}, "data": {}}
             exit(3)
 
     elif args.type == "uus":
@@ -1228,9 +1228,9 @@ uraid1 = parser.parse_args(["createPool", "--type", "uraid", "--pool", "poolurai
 uraid2 = parser.parse_args(["createDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--capacity", "1073741824", "--format", "qcow2"])
 uraid3 = parser.parse_args(["createExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--format", "qcow2"])
 uraid4 = parser.parse_args(["createExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.2", "--format", "qcow2"])
-uraid5 = parser.parse_args(["revertExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--format", "qcow2", "--backing_file", "/pool/pooldir/diskuraid/diskuraid"])
+uraid5 = parser.parse_args(["revertExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--format", "qcow2", "--backing_file", "/mnt/usb/local/diskuraid/diskuraid"])
 uraid6 = parser.parse_args(["createExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.3", "--format", "qcow2"])
-uraid7 = parser.parse_args(["deleteExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--backing_file", "/pool/pooldir/diskuraid/diskuraid"])
+uraid7 = parser.parse_args(["deleteExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--backing_file", "/mnt/usb/local/diskuraid/diskuraid"])
 uraid8 = parser.parse_args(["resizeDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--capacity", "2147483648"])
 uraid9 = parser.parse_args(["cloneDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--newname", "diskuraidclone", "--format", "qcow2"])
 uraid10 = parser.parse_args(["deleteDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraidclone"])

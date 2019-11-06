@@ -748,7 +748,7 @@ def revertExternalSnapshotParser(args):
             print {"result": {"code": 100, "msg": "can not find current file"}, "data": {}}
             exit(3)
         if not os.path.isfile(args.backing_file):
-            print {"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}}
+            print {"result": {"code": 100, "msg": "snapshot file %s not exist" % args.backing_file}, "data": {}}
             exit(3)
 
     elif args.type == "uus":
