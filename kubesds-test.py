@@ -7,7 +7,7 @@ from operation import *
 from utils import logger
 from utils.exception import *
 from utils.exception import ExecuteException
-from utils.libvirt_util import is_pool_exists, is_volume_exists, get_volume_path, get_volume_snapshots
+from utils.libvirt_util import is_pool_exists, is_volume_exists, get_volume_path
 
 LOG = "/var/log/kubesds.log"
 
