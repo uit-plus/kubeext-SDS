@@ -75,10 +75,23 @@ def createPool(params):
     logger.debug(params)
     result = None
     try:
-        if params.type == "dir":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             #  {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "mountpath": "/Disk240", "proto": "localfs", "url": "/dev/sdb1", "poolname": "pool1", "free": 223363817472, "disktype": "file", "maintain": "normal", "used": 768970752, "total": 236152303616}, "obj":"pooladd"}
-            op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
-                                                       'url': params.url}, with_result=True)
+            if params.type == "dir":
+                op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
+                                                              'url': params.url}, with_result=True)
+            elif params.type == "nfs":
+                kv = {"poolname": params.pool, "url": params.url}
+                if params.opt is not None:
+                    kv["opt"] = params.opt
+                op = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
+            elif params.type == "glusterfs":
+                kv = {"poolname": params.pool, "url": params.url, "path": params.pool}
+                op = Operation("cstor-cli pooladd-glusterfs", kv, with_result=True)
+            elif params.type == "uraid":
+                kv = {"poolname": params.pool, "url": params.url}
+                op = Operation("cstor-cli pooladd-uraid", kv, with_result=True)
+
             cstor = op.execute()
             if cstor['result']['code'] != 0:
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
@@ -108,7 +121,7 @@ def createPool(params):
 
             result = get_pool_info(params.pool)
             result['content'] = params.content
-            result["pooltype"] = "dir"
+            result["pooltype"] = params.type
             if is_pool_started(params.pool):
                 result["state"] = "active"
             else:
@@ -121,93 +134,6 @@ def createPool(params):
 
             result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"],
                       "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID(), "content": 'vmd'}
-        elif params.type == "nfs":
-            kv = {"poolname": params.pool, "url": params.url, "path": params.pool}
-            if params.opt is not None:
-                kv["opt"] = params.opt
-            op1 = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
-            poolinfo = op1.execute()
-            if poolinfo["result"]["code"] != 0:
-                print dumps(poolinfo)
-                exit(1)
-            # {"result":{"code":0, "msg":"success"}, "data":{"opt": "nolock", "status": "active", "mountpath": "/mnt/cstor/var/lib/libvirt/nfs/", "proto": "nfs", "url": "192.168.3.99:/nfs/nfs", "pool": "pool2", "free": 549, "disktype": "file", "maintain": "normal", "used": 0, "total": 549}, "obj":"pooladd"}
-
-            # create dir pool in virsh
-            logger.debug(poolinfo["data"]["mountpath"])
-
-            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/' + params.pool, "name": params.pool}
-            op2 = Operation("virsh pool-define-as", kv)
-            op2.execute()
-
-            # step3 autostart pool
-            if params.autostart:
-                try:
-                    op3 = Operation("virsh pool-autostart", {"pool": params.pool})
-                    op3.execute()
-                except ExecuteException, e:
-                    op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
-                    op_cancel.execute()
-                    raise e
-
-            op3 = Operation("virsh pool-start", {"pool": params.pool})
-            op3.execute()
-
-            with open(poolinfo["data"]["mountpath"] + '/' + params.pool + '/content', 'w') as f:
-                f.write(params.content)
-
-            result = get_pool_info(params.pool)
-            result["pooltype"] = "nfs"
-            result['content'] = params.content
-            if is_pool_started(params.pool):
-                result["state"] = "active"
-            else:
-                result["state"] = "inactive"
-        elif params.type == "glusterfs":
-            kv = {"poolname": params.pool, "url": params.url, "path": params.pool}
-            op1 = Operation("cstor-cli pooladd-glusterfs", kv, with_result=True)
-            poolinfo = op1.execute()
-            if poolinfo["result"]["code"] != 0:
-                print dumps(poolinfo)
-                exit(1)
-
-            # create dir pool in virsh
-            logger.debug(poolinfo["data"]["mountpath"])
-
-            kv = {"type": "dir", "target": poolinfo["data"]["mountpath"] + '/' + params.pool, "name": params.pool}
-            op2 = Operation("virsh pool-define-as", kv)
-            op2.execute()
-
-            # step3 autostart pool
-            if params.autostart:
-                try:
-                    op3 = Operation("virsh pool-autostart", {"pool": params.pool})
-                    op3.execute()
-                except ExecuteException, e:
-                    op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
-                    op_cancel.execute()
-                    raise e
-
-            op4 = Operation("virsh pool-start", {"pool": params.pool})
-            op4.execute()
-
-            with open(poolinfo["data"]["mountpath"] + '/' + params.pool + '/content', 'w') as f:
-                f.write(params.content)
-
-            result = get_pool_info(params.pool)
-            result["pooltype"] = "glusterfs"
-            result['content'] = params.content
-            if is_pool_started(params.pool):
-                result["state"] = "active"
-            else:
-                result["state"] = "inactive"
-        elif params.type == "uraid":
-            kv = {"poolname": params.pool, "url": params.url}
-            op = Operation("cstor-cli pooladd-uraid", kv, with_result=True)
-            uraid_poolinfo = op.execute()
-
-            result = {"name": params.pool, "pooltype": "uraid", "capacity": uraid_poolinfo["data"]["total"],
-                      "autostart": "yes", "path": uraid_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID(),
-                      "content": "vmd"}
 
         print dumps({"result": {"code": 0, "msg": "create pool "+params.pool+" successful."}, "data": result})
     except ExecuteException, e:
@@ -228,7 +154,7 @@ def createPool(params):
 def deletePool(params):
     result = None
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             if is_pool_started(params.pool):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
             pool_path = get_pool_info(params.pool)['path']
@@ -246,7 +172,7 @@ def deletePool(params):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
                 op2.execute()
             result = {"msg": "delete pool "+params.pool+" success"}
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             result = op.execute()
@@ -268,18 +194,21 @@ def deletePool(params):
 
 def startPool(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op1 = Operation("virsh pool-start", {"pool": params.pool})
             op1.execute()
             result = get_pool_info(params.pool)
             result["pooltype"] = params.type
+            with open(result['path'] +'/content', 'r') as f:
+                params.content = f.read()
+            result['content'] = params.content
             if is_pool_started(params.pool):
                 result["state"] = "active"
             else:
                 result["state"] = "inactive"
             print dumps(
                 {"result": {"code": 0, "msg": "start pool " + params.pool + " successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
         logger.debug("startPool " + params.pool)
@@ -298,7 +227,7 @@ def startPool(params):
 
 def autoStartPool(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             if params.disable:
                 op = Operation("virsh pool-autostart --disable", {"pool": params.pool})
                 op.execute()
@@ -313,7 +242,7 @@ def autoStartPool(params):
                 result["state"] = "inactive"
             print dumps(
                 {"result": {"code": 0, "msg": "autoStart pool " + params.pool + " successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
     except ExecuteException, e:
         logger.debug("autoStartPool " + params.pool)
@@ -356,7 +285,7 @@ def unregisterPool(params):
 
 def stopPool(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op1 = Operation("virsh pool-destroy", {"pool": params.pool})
             op1.execute()
 
@@ -368,7 +297,7 @@ def stopPool(params):
                 result["state"] = "inactive"
             print dumps(
                 {"result": {"code": 0, "msg": "stop pool " + params.pool + " successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid."}, "data": {}})
     except ExecuteException, e:
         logger.debug("stopPool " + params.pool)
@@ -388,12 +317,7 @@ def stopPool(params):
 def showPool(params):
     result = None
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
-            # op = Operation('cstor-cli pool-show ', {'poolname': params.pool}, with_result=True)
-            # cstor = op.execute()
-            # if cstor['result']['code'] != 0:
-            #     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
-
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             pool_info = get_pool_info(params.pool)
             with open(pool_info['path'] +'/content', 'r') as f:
                 content = f.read()
@@ -405,7 +329,7 @@ def showPool(params):
                 result["state"] = "active"
             else:
                 result["state"] = "inactive"
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-show", kv, with_result=True)
             uus_poolinfo = op.execute()
@@ -430,7 +354,7 @@ def showPool(params):
 
 def createDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
                                                        'size': params.capacity}, with_result=True)
             cstor = op.execute()
@@ -463,7 +387,7 @@ def createDisk(params):
             result['disk'] = params.vol
             result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol, "size": params.capacity}
             op1 = Operation("cstor-cli vdisk-create", kv, with_result=True)
             diskinfo = op1.execute()
@@ -512,7 +436,7 @@ def createDisk(params):
 
 def deleteDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-remove ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
@@ -537,7 +461,7 @@ def deleteDisk(params):
             # op = Operation("rm -rf " + disk_dir, {})
             # op.execute()
             print dumps({"result": {"code": 0, "msg": "delete volume " + params.vol + " success."}, "data": {}})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol}
             op1 = Operation("cstor-cli vdisk-show", kv, with_result=True)
             diskinfo = op1.execute()
@@ -573,7 +497,7 @@ def deleteDisk(params):
 
 def resizeDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-expand ', {'poolname': params.pool, 'name': params.vol,
                                                        'size': params.capacity}, with_result=True)
             cstor = op.execute()
@@ -598,7 +522,7 @@ def resizeDisk(params):
             result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
 
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             raise ExecuteException("", "not support operation for uus and uraid.")
 
     except ExecuteException, e:
@@ -618,7 +542,7 @@ def resizeDisk(params):
 
 def cloneDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-clone ', {'poolname': params.pool, 'name': params.vol,
                                                        'clonename': params.newname}, with_result=True)
             cstor = op.execute()
@@ -671,7 +595,7 @@ def cloneDisk(params):
             result['disk'] = params.newname
             result["pool"] = params.pool
             print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             raise ExecuteException("", "not support operation for uus and uraid.")
     except ExecuteException, e:
         logger.debug("deletePool " + params.pool)
@@ -690,7 +614,7 @@ def cloneDisk(params):
 
 def showDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
@@ -740,7 +664,7 @@ def showDisk(params):
 
 def showDiskSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             # op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol,
             #                                          'size': params.capacity}, with_result=True)
             # cstor = op.execute()
@@ -755,7 +679,7 @@ def showDiskSnapshot(params):
             result["pool"] = params.pool
             print dumps(
                 {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             raise ExecuteException("", "not support operation for uus and uraid.")
     except ExecuteException, e:
         logger.debug("showDiskSnapshot " + params.name)
@@ -910,7 +834,7 @@ def showSnapshot(params):
 
 def createExternalSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-add-ss ', {'poolname': params.pool, 'name': params.vol,
                                                        'sname': params.name}, with_result=True)
             cstor = op.execute()
@@ -976,7 +900,7 @@ def createExternalSnapshot(params):
                 print dumps(
                     {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
                      "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}})
     except ExecuteException, e:
         logger.debug("createExternalSnapshot " + params.name)
@@ -996,7 +920,7 @@ def createExternalSnapshot(params):
 # create snapshot on params.name, then rename snapshot to current
 def revertExternalSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': params.pool, 'name': params.vol,
                                                        'sname': params.name}, with_result=True)
             cstor = op.execute()
@@ -1025,7 +949,7 @@ def revertExternalSnapshot(params):
             result["pool"] = params.pool
 
             print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid."}, "data": {}})
     except ExecuteException, e:
         logger.debug("revertExternalSnapshot " + params.name)
@@ -1044,7 +968,7 @@ def revertExternalSnapshot(params):
 
 def deleteExternalSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
             op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': params.pool, 'name': params.vol,
                                                       'sname': params.name}, with_result=True)
             cstor = op.execute()
@@ -1131,7 +1055,7 @@ def deleteExternalSnapshot(params):
             print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
 
 
-        elif params.type == "uus" or params.type == "uraid":
+        elif params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid."}, "data": {}})
     except ExecuteException, e:
         logger.debug("deleteExternalSnapshot " + params.name)
