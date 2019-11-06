@@ -560,10 +560,10 @@ def get_disk_snapshots(ss_path):
 
 def get_disk_info(ss_path):
     try:
-        result = runCmdWithResult('qemu-img info -U --backing-chain --output json ' + ss_path)
+        result = runCmdWithResult('qemu-img info -U --output json ' + ss_path)
     except:
         try:
-            result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
+            result = runCmdWithResult('qemu-img info --output json ' + ss_path)
         except:
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
