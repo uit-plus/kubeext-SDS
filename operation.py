@@ -84,7 +84,6 @@ def createPool(params):
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             POOL_PATH = cstor['data']['mountpath'] + '/' + params.pool
-            logger.debug(POOL_PATH)
             if not os.path.isdir(POOL_PATH):
                 raise ExecuteException('', 'cant not get pooladd-localfs mount path')
             # step1 define pool
@@ -704,6 +703,7 @@ def showDisk(params):
             result = get_disk_info(config['current'])
             result['disk'] = params.vol
             result["pool"] = params.pool
+            result["current"] = config["current"]
             print dumps(
                 {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
         elif params.type == "uus":
@@ -718,6 +718,7 @@ def showDisk(params):
                 "filename": diskinfo["data"]["path"],
                 "uni": diskinfo["data"]["uni"],
                 "uuid": randomUUID(),
+                "current": diskinfo["data"]["path"]
             }
 
             print dumps({"result": {"code": 0,
