@@ -558,6 +558,18 @@ def get_disk_snapshots(ss_path):
             snapshots.append(disk_info['filename'])
     return snapshots
 
+def get_disk_info(path):
+    try:
+        result = runCmdWithResult('qemu-img info -U --backing-chain --output json ' + ss_path)
+    except:
+        try:
+            result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
+        except:
+            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
+            exit(1)
+    json_str = dumps(result)
+    return loads(json_str.replace('-', '_'))
+
 def get_sn_chain(ss_path):
     try:
         result = runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)

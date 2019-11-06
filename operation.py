@@ -1125,17 +1125,4 @@ def xmlToJson(xmlStr):
         "interface", "_interface").replace("transient", "_transient").replace(
         "nested-hv", "nested_hv").replace("suspend-to-mem", "suspend_to_mem").replace("suspend-to-disk",
                                                                                       "suspend_to_disk")
-def get_disk_info(path):
-    try:
-        op = Operation('qemu-img info -U --output json ' + path, {}, with_result=True)
-        disk_json = op.execute()
-    except:
-        try:
-            op = Operation('qemu-img info --output json ' + path, {}, with_result=True)
-            disk_json = op.execute()
-        except:
-            logger.debug(traceback.format_exc())
-            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
-            exit(1)
-    json_str = dumps(disk_json)
-    return loads(json_str.replace('-', '_'))
+
