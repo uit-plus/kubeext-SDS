@@ -565,7 +565,8 @@ def get_sn_chain(ss_path):
         try:
             result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
         except:
-            return None
+            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
+            exit(1)
     return result
 def get_sn_chain_path(ss_path):
     paths = set()
