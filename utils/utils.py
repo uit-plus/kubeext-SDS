@@ -558,7 +558,7 @@ def get_disk_snapshots(ss_path):
             snapshots.append(disk_info['filename'])
     return snapshots
 
-def get_disk_info(path):
+def get_disk_info(ss_path):
     try:
         result = runCmdWithResult('qemu-img info -U --backing-chain --output json ' + ss_path)
     except:
