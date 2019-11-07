@@ -456,7 +456,7 @@ def deleteDisk(params):
                             chain = get_sn_chain_path(snapshots_path + '/' + file)
                         except:
                             continue
-                        raise ExecuteException('', 'error: disk ' + params.vol + ' still has snapshot.')
+                        raise ExecuteException('', 'error: disk %s still has snapshot %s.' % (params.vol, file))
 
             op = Operation("rm -rf " + disk_dir, {})
             op.execute()
