@@ -940,7 +940,7 @@ def revertExternalSnapshot(params):
                             (params.format, params.backing_file, params.format, new_file_path), {})
             op1.execute()
             # change vm disk
-            if not change_vm_os_disk_file(params.domain, disk_config['current'], new_file_path):
+            if params.domain and not change_vm_os_disk_file(params.domain, disk_config['current'], new_file_path):
                 op2 = Operation('rm -f %s' % new_file_path, {})
                 op2.execute()
                 raise ExecuteException('', 'can not change disk source in domain xml')
