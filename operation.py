@@ -7,7 +7,7 @@ from json import dumps, loads
 from sys import exit
 
 from utils.exception import *
-from utils.libvirt_util import get_volume_xml, get_disks_spec
+from utils.libvirt_util import get_volume_xml, get_disks_spec, is_vm_active
 from utils.utils import *
 from utils import logger
 
@@ -921,6 +921,9 @@ def createExternalSnapshot(params):
 def revertExternalSnapshot(params):
     try:
         if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "uraid":
+            if params.domain and is_vm_active(params.domain):
+                raise ExecuteException('', 'domain %s is still active, plz stop it first.')
+
             op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': params.pool, 'name': params.vol,
                                                        'sname': params.name}, with_result=True)
             cstor = op.execute()
@@ -936,6 +939,11 @@ def revertExternalSnapshot(params):
             op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
                             (params.format, params.backing_file, params.format, new_file_path), {})
             op1.execute()
+            # change vm disk
+            if not change_vm_os_disk_file(params.domain, disk_config['current'], new_file_path):
+                op2 = Operation('rm -f %s' % new_file_path, {})
+                op2.execute()
+                raise ExecuteException('', 'can not change disk source in domain xml')
 
             # modify json file, make os_event_handler to modify data on api server .
             with open(disk_config['dir'] + '/config.json', "r") as f:

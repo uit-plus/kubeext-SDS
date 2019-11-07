@@ -18,6 +18,10 @@ from json import loads, dumps, load, dump
 
 import grpc
 import xmltodict
+try:
+    import xml.etree.CElementTree as ET
+except:
+    import xml.etree.ElementTree as ET
 
 import cmdcall_pb2
 import cmdcall_pb2_grpc
@@ -632,8 +636,29 @@ class DiskImageHelper(object):
         set_backing_file_cmd = "qemu-img rebase -u -b %s %s" % (backing_file, file)
         runCmdRaiseException(set_backing_file_cmd)
 
+def change_vm_os_disk_file(vm, source, target):
+    runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
+    tree = ET.parse('/tmp/%s.xml' % vm)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element.get("file") == source:
+                    source_element.set("file", target)
+                    tree.write('/tmp/%s.xml' % vm)
+                    runCmd('virsh define /tmp/%s.xml' % vm)
+                    return True
+    return False
 
 
+
+print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 
 # print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
