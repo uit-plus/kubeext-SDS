@@ -1160,7 +1160,7 @@ parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=
                                help="backing_file from k8s")
 parser_revert_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                help="disk format to use")
-parser_create_ess.add_argument("--domain", metavar="[domain]", type=str,
+parser_revert_ess.add_argument("--domain", metavar="[domain]", type=str,
                                 help="domain")
 # set default func
 parser_revert_ess.set_defaults(func=revertExternalSnapshotParser)
