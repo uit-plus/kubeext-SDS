@@ -932,11 +932,12 @@ def revertExternalSnapshot(params):
 
 
             disk_config = get_disk_config(params.pool, params.vol)
+            if check_disk_in_use(disk_config['current']):
+                raise ExecuteException('', 'error: current disk in use, plz check or set real domain field.')
+
             ss_path = disk_config['dir'] + '/snapshots/' + params.name
             if ss_path is None:
                 raise ExecuteException('', 'error: can not get snapshot backing file.')
-            if check_disk_in_use(ss_path):
-                raise ExecuteException('', 'error: disk in use, plz check or set real domain field.')
 
             uuid = randomUUID().replace('-', '')
             new_file_path = os.path.dirname(params.backing_file)+'/'+uuid
