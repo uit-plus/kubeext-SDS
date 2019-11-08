@@ -635,6 +635,13 @@ class DiskImageHelper(object):
         """ Sets backing file for disk image """
         set_backing_file_cmd = "qemu-img rebase -u -b %s %s" % (backing_file, file)
         runCmdRaiseException(set_backing_file_cmd)
+        
+def check_disk_in_use(disk_path):
+    try:
+        result = runCmdWithResult('qemu-img info %s' % disk_path)
+    except ExecuteException:
+        return True
+    return False
 
 def change_vm_os_disk_file(vm, source, target):
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))

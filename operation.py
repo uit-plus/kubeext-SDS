@@ -930,10 +930,14 @@ def revertExternalSnapshot(params):
             if cstor['result']['code'] != 0:
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
+
             disk_config = get_disk_config(params.pool, params.vol)
             ss_path = disk_config['dir'] + '/snapshots/' + params.name
             if ss_path is None:
                 raise ExecuteException('', 'error: can not get snapshot backing file.')
+            if check_disk_in_use(ss_path):
+                raise ExecuteException('', 'error: disk in use, plz check or set real domain field.')
+
             uuid = randomUUID().replace('-', '')
             new_file_path = os.path.dirname(params.backing_file)+'/'+uuid
             op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
