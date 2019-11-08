@@ -662,7 +662,7 @@ class DiskImageHelper(object):
 
 def check_disk_in_use(disk_path):
     try:
-        result = runCmdWithResult('qemu-img info %s' % disk_path)
+        result = runCmdWithResult('qemu-img info --output json %s' % disk_path)
     except:
         return True
     return False
