@@ -18,6 +18,7 @@ from json import loads, dumps, load, dump
 
 import grpc
 import xmltodict
+
 try:
     import xml.etree.CElementTree as ET
 except:
@@ -62,7 +63,8 @@ def runCmdWithResult(cmd):
                         continue
                     error_msg = error_msg + str.strip(line)
                 error_msg = str.strip(error_msg)
-                raise ExecuteException('RunCmdError', 'can not parse cstor-cli output to json----'+msg+'. '+error_msg)
+                raise ExecuteException('RunCmdError',
+                                       'can not parse cstor-cli output to json----' + msg + '. ' + error_msg)
         if std_err:
             msg = ''
             for index, line in enumerate(std_err):
@@ -79,12 +81,14 @@ def runCmdWithResult(cmd):
         p.stdout.close()
         p.stderr.close()
 
+
 def runCmdAndTransferXmlToJson(cmd):
     xml_str = runCmdAndGetOutput(cmd)
     dic = xmltodict.parse(xml_str, encoding='utf-8')
     dic = dumps(dic)
     dic = dic.replace('@', '').replace('#', '')
     return loads(dic)
+
 
 def runCmdAndSplitKvToJson(cmd):
     if not cmd:
@@ -117,6 +121,7 @@ def runCmdAndSplitKvToJson(cmd):
         p.stdout.close()
         p.stderr.close()
 
+
 def runCmdAndGetOutput(cmd):
     if not cmd:
         return
@@ -148,47 +153,49 @@ def runCmdAndGetOutput(cmd):
         p.stderr.close()
 
 
-
 '''
 Run back-end command in subprocess.
 '''
+
+
 def runCmd(cmd):
     std_err = None
     if not cmd:
-#         logger.debug('No CMD to execute.')
+        #         logger.debug('No CMD to execute.')
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         std_out = p.stdout.readlines()
         std_err = p.stderr.readlines()
         if std_out:
-#             msg = ''
-#             for index,line in enumerate(std_out):
-#                 if not str.strip(line):
-#                     continue
-#                 if index == len(std_out) - 1:
-#                     msg = msg + str.strip(line) + '. '
-#                 else:
-#                     msg = msg + str.strip(line) + ', '
-#             logger.debug(str.strip(msg))
+            #             msg = ''
+            #             for index,line in enumerate(std_out):
+            #                 if not str.strip(line):
+            #                     continue
+            #                 if index == len(std_out) - 1:
+            #                     msg = msg + str.strip(line) + '. '
+            #                 else:
+            #                     msg = msg + str.strip(line) + ', '
+            #             logger.debug(str.strip(msg))
             logger.debug(std_out)
         if std_err:
-#             msg = ''
-#             for index, line in enumerate(std_err):
-#                 if not str.strip(line):
-#                     continue
-#                 if index == len(std_err) - 1:
-#                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-#                 else:
-#                     msg = msg + str.strip(line) + ', '
+            #             msg = ''
+            #             for index, line in enumerate(std_err):
+            #                 if not str.strip(line):
+            #                     continue
+            #                 if index == len(std_err) - 1:
+            #                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
+            #                 else:
+            #                     msg = msg + str.strip(line) + ', '
             logger.error(std_err)
-#             raise ExecuteException('VirtctlError', str.strip(msg))
+            #             raise ExecuteException('VirtctlError', str.strip(msg))
             raise ExecuteException('VirtctlError', std_err)
-#         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
+        #         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
         return
     finally:
         p.stdout.close()
         p.stderr.close()
+
 
 def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
     logger.debug(cmd)
@@ -211,11 +218,13 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
         p.stdout.close()
         p.stderr.close()
 
+
 host = get_docker0_IP()
 port = '19999'
 
 channel = grpc.insecure_channel("{0}:{1}".format(host, port))
 client = cmdcall_pb2_grpc.CmdCallStub(channel)
+
 
 def rpcCall(cmd):
     jsondict = None
@@ -248,6 +257,7 @@ def rpcCall(cmd):
 
     if jsondict['result']['code'] != 0:
         raise ExecuteException('RunCmdError', jsondict['result']['msg'])
+
 
 def rpcCallWithResult(cmd):
     logger.debug(cmd)
@@ -338,6 +348,7 @@ def rpcCallAndTransferKvToJson(cmd):
         logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
+
 def randomUUID():
     u = [random.randint(0, 255) for ignore in range(0, 16)]
     u[6] = (u[6] & 0x0F) | (4 << 4)
@@ -345,11 +356,13 @@ def randomUUID():
     return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
                      "%02x" * 6]) % tuple(u)
 
+
 def randomUUIDFromName(name):
     name = str(name)
     namespace = uuid.NAMESPACE_URL
 
     return str(uuid.uuid5(namespace, name))
+
 
 class CDaemon:
     '''
@@ -516,7 +529,9 @@ def singleton(pid_filename):
                     return
             os.remove(pid_filename)
             return ret
+
         return decorated
+
     return decorator
 
 
@@ -524,6 +539,7 @@ def get_IP():
     myname = socket.getfqdn(socket.gethostname())
     myaddr = socket.gethostbyname(myname)
     return myaddr
+
 
 def get_pool_info(pool_):
     result = rpcCallAndTransferKvToJson('virsh pool-info ' + pool_)
@@ -554,6 +570,7 @@ def get_disk_config(pool, vol):
         return config
     raise ExecuteException('', 'can not get disk config by current')
 
+
 def get_disk_snapshots(ss_path):
     ss_chain = get_sn_chain(ss_path)
     snapshots = []
@@ -561,6 +578,7 @@ def get_disk_snapshots(ss_path):
         if disk_info['filename'] != ss_path:
             snapshots.append(disk_info['filename'])
     return snapshots
+
 
 def get_disk_info(ss_path):
     try:
@@ -574,9 +592,10 @@ def get_disk_info(ss_path):
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
+
 def get_sn_chain(ss_path):
     try:
-        result = runCmdWithResult('qemu-img info -U --backing-chain --output json '+ss_path)
+        result = runCmdWithResult('qemu-img info -U --backing-chain --output json ' + ss_path)
     except:
         try:
             result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
@@ -584,6 +603,8 @@ def get_sn_chain(ss_path):
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
     return result
+
+
 def get_sn_chain_path(ss_path):
     paths = set()
     chain = get_sn_chain(ss_path)
@@ -591,6 +612,7 @@ def get_sn_chain_path(ss_path):
         if 'backing-filename' in info.keys():
             paths.add(info['backing-filename'])
     return list(paths)
+
 
 def get_all_snapshot_to_delete(ss_path, current):
     delete_sn = []
@@ -601,6 +623,7 @@ def get_all_snapshot_to_delete(ss_path, current):
             delete_sn.extend(get_all_snapshot_to_delete(info['filename'], current))
             break
     return delete_sn
+
 
 class DiskImageHelper(object):
     @staticmethod
@@ -635,13 +658,15 @@ class DiskImageHelper(object):
         """ Sets backing file for disk image """
         set_backing_file_cmd = "qemu-img rebase -u -b %s %s" % (backing_file, file)
         runCmdRaiseException(set_backing_file_cmd)
-        
+
+
 def check_disk_in_use(disk_path):
     try:
         result = runCmdWithResult('qemu-img info %s' % disk_path)
-    except ExecuteException:
+    except:
         return True
     return False
+
 
 def change_vm_os_disk_file(vm, source, target):
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
@@ -662,8 +687,6 @@ def change_vm_os_disk_file(vm, source, target):
                     runCmd('virsh define /tmp/%s.xml' % vm)
                     return True
     return False
-
-
 
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
