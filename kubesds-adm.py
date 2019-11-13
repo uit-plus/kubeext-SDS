@@ -696,7 +696,7 @@ def createExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
         if not os.path.isfile(config['current']):
-            print {"result": {"code": 100, "msg": "can not find vol"}, "data": {}}
+            print {"result": {"code": 100, "msg": "can not find vol current %s." % config['current']}, "data": {}}
             exit(3)
         if os.path.isfile(disk_dir + '/snapshots/' + args.name):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}

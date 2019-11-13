@@ -842,6 +842,9 @@ def createExternalSnapshot(params):
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
             if params.domain is None:
                 disk_config = get_disk_config(params.pool, params.vol)
+                if check_disk_in_use(disk_config['current']):
+                    raise ExecuteException('', 'disk in using, current file %s is using by another process, '
+                                               'is there a vm using the current file, plz check.' % disk_config['current'])
                 ss_dir = disk_config['dir'] + '/snapshots'
                 if not os.path.exists(ss_dir):
                     os.makedirs(ss_dir)
@@ -868,6 +871,7 @@ def createExternalSnapshot(params):
                 specs = get_disks_spec(params.domain)
                 disk_config = get_disk_config(params.pool, params.vol)
                 if disk_config['current'] not in specs.keys():
+                    logger.debug('disk %s current is %s.' % (params.vol, disk_config['current']))
                     raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
 
                 vm_disk = specs[disk_config['current']]
