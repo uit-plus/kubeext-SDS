@@ -77,7 +77,8 @@ def runCmdWithResult(cmd):
             logger.debug(cmd)
             logger.debug(msg)
             logger.debug(traceback.format_exc())
-            raise ExecuteException('RunCmdError', msg)
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
     finally:
         p.stdout.close()
         p.stderr.close()
@@ -118,7 +119,8 @@ def runCmdAndSplitKvToJson(cmd):
                     error_msg = error_msg + str.strip(line)
             error_msg = str.strip(error_msg)
             logger.debug(error_msg)
-            raise ExecuteException('RunCmdError', error_msg)
+            if error_msg.strip() != '':
+                raise ExecuteException('RunCmdError', error_msg)
     finally:
         p.stdout.close()
         p.stderr.close()
@@ -148,7 +150,8 @@ def runCmdAndGetOutput(cmd):
             logger.debug(cmd)
             logger.debug(msg)
             logger.debug(traceback.format_exc())
-            raise ExecuteException('RunCmdError', msg)
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
     except Exception:
         logger.debug(traceback.format_exc())
     finally:
