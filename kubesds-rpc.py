@@ -12,7 +12,7 @@ import grpc
 from json import dumps
 from concurrent import futures
 
-from netutils import get_docker0_IP
+from netutils import get_host_ip
 from utils.exception import ExecuteException
 
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
@@ -146,9 +146,9 @@ def run_server():
     # 注册本地服务,方法CmdCallServicer只有这个是变的
     cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
     # 监听端口
-    print get_docker0_IP() + ':' + DEFAULT_PORT
-    logger.debug(get_docker0_IP() + ':' + DEFAULT_PORT)
-    server.add_insecure_port(get_docker0_IP() + ':' + DEFAULT_PORT)
+    print get_host_ip() + ':' + DEFAULT_PORT
+    logger.debug(get_host_ip() + ':' + DEFAULT_PORT)
+    server.add_insecure_port(get_host_ip() + ':' + DEFAULT_PORT)
     # 开始接收请求进行服务
     server.start()
     return server
@@ -166,10 +166,10 @@ def keep_alive():
     while True:
         output = None
         try:
-            output = runCmdAndGetOutput('netstat -anp|grep '+get_docker0_IP()+':19999')
+            output = runCmdAndGetOutput('netstat -anp|grep %s:%s' % (get_host_ip(), DEFAULT_PORT))
         except ExecuteException:
             logger.debug(traceback.format_exc())
-        if output is not None and output.find(get_docker0_IP()+':19999') >= 0:
+        if output is not None and output.find('%s:%s' % (get_host_ip(), DEFAULT_PORT)) >= 0:
             # logger.debug("port 19999 is alive")
             pass
         else:
@@ -180,7 +180,7 @@ def keep_alive():
                 logger.debug(traceback.format_exc())
             # restart server
             server = run_server()
-            logger.debug("restart port 19999...")
+            logger.debug("restart port %s..." % DEFAULT_PORT)
         time.sleep(1)
 
 class ClientDaemon(CDaemon):

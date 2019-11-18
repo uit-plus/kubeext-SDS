@@ -28,13 +28,14 @@ import cmdcall_pb2
 import cmdcall_pb2_grpc
 import logger
 from exception import ExecuteException
-from netutils import get_docker0_IP
+from netutils import get_docker0_IP, get_host_ip
 from libvirt_util import is_pool_started, _get_pool, is_pool_defined, _get_defined_pool
 
 LOG = '/var/log/kubesds.log'
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
+DEFAULT_PORT = '19999'
 
 def runCmdWithResult(cmd):
     if not cmd:
@@ -224,18 +225,12 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
         p.stdout.close()
         p.stderr.close()
 
-
-host = get_docker0_IP()
-port = '19999'
-
-channel = grpc.insecure_channel("{0}:{1}".format(host, port))
-client = cmdcall_pb2_grpc.CmdCallStub(channel)
-
-
 def rpcCall(cmd):
-    jsondict = None
     logger.debug(cmd)
     try:
+        host = get_host_ip()
+        channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
+        client = cmdcall_pb2_grpc.CmdCallStub(channel)
         response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
         logger.debug(response.json)
         jsondict = loads(str(response.json))
@@ -268,8 +263,12 @@ def rpcCall(cmd):
 def rpcCallWithResult(cmd):
     logger.debug(cmd)
     try:
+        host = get_host_ip()
+        channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
+        client = cmdcall_pb2_grpc.CmdCallStub(channel)
         # ideally, you should have try catch block here too
         response = client.CallWithResult(cmdcall_pb2.CallRequest(cmd=cmd))
+        client = cmdcall_pb2_grpc.CmdCallStub(channel)
         result = loads(str(response.json))
         return result
     except grpc.RpcError, e:
@@ -298,6 +297,9 @@ def rpcCallWithResult(cmd):
 def rpcCallAndTransferXmlToJson(cmd):
     logger.debug(cmd)
     try:
+        host = get_host_ip()
+        channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
+        client = cmdcall_pb2_grpc.CmdCallStub(channel)
         # ideally, you should have try catch block here too
         response = client.CallAndTransferXmlToJson(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
@@ -328,6 +330,9 @@ def rpcCallAndTransferXmlToJson(cmd):
 def rpcCallAndTransferKvToJson(cmd):
     logger.debug(cmd)
     try:
+        host = get_host_ip()
+        channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
+        client = cmdcall_pb2_grpc.CmdCallStub(channel)
         # ideally, you should have try catch block here too
         response = client.CallAndSplitKVToJson(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
