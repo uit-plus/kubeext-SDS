@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<storage>
+    <pool>
+        <create>
+            <args>
+                <arg name="" type="" require=""></arg>
+                <arg name="" type="" require=""></arg>
+                <arg name="" type="" require=""></arg>
+                <arg name="" type="" require=""></arg>
+            </args>
+
+        </create>
+    </pool>
+    <volume>
+
+    </volume>
+    <snapshot>
+
+    </snapshot>
+</storage>

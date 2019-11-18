@@ -1352,12 +1352,12 @@ try:
 #     args.func(args)
 
     # args = parser.parse_args(
-    #     ["createDisk", "--type", "dir", "--pool", "pooluittest", "--vol", "datadisk", "--capacity", "10737418240", "--format", "qcow2"])
+    #     ["createDisk", "--type", "dir", "--pool", "pooluitdir", "--vol", "vm006", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
     #
-    # args = parser.parse_args(
-    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooluittest", "--format", "qcow2", "--name", "datadisk.2", "--vol", "datadisk", "--domain", "vm010"])
-    # args.func(args)
+    args = parser.parse_args(
+        ["createExternalSnapshot", "--type", "dir", "--pool", "pooluitdir", "--format", "qcow2", "--name", "vm006.2", "--vol", "vm006"])
+    args.func(args)
     # #
     # args = parser.parse_args(
     #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
@@ -1368,11 +1368,11 @@ try:
     #      "--vol", "disktest"])
     # args.func(args)
     #
-    args = parser.parse_args(
-        ["revertExternalSnapshot", "--type", "dir", "--pool", "pooluittest", "--name", "datadisk.1",
-         "--vol", "datadisk", "--format", "qcow2", "--backing_file", "/uit/pooluittest/datadisk/datadisk", "--domain", "vm010"])
-    args.func(args)
-    #
+    # args = parser.parse_args(
+    #     ["revertExternalSnapshot", "--type", "dir", "--pool", "pooluittest", "--name", "datadisk.1",
+    #      "--vol", "datadisk", "--format", "qcow2", "--backing_file", "/uit/pooluittest/datadisk/datadisk", "--domain", "vm010"])
+    # args.func(args)
+    # #
     # args = parser.parse_args(
     #     ["deleteExternalSnapshot", "--type", "dir", "--pool", "pooluittest", "--name", "pooluittest.1",
     #      "--vol", "pooluittest", "--domain", "vm010", "--backing_file", "77525c7142144967831099b7626a0cb5"])

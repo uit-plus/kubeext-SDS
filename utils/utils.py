@@ -555,7 +555,6 @@ def get_pool_info(pool_):
     # result['capacity'] = int(1024 * 1024 * 1024 * float(result['capacity']))
     if 'allocation' in result.keys():
         del result['allocation']
-        del result['available']
     if 'available' in result.keys():
         del result['available']
 
