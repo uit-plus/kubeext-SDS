@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<storage>
+    <pool class='Pool'>
+        <check name="is_cstor_pool_exist">
+            <arg type="str" require="True">pool</arg>
+            <error description="cstor pool has exist.">True</error>
+            <error description="cstor pool has not exist.">False</error>
+            <operation return="False">create</operation>
+            <operation return="True">delete</operation>
+            <operation return="True">start</operation>
+            <operation return="True">autostart</operation>
+            <operation return="True">stop</operation>
+            <operation return="True">unregister</operation>
+        </check>
+        <check name="is_virsh_pool_exist">
+            <arg type="str" require="True">pool</arg>
+            <error description="virsh pool has exist.">True</error>
+            <error description="virsh pool has not exist.">False</error>
+            <operation return="False">create</operation>
+            <operation return="True">delete</operation>
+            <operation return="True">start</operation>
+            <operation return="True">autostart</operation>
+            <operation return="True">stop</operation>
+            <operation return="True">unregister</operation>
+        </check>
+        <create>
+            <arg type="str" support="dir|uraid|nfs|glusterfs|uus" require="True">pool</arg>
+            <arg type="str" support="dir|uraid|nfs|glusterfs|uus" require="True">url</arg>
+            <arg type="str" support="dir|uraid|nfs|glusterfs" require="True" range="vmd|vmdi|iso">content</arg>
+            <arg type="str" support="nfs" require="False">opt</arg>
+            <arg type="str" support="dir|uraid|nfs|glusterfs" require="False">autostart</arg>
+            <kinds>
+                <kind type="dir">
+                    <function>createLocalfsPool</function>
+                    <function>createVirshPool</function>
+                </kind>
+                <kind type="uraid">
+                    <function>createUraidPool</function>
+                    <function>createVirshPool</function>
+                </kind>
+                <kind type="nfs">
+                    <function>createNfsPool</function>
+                    <function>createVirshPool</function>
+                </kind>
+                <kind type="glusterfs">
+                    <function>createGlusterfsPool</function>
+                    <function>createVirshPool</function>
+                </kind>
+                <kind type="uus">
+                    <function>createUusPool</function>
+                    <function>createVirshPool</function>
+                </kind>
+            </kinds>
+        </create>
+        <delete>
+            <arg type="str" support="dir|uraid|nfs|glusterfs|uus" require="True">pool</arg>
+            <kinds>
+                <kind type="dir">
+                    <function>deleteLocalfsPool</function>
+                    <function>deleteVirshPool</function>
+                </kind>
+                <kind type="uraid">
+                    <function>deleteUraidPool</function>
+                    <function>deleteVirshPool</function>
+                </kind>
+                <kind type="nfs">
+                    <function>deleteNfsPool</function>
+                    <function>deleteVirshPool</function>
+                </kind>
+                <kind type="glusterfs">
+                    <function>deleteGlusterfsPool</function>
+                    <function>deleteVirshPool</function>
+                </kind>
+                <kind type="uus">
+                    <function>deleteUusPool</function>
+                </kind>
+            </kinds>
+        </delete>
+        <start>
+            <arg type="str" support="dir|uraid|nfs|glusterfs" require="True">pool</arg>
+            <kinds>
+                <kind type="dir">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="uraid">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="nfs">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="glusterfs">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="uus">
+                    <function>startVirshPool</function>
+                </kind>
+            </kinds>
+        </start>
+        <autostart>
+            <arg type="str" support="dir|uraid|nfs|glusterfs" require="True">pool</arg>
+            <arg type="bool" support="dir|uraid|nfs|glusterfs" require="True">disable</arg>
+            <kinds>
+                <kind type="dir">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="uraid">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="nfs">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="glusterfs">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="uus">
+                    <function>startVirshPool</function>
+                </kind>
+            </kinds>
+        </autostart>
+        <undefine>
+            <arg type="str" support="dir|uraid|nfs|glusterfs" require="True">pool</arg>
+            <kinds>
+                <kind type="dir">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="uraid">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="nfs">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="glusterfs">
+                    <function>startVirshPool</function>
+                </kind>
+                <kind type="uus">
+                    <function>startVirshPool</function>
+                </kind>
+            </kinds>
+        </undefine>
+    </pool>
+    <volume>
+
+    </volume>
+    <snapshot>
+
+    </snapshot>
+</storage>
