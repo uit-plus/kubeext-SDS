@@ -9,7 +9,7 @@ LOG = "/var/log/kubesds.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
-class Executor(object):
+class Operation(object):
     def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False):
         if cmd is None or cmd == "":
             raise Exception("plz give me right cmd.")
@@ -41,13 +41,6 @@ class Executor(object):
             return rpcCallAndTransferKvToJson(cmd)
         else:
             return rpcCall(cmd)
-
-class Operation(object):
-    def do(self):
-        pass
-
-    def cancel(self):
-        pass
 
 
 class Pool(object):
@@ -81,7 +74,7 @@ class Pool(object):
         return True
 
     def cstor_info(self):
-        op = Executor("cstor-cli pool-show", {"poolname": self.name}, with_result=True)
+        op = Operation("cstor-cli pool-show", {"poolname": self.name}, with_result=True)
         result = op.execute()
         if result["result"]["code"] != 0:
             raise ExecuteException('Cstor Error', 'cant get cstor pool info')
@@ -122,10 +115,20 @@ class Pool(object):
         self.check_args()
         self.check_precondition()
 
-    def create_cstor_pool_operation(self):
-        return Executor('', {}, with_result=True)
     def operation_chain_executor(self):
         self.check()
+
+    def create_localfs_pool(self):
+        op = Operation('cstor-cli pooladd-localfs ', {'poolname': self.args.pool,
+                                                      'url': self.args.url}, with_result=True)
+        info = op.execute()
+
+        self.mount_path = info['data']['mountpath']
+        self.path = '%s/%s' % (self.mount_path, self.args.pool)
+        if not os.path.isdir(self.path):
+            raise ExecuteException('', 'cant not get pooladd-localfs mount path')
+
+
 
 
 class Volume(object):
