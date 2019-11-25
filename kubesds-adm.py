@@ -872,7 +872,7 @@ parser_create_pool.add_argument("--path", metavar="[PATH]", type=str,
                                 help="nfs or glusterfs mount path")
 
 # vdiskfs only
-parser_create_pool.add_argument("--force", metavar="[FORCE]", type=bool, nargs='?', const=False,
+parser_create_pool.add_argument("--force", metavar="[FORCE]", type=str,
                                 help="vdiskfs only, force add vdiskfs pool do not check mount")
 
 
