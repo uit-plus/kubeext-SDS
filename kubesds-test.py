@@ -235,7 +235,7 @@ def createPoolParser(args):
         print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
         exit(9)
 
-    if args.type == "nfs" or args.type == "glusterfs" or args.type == "uus":
+    if args.type == "nfs" or args.type == "uus":
         if args.opt is None:
             print {"result": {"code": 100, "msg": "less arg, opt must be set"}, "data": {}}
             exit(9)
