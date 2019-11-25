@@ -86,8 +86,12 @@ def createPool(params):
                     kv["path"] = params.path
                 op = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
             elif params.type == "glusterfs":
-                kv = {"poolname": params.pool, "url": params.url, "opt": params.opt}
+                kv = {"poolname": params.pool, "url": params.url}
                 op = Operation("cstor-cli pooladd-glusterfs", kv, with_result=True)
+                if params.path:
+                    kv["path"] = params.path
+                if params.opt:
+                    kv["opt"] = params.opt
             elif params.type == "vdiskfs":
                 kv = {"poolname": params.pool, "url": params.url}
                 if params.force:
