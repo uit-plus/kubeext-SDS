@@ -1231,7 +1231,7 @@ dir11 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "
 dir12 = parser.parse_args(["stopPool", "--type", "dir", "--pool", "pooldir"])
 dir13 = parser.parse_args(["deletePool", "--type", "dir", "--pool", "pooldir"])
 
-uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "192.168.3.100:p1", "--opt", "dev,username=admin,password=admin,port=7000"])
+uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "192.168.3.100:p1", "--opt", "iscsi,username=admin,password=admin,port=7000"])
 uus2 = parser.parse_args(["createDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "1073741824"])
 # uus3 = parser.parse_args(["resizeDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "2147483648"])
 # uus4 = parser.parse_args(["cloneDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--newname", "diskdevclone"])
@@ -1295,12 +1295,12 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(dir12)
 # test_args.append(dir13)
 
-# test_args.append(uus1)
-# test_args.append(uus2)
-# # test_args.append(uus3)
-# # test_args.append(uus4)
-# test_args.append(uus5)
-# test_args.append(uus6)
+test_args.append(uus1)
+test_args.append(uus2)
+# test_args.append(uus3)
+# test_args.append(uus4)
+test_args.append(uus5)
+test_args.append(uus6)
 #
 # test_args.append(vdiskfs1)
 # test_args.append(vdiskfs2)
