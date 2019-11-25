@@ -23,17 +23,17 @@ def get_cstor_pool_info(pool):
 def check_pool_type(pool, type):
     poolInfo = get_cstor_pool_info(pool)
     if type == "dir":
-        if poolInfo['result']['code'] == 0 and poolInfo['data']['pooltype'] != 'localfs':
+        if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
             print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
             exit(3)
     else:
         if poolInfo['result']['code'] == 0:  # is cstor pool, and check pool type
             # check pool type, if pool type not match, stop delete pool
-            if 'pooltype' not in poolInfo['data'].keys():
-                print {"result": {"code": 221, "msg": "can not get pool pooltype, cstor-cli cmd bug"}, "data": {}}
+            if 'proto' not in poolInfo['data'].keys():
+                print {"result": {"code": 221, "msg": "can not get pool proto, cstor-cli cmd bug"}, "data": {}}
                 exit(3)
 
-            if poolInfo['data']['pooltype'] != type:
+            if poolInfo['data']['proto'] != type:
                 print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
                 exit(3)
         else:  # not is cstor pool, exit
@@ -1281,19 +1281,19 @@ gfs11 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolg
 gfs12 = parser.parse_args(["stopPool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 
-# test_args.append(dir1)
-# test_args.append(dir2)
-# test_args.append(dir3)
-# test_args.append(dir4)
-# test_args.append(dir5)
-# test_args.append(dir6)
-# test_args.append(dir7)
-# test_args.append(dir8)
-# test_args.append(dir9)
-# test_args.append(dir10)
-# test_args.append(dir11)
-# test_args.append(dir12)
-# test_args.append(dir13)
+test_args.append(dir1)
+test_args.append(dir2)
+test_args.append(dir3)
+test_args.append(dir4)
+test_args.append(dir5)
+test_args.append(dir6)
+test_args.append(dir7)
+test_args.append(dir8)
+test_args.append(dir9)
+test_args.append(dir10)
+test_args.append(dir11)
+test_args.append(dir12)
+test_args.append(dir13)
 
 # test_args.append(uus1)
 # test_args.append(uus2)
@@ -1302,19 +1302,19 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(uus5)
 # test_args.append(uus6)
 #
-test_args.append(vdiskfs1)
-test_args.append(vdiskfs2)
-test_args.append(vdiskfs3)
-test_args.append(vdiskfs4)
-test_args.append(vdiskfs5)
-test_args.append(vdiskfs6)
-test_args.append(vdiskfs7)
-test_args.append(vdiskfs8)
-test_args.append(vdiskfs9)
-test_args.append(vdiskfs10)
-test_args.append(vdiskfs11)
-test_args.append(vdiskfs12)
-test_args.append(vdiskfs13)
+# test_args.append(vdiskfs1)
+# test_args.append(vdiskfs2)
+# test_args.append(vdiskfs3)
+# test_args.append(vdiskfs4)
+# test_args.append(vdiskfs5)
+# test_args.append(vdiskfs6)
+# test_args.append(vdiskfs7)
+# test_args.append(vdiskfs8)
+# test_args.append(vdiskfs9)
+# test_args.append(vdiskfs10)
+# test_args.append(vdiskfs11)
+# test_args.append(vdiskfs12)
+# test_args.append(vdiskfs13)
 #
 # test_args.append(nfs1)
 # test_args.append(nfs2)
