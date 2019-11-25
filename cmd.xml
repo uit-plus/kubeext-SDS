@@ -49,7 +49,7 @@
                 <function>deleteVirshPool</function>
             </kind>
             <kind type="uus">
-                    <function>deleteUusPool</function>
+                <function>deleteUusPool</function>
             </kind>
         </operation>
         <operation name="start">

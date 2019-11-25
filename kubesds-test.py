@@ -225,7 +225,7 @@ def createPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -235,7 +235,12 @@ def createPoolParser(args):
         print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
         exit(9)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "nfs" or args.type == "glusterfs" or args.type == "uus":
+        if args.opt is None:
+            print {"result": {"code": 100, "msg": "less arg, opt must be set"}, "data": {}}
+            exit(9)
+
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         # if args.target is None:
         #     print {"result": {"code": 100, "msg": "less arg, target must be set"}, "data": {}}
         #     exit(9)
@@ -247,7 +252,7 @@ def createPoolParser(args):
             exit(9)
         # check cstor pool
         check_cstor_pool_exist(args.pool)
-        # check virsh pool, only for nfs, glusterfs and uraid
+        # check virsh pool, only for nfs, glusterfs and vdiskfs
         check_virsh_pool_exist(args.pool)
 
     elif args.type == "uus":
@@ -261,14 +266,14 @@ def deletePoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         # check pool type, if pool type not match, stop delete pool
         check_pool_type(args.pool, args.type)
 
@@ -286,21 +291,21 @@ def startPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
         check_pool_type(args.pool, args.type)
 
     elif args.type == "uus":
-        print {"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}}
+        print {"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}}
         exit(3)
 
     startPool(args)
@@ -310,21 +315,21 @@ def autoStartPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
         check_pool_type(args.pool, args.type)
 
     elif args.type == "uus":
-        print {"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}}
+        print {"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}}
         exit(3)
 
     autoStartPool(args)
@@ -334,21 +339,21 @@ def unregisterPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
         check_pool_type(args.pool, args.type)
 
     elif args.type == "uus":
-        print {"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}}
+        print {"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}}
         exit(3)
 
     unregisterPool(args)
@@ -358,21 +363,21 @@ def stopPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
         check_pool_type(args.pool, args.type)
 
     elif args.type == "uus":
-        print {"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}}
+        print {"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}}
         exit(3)
 
     stopPool(args)
@@ -382,14 +387,14 @@ def showPoolParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
         print {"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}}
         exit(3)
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
-        # check virsh pool, only for dir, uraid, nfs and glusterfs
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
+        # check virsh pool, only for dir, vdiskfs, nfs and glusterfs
         check_virsh_pool_not_exist(args.pool)
         # check cstor pool
         check_cstor_pool_not_exist(args.pool)
@@ -404,7 +409,7 @@ def createDiskParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -420,7 +425,7 @@ def createDiskParser(args):
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(4)
@@ -441,7 +446,7 @@ def deleteDiskParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -451,7 +456,7 @@ def deleteDiskParser(args):
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
@@ -467,7 +472,7 @@ def resizeDiskParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         print
         exit(2)
@@ -485,7 +490,7 @@ def resizeDiskParser(args):
     if args.type == "nfs" or args.type == "glusterfs":
         check_cstor_pool_not_exist(args.pool)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
@@ -502,7 +507,7 @@ def cloneDiskParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -518,7 +523,7 @@ def cloneDiskParser(args):
         print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
@@ -536,7 +541,7 @@ def showDiskParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -546,7 +551,7 @@ def showDiskParser(args):
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
@@ -562,7 +567,7 @@ def showDiskSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -575,7 +580,7 @@ def showDiskSnapshotParser(args):
         print {"result": {"code": 100, "msg": "less arg, name of snapshot must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
@@ -591,7 +596,7 @@ def createSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -616,7 +621,7 @@ def createSnapshotParser(args):
             exit(3)
         check_virsh_disk_not_exist(args.pool, args.snapshot)
         check_virsh_disk_exist(args.pool, args.backing_vol)
-    elif args.type == "uus" or args.type == "uraid":
+    elif args.type == "uus" or args.type == "vdiskfs":
         # check cstor disk
         check_cstor_snapshot_exist(args.pool, args.backing_vol, args.snapshot)
 
@@ -711,7 +716,7 @@ def createExternalSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -724,7 +729,7 @@ def createExternalSnapshotParser(args):
         print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
@@ -743,7 +748,7 @@ def createExternalSnapshotParser(args):
             print {"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}}
             exit(3)
     elif args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or uraid"}, "data": {}})
+        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
         exit(1)
 
     createExternalSnapshot(args)
@@ -753,7 +758,7 @@ def revertExternalSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -769,7 +774,7 @@ def revertExternalSnapshotParser(args):
         print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         if args.format is None:
             print {"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}}
             exit(3)
@@ -804,7 +809,7 @@ def deleteExternalSnapshotParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.pool is None:
@@ -820,7 +825,7 @@ def deleteExternalSnapshotParser(args):
         print {"result": {"code": 100, "msg": "less arg, backing_file must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
@@ -842,14 +847,14 @@ def updateDiskCurrentParser(args):
     if args.type is None:
         print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
         exit(1)
-    if args.type not in ["dir", "uus", "nfs", "glusterfs", "uraid"]:
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
         print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
         exit(2)
     if args.current is None:
         print {"result": {"code": 100, "msg": "less arg, current must be set"}, "data": {}}
         exit(3)
 
-    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "uraid":
+    if args.type == "dir" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
         for current in args.current:
             if not os.path.isfile(current):
                 print {"result": {"code": 100, "msg": "current" + current + " file not exist"}, "data": {}}
@@ -883,7 +888,7 @@ subparsers = parser.add_subparsers(help="sub-command help")
 
 # -------------------- add createPool cmd ----------------------------------
 parser_create_pool = subparsers.add_parser("createPool", help="createPool help")
-parser_create_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_create_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 
 parser_create_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -904,16 +909,24 @@ parser_create_pool.add_argument("--autostart", metavar="[AUTOSTART]", type=bool,
 parser_create_pool.add_argument("--content", metavar="[CONTENT]", type=str,
                                 help="pool content")
 
-# nfs only
+# uus and nfs only
 parser_create_pool.add_argument("--opt", metavar="[OPT]", type=str,
-                                help="nfs mount options, only for nfs")
+                                help="uus require or nfs mount options, only for uus and nfs")
+
+# nfs and glusterfs only
+parser_create_pool.add_argument("--path", metavar="[PATH]", type=str,
+                                help="nfs or glusterfs mount path")
+
+# vdiskfs only
+parser_create_pool.add_argument("--force", metavar="[FORCE]", type=str,
+                                help="vdiskfs only, force add vdiskfs pool do not check mount")
 
 # set default func
 parser_create_pool.set_defaults(func=createPoolParser)
 
 # -------------------- add deletePool cmd ----------------------------------
 parser_delete_pool = subparsers.add_parser("deletePool", help="deletePool help")
-parser_delete_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_delete_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 
 parser_delete_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -923,7 +936,7 @@ parser_delete_pool.set_defaults(func=deletePoolParser)
 
 # -------------------- add startPool cmd ----------------------------------
 parser_start_pool = subparsers.add_parser("startPool", help="startPool help")
-parser_start_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_start_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                help="storage pool type to use")
 
 parser_start_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -933,7 +946,7 @@ parser_start_pool.set_defaults(func=startPoolParser)
 
 # -------------------- add autoStartPool cmd ----------------------------------
 parser_autostart_pool = subparsers.add_parser("autoStartPool", help="autoStartPool help")
-parser_autostart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_autostart_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                    help="storage pool type to use")
 
 parser_autostart_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -946,7 +959,7 @@ parser_autostart_pool.set_defaults(func=autoStartPoolParser)
 
 # -------------------- add unregisterPool cmd ----------------------------------
 parser_unregister_pool = subparsers.add_parser("unregisterPool", help="unregisterPool help")
-parser_unregister_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_unregister_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                     help="storage pool type to use")
 
 parser_unregister_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -956,7 +969,7 @@ parser_unregister_pool.set_defaults(func=unregisterPoolParser)
 
 # -------------------- add stopPool cmd ----------------------------------
 parser_stop_pool = subparsers.add_parser("stopPool", help="stopPool help")
-parser_stop_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_stop_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                               help="storage pool type to use")
 
 parser_stop_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -966,7 +979,7 @@ parser_stop_pool.set_defaults(func=stopPoolParser)
 
 # -------------------- add showPool cmd ----------------------------------
 parser_show_pool = subparsers.add_parser("showPool", help="showPool help")
-parser_show_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_show_pool.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                               help="storage pool type to use")
 
 parser_show_pool.add_argument("--pool", metavar="[POOL]", type=str,
@@ -976,7 +989,7 @@ parser_show_pool.set_defaults(func=showPoolParser)
 
 # -------------------- add createDisk cmd ----------------------------------
 parser_create_disk = subparsers.add_parser("createDisk", help="createDisk help")
-parser_create_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_create_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                 help="disk type to use")
 parser_create_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1000,7 +1013,7 @@ parser_create_disk.set_defaults(func=createDiskParser)
 
 # -------------------- add deleteDisk cmd ----------------------------------
 parser_delete_disk = subparsers.add_parser("deleteDisk", help="deleteDisk help")
-parser_delete_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_delete_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 parser_delete_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1011,7 +1024,7 @@ parser_delete_disk.set_defaults(func=deleteDiskParser)
 
 # -------------------- add resizeDisk cmd ----------------------------------
 parser_resize_disk = subparsers.add_parser("resizeDisk", help="resizeDisk help")
-parser_resize_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_resize_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 parser_resize_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1026,7 +1039,7 @@ parser_resize_disk.set_defaults(func=resizeDiskParser)
 
 # -------------------- add cloneDisk cmd ----------------------------------
 parser_clone_disk = subparsers.add_parser("cloneDisk", help="cloneDisk help")
-parser_clone_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_clone_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                help="storage pool type to use")
 parser_clone_disk.add_argument("--pool", metavar="[POOL]", type=str,
                                help="storage pool to use")
@@ -1041,7 +1054,7 @@ parser_clone_disk.set_defaults(func=cloneDiskParser)
 
 # -------------------- add showDisk cmd ----------------------------------
 parser_show_disk = subparsers.add_parser("showDisk", help="showDisk help")
-parser_show_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_show_disk.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                               help="storage pool type to use")
 parser_show_disk.add_argument("--pool", metavar="[POOL]", type=str,
                               help="storage pool to use")
@@ -1052,7 +1065,7 @@ parser_show_disk.set_defaults(func=showDiskParser)
 
 # -------------------- add showDiskSnapshot cmd ----------------------------------
 parser_show_disk_snapshot = subparsers.add_parser("showDiskSnapshot", help="showDiskSnapshot help")
-parser_show_disk_snapshot.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_show_disk_snapshot.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                        help="storage pool type to use")
 parser_show_disk_snapshot.add_argument("--pool", metavar="[POOL]", type=str,
                                        help="storage pool to use")
@@ -1065,7 +1078,7 @@ parser_show_disk_snapshot.set_defaults(func=showDiskSnapshotParser)
 
 # -------------------- add createSnapshot cmd ----------------------------------
 parser_create_ss = subparsers.add_parser("createSnapshot", help="createSnapshot help")
-parser_create_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_create_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                               help="storage pool type to use")
 parser_create_ss.add_argument("--pool", metavar="[POOL]", type=str,
                               help="storage pool to use")
@@ -1086,7 +1099,7 @@ parser_create_ss.set_defaults(func=createSnapshotParser)
 
 # -------------------- add deleteSnapshot cmd ----------------------------------
 parser_delete_ss = subparsers.add_parser("deleteSnapshot", help="deleteSnapshot help")
-parser_delete_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_delete_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                               help="storage pool type to use")
 parser_delete_ss.add_argument("--pool", metavar="[POOL]", type=str,
                               help="storage pool to use")
@@ -1101,7 +1114,7 @@ parser_delete_ss.set_defaults(func=deleteSnapshotParser)
 
 # -------------------- add recoverySnapshot cmd ----------------------------------
 parser_revert_ss = subparsers.add_parser("recoverySnapshot", help="recoverySnapshot help")
-parser_revert_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_revert_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                               help="storage pool type to use")
 parser_revert_ss.add_argument("--pool", metavar="[POOL]", type=str,
                               help="storage pool to use")
@@ -1116,7 +1129,7 @@ parser_revert_ss.set_defaults(func=revertSnapshotParser)
 
 # -------------------- add showSnapshot cmd ----------------------------------
 parser_show_ss = subparsers.add_parser("showSnapshot", help="showSnapshot help")
-parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                             help="storage pool type to use")
 parser_show_ss.add_argument("--pool", metavar="[POOL]", type=str,
                             help="storage pool to use")
@@ -1131,7 +1144,7 @@ parser_show_ss.set_defaults(func=showSnapshotParser)
 
 # -------------------- add createExternalSnapshot cmd ----------------------------------
 parser_create_ess = subparsers.add_parser("createExternalSnapshot", help="createExternalSnapshot help")
-parser_create_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_create_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                help="storage pool type to use")
 parser_create_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                help="storage pool to use")
@@ -1148,7 +1161,7 @@ parser_create_ess.set_defaults(func=createExternalSnapshotParser)
 
 # -------------------- add revertExternalSnapshot cmd ----------------------------------
 parser_revert_ess = subparsers.add_parser("revertExternalSnapshot", help="revertExternalSnapshot help")
-parser_revert_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_revert_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                help="storage pool type to use")
 parser_revert_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                help="storage pool to use")
@@ -1161,13 +1174,13 @@ parser_revert_ess.add_argument("--backing_file", metavar="[backing_file]", type=
 parser_revert_ess.add_argument("--format", metavar="[FORMAT]", type=str,
                                help="disk format to use")
 parser_revert_ess.add_argument("--domain", metavar="[domain]", type=str,
-                                help="domain")
+                               help="domain")
 # set default func
 parser_revert_ess.set_defaults(func=revertExternalSnapshotParser)
 
 # -------------------- add deleteExternalSnapshot cmd ----------------------------------
 parser_delete_ess = subparsers.add_parser("deleteExternalSnapshot", help="deleteExternalSnapshot help")
-parser_delete_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_delete_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                help="storage pool type to use")
 parser_delete_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                help="storage pool to use")
@@ -1184,7 +1197,7 @@ parser_delete_ess.set_defaults(func=deleteExternalSnapshotParser)
 
 # -------------------- add updateDiskCurrent cmd ----------------------------------
 parser_upodate_current = subparsers.add_parser("updateDiskCurrent", help="updateDiskCurrent help")
-parser_upodate_current.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|uraid]", type=str,
+parser_upodate_current.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
                                     help="storage pool type to use")
 parser_upodate_current.add_argument("--current", metavar="[CURRENT]", type=str, nargs='*',
                                     help="disk current file to use")
@@ -1204,13 +1217,13 @@ parser_customize_current.set_defaults(func=customizeParser)
 
 test_args = []
 
-dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--url", "localfs:///dev/sdb1:/uit", "--content", "vmd"])
+dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--url", "/mnt/localfs/pooldir", "--content", "vmd"])
 dir2 = parser.parse_args(["createDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "1073741824", "--format", "qcow2"])
 dir3 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
 dir4 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.2", "--format", "qcow2"])
-dir5 = parser.parse_args(["revertExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2", "--backing_file", "/uit/pooldir/diskdir/diskdir"])
+dir5 = parser.parse_args(["revertExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2", "--backing_file", "/mnt/localfs/pooldir/pooldir/diskdir/diskdir"])
 dir6 = parser.parse_args(["createExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.3", "--format", "qcow2"])
-dir7 = parser.parse_args(["deleteExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--backing_file", "/uit/pooldir/diskdir/diskdir"])
+dir7 = parser.parse_args(["deleteExternalSnapshot", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--backing_file", "/mnt/localfs/pooldir/pooldir/diskdir/diskdir"])
 dir8 = parser.parse_args(["resizeDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "2147483648"])
 dir9 = parser.parse_args(["cloneDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdir", "--newname", "diskdirclone", "--format", "qcow2"])
 dir10 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "--vol", "diskdirclone"])
@@ -1218,7 +1231,7 @@ dir11 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "
 dir12 = parser.parse_args(["stopPool", "--type", "dir", "--pool", "pooldir"])
 dir13 = parser.parse_args(["deletePool", "--type", "dir", "--pool", "pooldir"])
 
-uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "uus-iscsi-independent://admin:admin@192.168.3.10:7000/p1/4/2/0/32/0/3"])
+uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "192.168.3.10:p1", "--opt", "iscsi,username=admin,password=admin,port=7000"])
 uus2 = parser.parse_args(["createDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "1073741824"])
 # uus3 = parser.parse_args(["resizeDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "2147483648"])
 # uus4 = parser.parse_args(["cloneDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--newname", "diskdevclone"])
@@ -1226,19 +1239,19 @@ uus5 = parser.parse_args(["deleteDisk", "--type", "uus", "--pool", "pooldev", "-
 uus6 = parser.parse_args(["deletePool", "--type", "uus", "--pool", "pooldev"])
 
 
-uraid1 = parser.parse_args(["createPool", "--type", "uraid", "--pool", "pooluraid", "--url", "uraid:///dev/md_d179:/mnt/usb/local", "--content", "vmd"])
-uraid2 = parser.parse_args(["createDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--capacity", "1073741824", "--format", "qcow2"])
-uraid3 = parser.parse_args(["createExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--format", "qcow2"])
-uraid4 = parser.parse_args(["createExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.2", "--format", "qcow2"])
-uraid5 = parser.parse_args(["revertExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--format", "qcow2", "--backing_file", "/mnt/usb/local/pooluraid/diskuraid/diskuraid"])
-uraid6 = parser.parse_args(["createExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.3", "--format", "qcow2"])
-uraid7 = parser.parse_args(["deleteExternalSnapshot", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--name", "diskuraid.1", "--backing_file", "/mnt/usb/local/pooluraid/diskuraid/diskuraid"])
-uraid8 = parser.parse_args(["resizeDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--capacity", "2147483648"])
-uraid9 = parser.parse_args(["cloneDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid", "--newname", "diskuraidclone", "--format", "qcow2"])
-uraid10 = parser.parse_args(["deleteDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraidclone"])
-uraid11 = parser.parse_args(["deleteDisk", "--type", "uraid", "--pool", "pooluraid", "--vol", "diskuraid"])
-uraid12 = parser.parse_args(["stopPool", "--type", "uraid", "--pool", "pooluraid"])
-uraid13 = parser.parse_args(["deletePool", "--type", "uraid", "--pool", "pooluraid"])
+vdiskfs1 = parser.parse_args(["createPool", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--url", "vdiskfs:///dev/md_d179:/mnt/usb/local", "--content", "vmd"])
+vdiskfs2 = parser.parse_args(["createDisk", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--capacity", "1073741824", "--format", "qcow2"])
+vdiskfs3 = parser.parse_args(["createExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.1", "--format", "qcow2"])
+vdiskfs4 = parser.parse_args(["createExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.2", "--format", "qcow2"])
+vdiskfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.1", "--format", "qcow2", "--backing_file", "/mnt/usb/local/poolvdiskfs/diskvdiskfs/diskvdiskfs"])
+vdiskfs6 = parser.parse_args(["createExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.3", "--format", "qcow2"])
+vdiskfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.1", "--backing_file", "/mnt/usb/local/poolvdiskfs/diskvdiskfs/diskvdiskfs"])
+vdiskfs8 = parser.parse_args(["resizeDisk", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--capacity", "2147483648"])
+vdiskfs9 = parser.parse_args(["cloneDisk", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--newname", "diskvdiskfsclone", "--format", "qcow2"])
+vdiskfs10 = parser.parse_args(["deleteDisk", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfsclone"])
+vdiskfs11 = parser.parse_args(["deleteDisk", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs"])
+vdiskfs12 = parser.parse_args(["stopPool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
+vdiskfs13 = parser.parse_args(["deletePool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 
 nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "nfs://192.168.3.99:/nfs/nfs", "--opt", "nolock", "--content", "vmd"])
 nfs2 = parser.parse_args(["createDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--capacity", "1073741824", "--format", "qcow2"])
@@ -1282,26 +1295,26 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(dir12)
 # test_args.append(dir13)
 
-# test_args.append(uus1)
-# test_args.append(uus2)
-# # test_args.append(uus3)
-# # test_args.append(uus4)
-# test_args.append(uus5)
-# test_args.append(uus6)
+test_args.append(uus1)
+test_args.append(uus2)
+# test_args.append(uus3)
+# test_args.append(uus4)
+test_args.append(uus5)
+test_args.append(uus6)
 #
-# test_args.append(uraid1)
-# test_args.append(uraid2)
-# test_args.append(uraid3)
-# test_args.append(uraid4)
-# test_args.append(uraid5)
-# test_args.append(uraid6)
-# test_args.append(uraid7)
-# test_args.append(uraid8)
-# test_args.append(uraid9)
-# test_args.append(uraid10)
-# test_args.append(uraid11)
-# test_args.append(uraid12)
-# test_args.append(uraid13)
+# test_args.append(vdiskfs1)
+# test_args.append(vdiskfs2)
+# test_args.append(vdiskfs3)
+# test_args.append(vdiskfs4)
+# test_args.append(vdiskfs5)
+# test_args.append(vdiskfs6)
+# test_args.append(vdiskfs7)
+# test_args.append(vdiskfs8)
+# test_args.append(vdiskfs9)
+# test_args.append(vdiskfs10)
+# test_args.append(vdiskfs11)
+# test_args.append(vdiskfs12)
+# test_args.append(vdiskfs13)
 #
 # test_args.append(nfs1)
 # test_args.append(nfs2)
@@ -1332,11 +1345,11 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(gfs13)
 
 
-# for args in test_args:
-#     try:
-#         args.func(args)
-#     except TypeError:
-#         logger.debug(traceback.format_exc())
+for args in test_args:
+    try:
+        args.func(args)
+    except TypeError:
+        logger.debug(traceback.format_exc())
 
 
 # try:
@@ -1346,7 +1359,7 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 #     # print "argument number not enough"
 #     logger.debug(traceback.format_exc())
 
-try:
+# try:
 #     args = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir12", "--target", "/var/lib/libvirt/pooldir12"
 #                               , "--content", "vmd"])
 #     args.func(args)
@@ -1355,9 +1368,9 @@ try:
     #     ["createDisk", "--type", "dir", "--pool", "pooluitdir", "--vol", "vm006", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
     #
-    args = parser.parse_args(
-        ["createExternalSnapshot", "--type", "dir", "--pool", "pooluitdir", "--format", "qcow2", "--name", "vm006.2", "--vol", "vm006"])
-    args.func(args)
+    # args = parser.parse_args(
+    #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooluitdir", "--format", "qcow2", "--name", "vm006.2", "--vol", "vm006"])
+    # args.func(args)
     # #
     # args = parser.parse_args(
     #     ["createExternalSnapshot", "--type", "dir", "--pool", "pooltest", "--format", "qcow2", "--name", "ss2",
@@ -1380,6 +1393,6 @@ try:
     # args = parser.parse_args(
     #     ["updateDiskCurrent", "--type", "dir", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
     # args.func(args)
-except TypeError:
-    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-    logger.debug(traceback.format_exc())
+# except TypeError:
+#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+#     logger.debug(traceback.format_exc())
