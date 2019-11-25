@@ -1231,7 +1231,7 @@ dir11 = parser.parse_args(["deleteDisk", "--type", "dir", "--pool", "pooldir", "
 dir12 = parser.parse_args(["stopPool", "--type", "dir", "--pool", "pooldir"])
 dir13 = parser.parse_args(["deletePool", "--type", "dir", "--pool", "pooldir"])
 
-uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "192.168.3.10:p1", "--opt", "iscsi,username=admin,password=admin,port=7000"])
+uus1 = parser.parse_args(["createPool", "--type", "uus", "--pool", "pooldev", "--url", "192.168.3.100:p1", "--opt", "dev,username=admin,password=admin,port=7000"])
 uus2 = parser.parse_args(["createDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "1073741824"])
 # uus3 = parser.parse_args(["resizeDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--capacity", "2147483648"])
 # uus4 = parser.parse_args(["cloneDisk", "--type", "uus", "--pool", "pooldev", "--vol", "diskdev", "--newname", "diskdevclone"])
@@ -1239,7 +1239,7 @@ uus5 = parser.parse_args(["deleteDisk", "--type", "uus", "--pool", "pooldev", "-
 uus6 = parser.parse_args(["deletePool", "--type", "uus", "--pool", "pooldev"])
 
 
-vdiskfs1 = parser.parse_args(["createPool", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--url", "vdiskfs:///dev/md_d179:/mnt/usb/local", "--content", "vmd"])
+vdiskfs1 = parser.parse_args(["createPool", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--url", "local", "--content", "vmd"])
 vdiskfs2 = parser.parse_args(["createDisk", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--capacity", "1073741824", "--format", "qcow2"])
 vdiskfs3 = parser.parse_args(["createExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.1", "--format", "qcow2"])
 vdiskfs4 = parser.parse_args(["createExternalSnapshot", "--type", "vdiskfs", "--pool", "poolvdiskfs", "--vol", "diskvdiskfs", "--name", "diskvdiskfs.2", "--format", "qcow2"])
@@ -1253,7 +1253,7 @@ vdiskfs11 = parser.parse_args(["deleteDisk", "--type", "vdiskfs", "--pool", "poo
 vdiskfs12 = parser.parse_args(["stopPool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 vdiskfs13 = parser.parse_args(["deletePool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 
-nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "nfs://192.168.3.99:/nfs/nfs", "--opt", "nolock", "--content", "vmd"])
+nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "192.168.3.100:/nfs/nfs", "--opt", "nolock", "--content", "vmd"])
 nfs2 = parser.parse_args(["createDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--capacity", "1073741824", "--format", "qcow2"])
 nfs3 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2"])
 nfs4 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.2", "--format", "qcow2"])
@@ -1267,7 +1267,7 @@ nfs11 = parser.parse_args(["deleteDisk", "--type", "nfs", "--pool", "poolnfs", "
 nfs12 = parser.parse_args(["stopPool", "--type", "nfs", "--pool", "poolnfs"])
 nfs13 = parser.parse_args(["deletePool", "--type", "nfs", "--pool", "poolnfs"])
 
-gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "glusterfs://192.168.3.93:nfsvol", "--opt", "nolock", "--content", "vmd"])
+gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "192.168.3.100:nfsvol ", "--opt", "nolock", "--content", "vmd"])
 gfs2 = parser.parse_args(["createDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--capacity", "1073741824", "--format", "qcow2"])
 gfs3 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2"])
 gfs4 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.2", "--format", "qcow2"])
