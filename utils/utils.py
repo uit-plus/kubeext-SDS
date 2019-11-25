@@ -228,7 +228,7 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
 def rpcCall(cmd):
     logger.debug(cmd)
     try:
-        host = get_host_ip()
+        host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
         client = cmdcall_pb2_grpc.CmdCallStub(channel)
         response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
@@ -263,7 +263,7 @@ def rpcCall(cmd):
 def rpcCallWithResult(cmd):
     logger.debug(cmd)
     try:
-        host = get_host_ip()
+        host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
         client = cmdcall_pb2_grpc.CmdCallStub(channel)
         # ideally, you should have try catch block here too
@@ -297,7 +297,7 @@ def rpcCallWithResult(cmd):
 def rpcCallAndTransferXmlToJson(cmd):
     logger.debug(cmd)
     try:
-        host = get_host_ip()
+        host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
         client = cmdcall_pb2_grpc.CmdCallStub(channel)
         # ideally, you should have try catch block here too
@@ -330,7 +330,7 @@ def rpcCallAndTransferXmlToJson(cmd):
 def rpcCallAndTransferKvToJson(cmd):
     logger.debug(cmd)
     try:
-        host = get_host_ip()
+        host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
         client = cmdcall_pb2_grpc.CmdCallStub(channel)
         # ideally, you should have try catch block here too
