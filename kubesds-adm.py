@@ -835,6 +835,26 @@ def customizeParser(args):
 
     customize(args)
 
+def createDiskFromImageParser(args):
+    if args.type is None:
+        print {"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}}
+        exit(1)
+    if args.type not in ["dir", "uus", "nfs", "glusterfs", "vdiskfs"]:
+        print {"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}}
+        exit(2)
+    if args.targetPool is None:
+        print {"result": {"code": 100, "msg": "less arg, targetPool must be set"}, "data": {}}
+        exit(3)
+    if args.name is None:
+        print {"result": {"code": 100, "msg": "less arg, name must be set"}, "data": {}}
+        exit(3)
+    if args.source is None:
+        print {"result": {"code": 100, "msg": "less arg, source must be set"}, "data": {}}
+        exit(3)
+
+
+    createDiskFromImage(args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1088,7 +1108,7 @@ parser_revert_ss.set_defaults(func=revertSnapshotParser)
 
 # -------------------- add showSnapshot cmd ----------------------------------
 parser_show_ss = subparsers.add_parser("showSnapshot", help="showSnapshot help")
-parser_show_ss.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
+parser_show_ss.add_argument("--type", metavar="[dir|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 parser_show_ss.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1104,7 +1124,7 @@ parser_show_ss.set_defaults(func=showSnapshotParser)
 
 # -------------------- add createExternalSnapshot cmd ----------------------------------
 parser_create_ess = subparsers.add_parser("createExternalSnapshot", help="createExternalSnapshot help")
-parser_create_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
+parser_create_ess.add_argument("--type", metavar="[dir|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 parser_create_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1121,7 +1141,7 @@ parser_create_ess.set_defaults(func=createExternalSnapshotParser)
 
 # -------------------- add revertExternalSnapshot cmd ----------------------------------
 parser_revert_ess = subparsers.add_parser("revertExternalSnapshot", help="revertExternalSnapshot help")
-parser_revert_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
+parser_revert_ess.add_argument("--type", metavar="[dir|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 parser_revert_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1140,7 +1160,7 @@ parser_revert_ess.set_defaults(func=revertExternalSnapshotParser)
 
 # -------------------- add deleteExternalSnapshot cmd ----------------------------------
 parser_delete_ess = subparsers.add_parser("deleteExternalSnapshot", help="deleteExternalSnapshot help")
-parser_delete_ess.add_argument("--type", metavar="[dir|uus|nfs|glusterfs|vdiskfs]", type=str,
+parser_delete_ess.add_argument("--type", metavar="[dir|nfs|glusterfs|vdiskfs]", type=str,
                                 help="storage pool type to use")
 parser_delete_ess.add_argument("--pool", metavar="[POOL]", type=str,
                                 help="storage pool to use")
@@ -1165,16 +1185,38 @@ parser_upodate_current.add_argument("--current", metavar="[CURRENT]", type=str, 
 parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
 
 # -------------------- add customize cmd ----------------------------------
-parser_customize_current = subparsers.add_parser("customize", help="customize help")
-parser_customize_current.add_argument("--add", metavar="[ADD]", type=str,
-                                help="storage pool type to use")
-parser_customize_current.add_argument("--user", metavar="[USER]", type=str,
-                                help="disk current file to use")
-parser_customize_current.add_argument("--password", metavar="[PASSWORD]", type=str,
-                                help="disk current file to use")
+parser_customize = subparsers.add_parser("customize", help="customize help")
+parser_customize.add_argument("--add", metavar="[ADD]", type=str,
+                              help="storage pool type to use")
+parser_customize.add_argument("--user", metavar="[USER]", type=str,
+                              help="disk current file to use")
+parser_customize.add_argument("--password", metavar="[PASSWORD]", type=str,
+                              help="disk current file to use")
 # set default func
-parser_customize_current.set_defaults(func=customizeParser)
+parser_customize.set_defaults(func=customizeParser)
 
+
+# -------------------- add createDiskFromImage cmd ----------------------------------
+parser_create_disk_from_image = subparsers.add_parser("createDiskFromImage", help="createDiskFromImage help")
+parser_create_disk_from_image.add_argument("--type", metavar="[dir|nfs|glusterfs|vdiskfs]", type=str,
+                                help="storage pool type to use")
+parser_create_disk_from_image.add_argument("--name", metavar="[name]", type=str,
+                                help="new disk name to use")
+parser_create_disk_from_image.add_argument("--targetPool", metavar="[targetPool]", type=str,
+                                help="storage pool to use")
+parser_create_disk_from_image.add_argument("--source", metavar="[source]", type=str,
+                                help="disk source to use")
+parser_create_disk_from_image.add_argument("--full_copy", metavar="[full_copy]", type=bool, nargs='?', const=True,
+                                help="if full_copy, new disk will be created by snapshot")
+# set default func
+parser_create_disk_from_image.set_defaults(func=createDiskFromImageParser)
+
+# -------------------- add migrate cmd ----------------------------------
+# parser_migrate = subparsers.add_parser("migrate", help="migrate help")
+# parser_migrate.add_argument("--ip", metavar="[IP]", type=str,
+#                                 help="storage pool type to use")
+# # set default func
+# parser_migrate.set_defaults(func=migrateParser)
 
 try:
     args = parser.parse_args()

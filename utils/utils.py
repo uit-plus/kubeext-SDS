@@ -580,6 +580,12 @@ def get_disk_config(pool, vol):
         return config
     raise ExecuteException('', 'can not get disk config by current')
 
+def get_disk_config_by_path(config_path):
+    with open(config_path, "r") as f:
+        config = load(f)
+        return config
+    raise ExecuteException('', 'can not get disk config by current')
+
 
 def get_disk_snapshots(ss_path):
     ss_chain = get_sn_chain(ss_path)

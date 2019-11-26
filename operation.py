@@ -1142,6 +1142,77 @@ def customize(params):
         print {"result": {"code": 300, "msg": "error occur while customize."}, "data": {}}
         exit(1)
 
+def createDiskFromImage(params):
+    try:
+        pool_info = get_pool_info(params.targetPool)
+        dest_dir = '%s/%s' % (pool_info['path'], params.name)
+        dest = '%s/%s' % (dest_dir, params.name)
+        dest_config_file = '%s/config.json' % (dest_dir)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir, 0711)
+        if os.path.exists(dest_config_file):
+            raise Exception('Path %s already in use, aborting copy.' % dest_dir)
+
+        if params.full_copy:
+            try:
+                op = Operation('cp -f %s %s' % (params.source, dest), {})
+                op.execute()
+            except:
+                if os.path.exists(dest_dir):
+                    op = Operation('rm -rf %s' % dest_dir, {})
+                    op.execute()
+                raise Exception('Copy %s to %s failed!' % (params.source, dest))
+
+            try:
+                op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
+                op.execute()
+            except:
+                if os.path.exists(dest_dir):
+                    op = Operation('rm -rf %s' % dest_dir, {})
+                    op.execute()
+                raise Exception('Execute "qemu-img rebase -f qcow2 %s" failed!' % (dest))
+
+        else:
+            if params.source.find('snapshots') >= 0:
+                source_disk_dir = os.path.dirname(os.path.dirname(params.source))
+            else:
+                source_disk_dir = os.path.dirname(params.source)
+            config = get_disk_config_by_path('%s/config.json' % source_disk_dir)
+            disk_info = get_disk_info(config['current'])
+            op = Operation(
+                'qemu-img create -f %s -b %s -F %s %s' %
+                            (disk_info['format'], config['current'], disk_info['format'], dest), {})
+            op.execute()
+        config = {}
+        config['name'] = params.name
+        config['dir'] = dest_dir
+        config['current'] = dest
+
+        with open(dest_dir + '/config.json', "w") as f:
+            dump(config, f)
+        result = get_disk_info(dest)
+        result['disk'] = config['name']
+        result["pool"] = params.targetPool
+        print dumps(
+            {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
+             "data": result})
+    except ExecuteException, e:
+        logger.debug("customize")
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}}
+        exit(1)
+    except Exception:
+        logger.debug("customize " + params.name)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 300, "msg": "error occur while createDiskFromImage."}, "data": {}}
+        exit(1)
+
+
+
 def xmlToJson(xmlStr):
     json = dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
     return json.replace("@", "_").replace("$", "text").replace(
