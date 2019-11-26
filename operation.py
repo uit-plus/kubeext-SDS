@@ -1129,14 +1129,11 @@ def customize(params):
         op.execute()
     except ExecuteException, e:
         logger.debug("customize")
-        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("customize " + params.name)
-        logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {"result": {"code": 300, "msg": "error occur while customize."}, "data": {}}
@@ -1194,24 +1191,44 @@ def createDiskFromImage(params):
         result['disk'] = config['name']
         result["pool"] = params.targetPool
         print dumps(
-            {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
+            {"result": {"code": 0, "msg": "createDiskFromImage " + params.name + " successful."},
              "data": result})
     except ExecuteException, e:
-        logger.debug("customize")
+        logger.debug("createDiskFromImage")
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}}
+        print {"result": {"code": 400, "msg": "error occur while createDiskFromImage. " + e.message}, "data": {}}
         exit(1)
     except Exception:
-        logger.debug("customize " + params.name)
+        logger.debug("createDiskFromImage " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print {"result": {"code": 300, "msg": "error occur while createDiskFromImage."}, "data": {}}
         exit(1)
 
+def migrate(params):
+    try:
+        if not is_vm_disk_driver_cache_none(params.domain):
+            raise ExecuteException('', 'error: disk driver cache is not none')
+        if not is_vm_disk_not_shared_storage(params.domain):
+            raise ExecuteException('', 'error: still has disk not create in shared storage.')
 
+        op = Operation('virsh migrate --live  --persistent %s qemu+ssh://%s/system tcp://%s' % (params.domain, params.ip, params.ip), {})
+        op.execute()
+    except ExecuteException, e:
+        logger.debug("migrate")
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 400, "msg": "error occur while migrate. " + e.message}, "data": {}}
+        exit(1)
+    except Exception:
+        logger.debug("migrate " + params.domain)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print {"result": {"code": 300, "msg": "error occur while migrate."}, "data": {}}
+        exit(1)
 
 def xmlToJson(xmlStr):
     json = dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)

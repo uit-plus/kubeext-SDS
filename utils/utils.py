@@ -704,6 +704,53 @@ def change_vm_os_disk_file(vm, source, target):
                     return True
     return False
 
+def is_shared_storage(file):
+    cmd = 'df %s | awk \'{print $1}\' | sed -n "2, 1p"' % file
+    fs = runCmdAndGetOutput(cmd)
+    fs = fs.strip()
+    if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
+        return True
+    return False
+
+def is_vm_disk_not_shared_storage(vm):
+    runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
+    tree = ET.parse('/tmp/%s.xml' % vm)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                disk_file = source_element.get("file")
+                if not is_shared_storage(disk_file):
+                  return False
+
+    return True
+
+def is_vm_disk_driver_cache_none(vm):
+    runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
+    tree = ET.parse('/tmp/%s.xml' % vm)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("driver")
+                if "cache" in source_element.keys() and source_element.get("cache") == "none":
+                    continue
+                else:
+                    return False
+    return True
+
+# print is_vm_disk_not_shared_storage('vm006')
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 

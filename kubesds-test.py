@@ -898,7 +898,15 @@ def createDiskFromImageParser(args):
         print {"result": {"code": 100, "msg": "less arg, source must be set"}, "data": {}}
         exit(3)
 
-    createDiskFromImage(args)
+
+def migrateParser(args):
+    if args.ip is None:
+        print {"result": {"code": 100, "msg": "less arg, ip must be set"}, "data": {}}
+        exit(3)
+    if not re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}$', args.ip):
+        print {"result": {"code": 100, "msg": "ip is not right"}, "data": {}}
+        exit(3)
+    migrate(args)
 
 
 # --------------------------- cmd line parser ---------------------------------------
@@ -1250,6 +1258,15 @@ parser_create_disk_from_image.add_argument("--full_copy", metavar="[full_copy]",
 # set default func
 parser_create_disk_from_image.set_defaults(func=createDiskFromImageParser)
 
+# -------------------- add migrate cmd ----------------------------------
+parser_migrate = subparsers.add_parser("migrate", help="migrate help")
+parser_migrate.add_argument("--domain", metavar="[DOMAIN]", type=str,
+                            help="vm domain to migrate")
+parser_migrate.add_argument("--ip", metavar="[IP]", type=str,
+                            help="storage pool type to use")
+# set default func
+parser_migrate.set_defaults(func=migrateParser)
+
 test_args = []
 
 dir1 = parser.parse_args(["createPool", "--type", "dir", "--pool", "pooldir", "--url", "/mnt/localfs/pooldir", "--content", "vmd"])
@@ -1395,15 +1412,18 @@ test_args.append(gfs13)
 #     logger.debug(traceback.format_exc())
 
 try:
+    args = parser.parse_args(
+        ["migrate", "--domain", "vm006", "--ip", "133.133.135.31"])
+    args.func(args)
     # args = parser.parse_args(["createPool", "--type", "dir", "--pool", "vmdi", "--url", "/mnt/localfs/sdb", "--content", "vmdi"])
     # args.func(args)
     #
     # args = parser.parse_args(
     #     ["createDisk", "--type", "dir", "--pool", "vmdi", "--vol", "vm006", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
-    args = parser.parse_args(
-        ["createDiskFromImage", "--type", "dir", "--targetPool", "vmdi", "--name", "vm006copy", "--source", "/mnt/localfs/sdb/vmdi/vm006/vm006", "--full_copy"])
-    args.func(args)
+    # args = parser.parse_args(
+    #     ["createDiskFromImage", "--type", "dir", "--targetPool", "vmdi", "--name", "vm006copy", "--source", "/mnt/localfs/sdb/vmdi/vm006/vm006", "--full_copy"])
+    # args.func(args)
 
     # args = parser.parse_args(
     #     ["createExternalSnapshot", "--type", "dir", "--pool", "vmdi", "--format", "qcow2", "--name", "vm006.1", "--vol", "vm006"])

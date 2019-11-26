@@ -852,8 +852,14 @@ def createDiskFromImageParser(args):
         print {"result": {"code": 100, "msg": "less arg, source must be set"}, "data": {}}
         exit(3)
 
-
-    createDiskFromImage(args)
+def migrateParser(args):
+    if args.ip is None:
+        print {"result": {"code": 100, "msg": "less arg, ip must be set"}, "data": {}}
+        exit(3)
+    if not re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}$', args.ip):
+        print {"result": {"code": 100, "msg": "ip is not right"}, "data": {}}
+        exit(3)
+    migrate(args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
@@ -1212,11 +1218,13 @@ parser_create_disk_from_image.add_argument("--full_copy", metavar="[full_copy]",
 parser_create_disk_from_image.set_defaults(func=createDiskFromImageParser)
 
 # -------------------- add migrate cmd ----------------------------------
-# parser_migrate = subparsers.add_parser("migrate", help="migrate help")
-# parser_migrate.add_argument("--ip", metavar="[IP]", type=str,
-#                                 help="storage pool type to use")
-# # set default func
-# parser_migrate.set_defaults(func=migrateParser)
+parser_migrate = subparsers.add_parser("migrate", help="migrate help")
+parser_migrate.add_argument("--domain", metavar="[DOMAIN]", type=str,
+                                help="vm domain to migrate")
+parser_migrate.add_argument("--ip", metavar="[IP]", type=str,
+                                help="storage pool type to use")
+# set default func
+parser_migrate.set_defaults(func=migrateParser)
 
 try:
     args = parser.parse_args()
