@@ -1413,7 +1413,7 @@ test_args.append(gfs13)
 
 try:
     args = parser.parse_args(
-        ["migrate", "--domain", "vm006", "--ip", "133.133.135.31"])
+        ["migrate", "--domain", "vm006", "--ip", "133.133.135.22"])
     args.func(args)
     # args = parser.parse_args(["createPool", "--type", "dir", "--pool", "vmdi", "--url", "/mnt/localfs/sdb", "--content", "vmdi"])
     # args.func(args)
