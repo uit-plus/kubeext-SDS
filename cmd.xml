@@ -1,26 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<storage>
-    <pool class='pool'>
+<root prog="kubesds-adm" description="All storage adaptation tools">
+    <storage class="Pool">
         <check name="is_cstor_pool_exist">
-            <arg type="str" require="True">pool</arg>
-            <error description="cstor pool has exist." require="True"/>
-            <error description="cstor pool has not exist." require="False"/>
-            <operation return="False" opetation="create"/>
-            <operation return="True" opetation="delete|start|autostart|stop|unregister"/>
+            <operation expect="False" opetation="create" error="cstor pool has exist."/>
+            <operation expect="True" opetation="delete|start|autostart|stop|unregister" error="cstor pool has not exist."/>
         </check>
         <check name="is_virsh_pool_exist">
-            <arg type="str" require="True">pool</arg>
-            <error description="virsh pool has exist.">True</error>
-            <error description="virsh pool has not exist.">False</error>
-            <operation return="False" opetation="create"/>
-            <operation return="True" opetation="delete|start|autostart|stop|unregister"/>
+            <operation expect="False" opetation="create" error="virsh pool has exist."/>
+            <operation expect="True" opetation="delete|start|autostart|stop|unregister" error="virsh pool has not exist."/>
         </check>
         <operation name="create">
-            <arg type="str" support="dir|uraid|nfs|glusterfs|uus" require="True">pool</arg>
-            <arg type="str" support="dir|uraid|nfs|glusterfs|uus" require="True">url</arg>
-            <arg type="str" support="dir|uraid|nfs|glusterfs" require="True" range="vmd|vmdi|iso">content</arg>
-            <arg type="str" support="nfs" require="False">opt</arg>
-            <arg type="str" support="dir|uraid|nfs|glusterfs" require="False">autostart</arg>
+            <arg name="pool" type="str" support="dir|uraid|nfs|glusterfs|uus" require="True" range=".*"/>
+            <arg name="url" type="str" support="dir|uraid|nfs|glusterfs|uus" require="True" range=".*"/>
+            <arg name="content" type="str" support="dir|uraid|nfs|glusterfs" require="True" range="vmd|vmdi|iso"/>
+            <arg name="opt" type="str" support="nfs" require="False" range=".*"/>
+            <arg name="autostart" type="str" support="dir|uraid|nfs|glusterfs" require="False" range=".*"/>
             <kind type="dir">
                 <function>create_localfs_pool</function>
                 <function>createVirshPool</function>
@@ -71,9 +65,5 @@
                 <function>undefine_virsh_pool</function>
             </kind>
         </operation>
-    </pool>
-    <volume>
-    </volume>
-    <snapshot>
-    </snapshot>
-</storage>
+    </storage>
+</root>

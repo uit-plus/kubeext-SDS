@@ -5,7 +5,7 @@ from utils.libvirt_util import list_pools, list_defined_pools
 from utils.utils import rpcCallAndTransferKvToJson, rpcCallAndTransferXmlToJson, rpcCallWithResult, rpcCall
 from utils import logger
 
-LOG = "/var/log/kubesds.log"
+LOG = "kubesds.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
@@ -44,20 +44,20 @@ class Operation(object):
 
 
 class Pool(object):
-    def __init__(self, name, args):
-        self.name = name
-        self.args = args
+    def __init__(self, **args):
+        for key in args:
+            setattr(self, key, args[key])
         self.proto = None
         self.mount_path = None
         self.path = None
 
     def is_virsh_active(self):
-        if self.name in list_pools():
+        if self.pool in list_pools():
             return True
         return False
 
     def is_virsh_defined(self):
-        if self.name in list_defined_pools():
+        if self.pool in list_defined_pools():
             return True
         return False
 
@@ -74,14 +74,14 @@ class Pool(object):
         return True
 
     def cstor_info(self):
-        op = Operation("cstor-cli pool-show", {"poolname": self.name}, with_result=True)
+        op = Operation("cstor-cli pool-show", {"poolname": self.pool}, with_result=True)
         result = op.execute()
         if result["result"]["code"] != 0:
             raise ExecuteException('Cstor Error', 'cant get cstor pool info')
         return result
 
     def virsh_info(self):
-        info = rpcCallAndTransferKvToJson('virsh pool-info %s' % self.name)
+        info = rpcCallAndTransferKvToJson('virsh pool-info %s' % self.pool)
         # info['allocation'] = int(1024*1024*1024*float(info['allocation']))
         # info['available'] = int(1024 * 1024 * 1024 * float(info['available']))
         # info['capacity'] = int(1024 * 1024 * 1024 * float(info['capacity']))
@@ -90,7 +90,7 @@ class Pool(object):
         if 'available' in info.keys():
             del info['available']
 
-        xml_dict = rpcCallAndTransferXmlToJson('virsh pool-dumpxml %s' % self.name)
+        xml_dict = rpcCallAndTransferXmlToJson('virsh pool-dumpxml %s' % self.pool)
         info['capacity'] = int(xml_dict['pool']['capacity']['text'])
         info['path'] = xml_dict['pool']['target']['path']
         return info
@@ -119,12 +119,12 @@ class Pool(object):
         self.check()
 
     def create_localfs_pool(self):
-        op = Operation('cstor-cli pooladd-localfs ', {'poolname': self.args.pool,
-                                                      'url': self.args.url}, with_result=True)
+        op = Operation('cstor-cli pooladd-localfs ', {'poolname': self.pool,
+                                                      'url': self.url}, with_result=True)
         info = op.execute()
 
         self.mount_path = info['data']['mountpath']
-        self.path = '%s/%s' % (self.mount_path, self.args.pool)
+        self.path = '%s/%s' % (self.mount_path, self.pool)
         if not os.path.isdir(self.path):
             raise ExecuteException('', 'cant not get pooladd-localfs mount path')
 
