@@ -102,10 +102,7 @@ def createPool(params):
             if cstor['result']['code'] != 0:
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
-            if params.path:
-                POOL_PATH = "%s/%s/%s" % (cstor['data']['mountpath'], params.path, params.pool)
-            else:
-                POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.pool)
+            POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.pool)
             # if not os.path.isdir(POOL_PATH):
             #     raise ExecuteException('', 'cant not get pooladd-localfs mount path')
             # step1 define pool
