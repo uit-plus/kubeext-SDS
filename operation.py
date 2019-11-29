@@ -75,9 +75,9 @@ def createPool(params):
     logger.debug(params)
     result = None
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             #  {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "mountpath": "/Disk240", "proto": "localfs", "url": "/dev/sdb1", "poolname": "pool1", "free": 223363817472, "disktype": "file", "maintain": "normal", "used": 768970752, "total": 236152303616}, "obj":"pooladd"}
-            if params.type == "dir":
+            if params.type == "localfs":
                 op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
                                                               'url': params.url}, with_result=True)
             elif params.type == "nfs":
@@ -160,7 +160,7 @@ def createPool(params):
 def deletePool(params):
     result = None
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             if is_pool_started(params.pool):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
             pool_path = get_pool_info(params.pool)['path']
@@ -200,7 +200,7 @@ def deletePool(params):
 
 def startPool(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op1 = Operation("virsh pool-start", {"pool": params.pool})
             op1.execute()
             result = get_pool_info(params.pool)
@@ -233,7 +233,7 @@ def startPool(params):
 
 def autoStartPool(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             if params.disable:
                 op = Operation("virsh pool-autostart --disable", {"pool": params.pool})
                 op.execute()
@@ -267,7 +267,7 @@ def autoStartPool(params):
 
 def unregisterPool(params):
     try:
-        if params.type == "dir":
+        if params.type == "localfs":
             deletePool(params)
         elif params.type == "nfs" or params.type == "glusterfs":
             print dumps(
@@ -291,7 +291,7 @@ def unregisterPool(params):
 
 def stopPool(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op1 = Operation("virsh pool-destroy", {"pool": params.pool})
             op1.execute()
 
@@ -323,7 +323,7 @@ def stopPool(params):
 def showPool(params):
     result = None
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             pool_info = get_pool_info(params.pool)
             with open(pool_info['path'] +'/content', 'r') as f:
                 content = f.read()
@@ -360,7 +360,7 @@ def showPool(params):
 
 def createDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
                                                        'size': params.capacity}, with_result=True)
             cstor = op.execute()
@@ -442,7 +442,7 @@ def createDisk(params):
 
 def deleteDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-remove ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
@@ -503,7 +503,7 @@ def deleteDisk(params):
 
 def resizeDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-expand ', {'poolname': params.pool, 'name': params.vol,
                                                        'size': params.capacity}, with_result=True)
             cstor = op.execute()
@@ -548,7 +548,7 @@ def resizeDisk(params):
 
 def cloneDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-clone ', {'poolname': params.pool, 'name': params.vol,
                                                        'clonename': params.newname}, with_result=True)
             cstor = op.execute()
@@ -620,7 +620,7 @@ def cloneDisk(params):
 
 def showDisk(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
@@ -670,7 +670,7 @@ def showDisk(params):
 
 def showDiskSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             # op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol,
             #                                          'size': params.capacity}, with_result=True)
             # cstor = op.execute()
@@ -704,7 +704,7 @@ def showDiskSnapshot(params):
 
 def createSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
             op = Operation("virsh vol-create-as ", {'pool': params.pool, 'name': params.snapshot, 'capacity': params.capacity,
                                                     'format': params.format, 'backing-vol': params.backing_vol,
                                                     'backing-vol-format': params.backing_vol_format})
@@ -743,7 +743,7 @@ def createSnapshot(params):
 
 def deleteSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
             op = Operation("virsh vol-delete ", {'pool': params.pool, 'vol': params.snapshot})
             op.execute()
             print dumps({"result": {"code": 0, "msg": "delete snapshot " + params.snapshot + " success."}, "data": {}})
@@ -776,7 +776,7 @@ def deleteSnapshot(params):
 
 def revertSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
             print dumps({"result": {"code": 1, "msg": "not support operation."}, "data": {}})
         elif params.type == "uus":
             if params.vmname is None:
@@ -807,7 +807,7 @@ def revertSnapshot(params):
 
 def showSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
             vol_xml = get_volume_xml(params.pool, params.snapshot)
             result = loads(xmlToJson(vol_xml))['volume']
             print dumps(
@@ -840,7 +840,7 @@ def showSnapshot(params):
 
 def createExternalSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-add-ss ', {'poolname': params.pool, 'name': params.vol,
                                                        'sname': params.name}, with_result=True)
             cstor = op.execute()
@@ -930,7 +930,7 @@ def createExternalSnapshot(params):
 # create snapshot on params.name, then rename snapshot to current
 def revertExternalSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             if params.domain and is_vm_active(params.domain):
                 raise ExecuteException('', 'domain %s is still active, plz stop it first.')
 
@@ -991,7 +991,7 @@ def revertExternalSnapshot(params):
 
 def deleteExternalSnapshot(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': params.pool, 'name': params.vol,
                                                       'sname': params.name}, with_result=True)
             cstor = op.execute()
@@ -1097,7 +1097,7 @@ def deleteExternalSnapshot(params):
 
 def updateDiskCurrent(params):
     try:
-        if params.type == "dir" or params.type == "nfs" or params.type == "glusterfs":
+        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
             for current in params.current:
                 config_path = os.path.dirname(current) + '/config.json'
                 with open(config_path, "r") as f:
