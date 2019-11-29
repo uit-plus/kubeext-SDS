@@ -41,13 +41,13 @@ class Operation(object):
         logger.debug(cmd)
 
         if self.with_result:
-            return rpcCallWithResult(cmd)
+            return runCmdWithResult(cmd)
         elif self.xml_to_json:
-            return rpcCallAndTransferXmlToJson(cmd)
+            return runCmdAndTransferXmlToJson(cmd)
         elif self.kv_to_json:
-            return rpcCallAndTransferKvToJson(cmd)
+            return runCmdAndSplitKvToJson(cmd)
         else:
-            return rpcCall(cmd)
+            return runCmd(cmd)
 
 
 
