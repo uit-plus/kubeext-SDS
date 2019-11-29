@@ -103,8 +103,8 @@ def createPool(params):
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.pool)
-            # if not os.path.isdir(POOL_PATH):
-            #     raise ExecuteException('', 'cant not get pooladd-localfs mount path')
+            if not os.path.isdir(POOL_PATH):
+                raise ExecuteException('', 'cant not get pooladd-localfs mount path')
             # step1 define pool
             op1 = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": POOL_PATH})
             op1.execute()
