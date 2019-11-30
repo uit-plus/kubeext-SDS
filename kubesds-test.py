@@ -21,7 +21,9 @@ def get_cstor_pool_info(pool):
 
 
 def check_pool_type(pool, type):
-    poolInfo = get_cstor_pool_info(pool)
+    pool_info = get_pool_info(pool)
+    uuid = os.path.basename(pool_info['path'])
+    poolInfo = get_cstor_pool_info(uuid)
     if type == "localfs":
         if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
             print {"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}}
@@ -96,8 +98,10 @@ def check_cstor_pool_exist(pool):
 
 def check_cstor_pool_not_exist(pool):
     try:
-        if not is_cstor_pool_exist(pool):
-            print {"result": {"code": 206, "msg": "cstor pool " + pool + " not exist"}, "data": {}}
+        pool_info = get_pool_info(pool)
+        uuid = os.path.basename(pool_info['path'])
+        if not is_cstor_pool_exist(uuid):
+            print {"result": {"code": 206, "msg": "cstor pool " + uuid + " not exist"}, "data": {}}
             exit(11)
     except Exception:
         logger.debug(traceback.format_exc())
@@ -235,9 +239,14 @@ def createPoolParser(args):
         print {"result": {"code": 100, "msg": "less arg, url must be set"}, "data": {}}
         exit(9)
 
-    if args.type == "nfs" or args.type == "uus":
+    if args.type == "uus":
         if args.opt is None:
             print {"result": {"code": 100, "msg": "less arg, opt must be set"}, "data": {}}
+            exit(9)
+
+    if args.type == "nfs" or args.type == "glusterfs":
+        if args.uuid is None:
+            print {"result": {"code": 100, "msg": "less arg, uuid must be set"}, "data": {}}
             exit(9)
 
     if args.type == "localfs" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
@@ -942,6 +951,10 @@ parser_create_pool.add_argument("--opt", metavar="[OPT]", type=str,
                                 help="uus require or nfs mount options, only for uus and nfs")
 
 # nfs and glusterfs only
+parser_create_pool.add_argument("--uuid", metavar="[UUID]", type=str,
+                                help="nfs or glusterfs poolname when use cstor-cli")
+
+# nfs and glusterfs only
 parser_create_pool.add_argument("--path", metavar="[PATH]", type=str,
                                 help="nfs or glusterfs mount path")
 
@@ -1305,13 +1318,13 @@ vdiskfs11 = parser.parse_args(["deleteDisk", "--type", "vdiskfs", "--pool", "poo
 vdiskfs12 = parser.parse_args(["stopPool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 vdiskfs13 = parser.parse_args(["deletePool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 
-nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "133.133.135.30:/home/nfs", "--opt", "nolock", "--content", "vmd", "--path", "abc"])
+nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "133.133.135.30:/home/nfs", "--opt", "nolock", "--content", "vmd", "--path", "abc", "--uuid", "07098ca5-fd17-4fcc-afed-76b0d7fccde4"])
 nfs2 = parser.parse_args(["createDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--capacity", "1073741824", "--format", "qcow2"])
 nfs3 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2"])
 nfs4 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.2", "--format", "qcow2"])
-nfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/poolnfs/disknfs/disknfs"])
+nfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5-fd17-4fcc-afed-76b0d7fccde4/disknfs/disknfs"])
 nfs6 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.3", "--format", "qcow2"])
-nfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--backing_file", "/var/lib/libvirt/cstor/abc/poolnfs/disknfs/disknfs"])
+nfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5-fd17-4fcc-afed-76b0d7fccde4/disknfs/disknfs"])
 nfs8 = parser.parse_args(["resizeDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--capacity", "2147483648"])
 nfs9 = parser.parse_args(["cloneDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--newname", "disknfsclone", "--format", "qcow2"])
 nfs10 = parser.parse_args(["deleteDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfsclone"])
@@ -1319,13 +1332,13 @@ nfs11 = parser.parse_args(["deleteDisk", "--type", "nfs", "--pool", "poolnfs", "
 nfs12 = parser.parse_args(["stopPool", "--type", "nfs", "--pool", "poolnfs"])
 nfs13 = parser.parse_args(["deletePool", "--type", "nfs", "--pool", "poolnfs"])
 
-gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "192.168.3.100:nfsvol", "--content", "vmd"])
+gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "192.168.3.100:nfsvol", "--content", "vmd", "--path", "abc", "--uuid", "07098ca5-fd17-4fcc-afed-76b0d7fccde4"])
 gfs2 = parser.parse_args(["createDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--capacity", "1073741824", "--format", "qcow2"])
 gfs3 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2"])
 gfs4 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.2", "--format", "qcow2"])
-gfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/poolglusterfs/poolglusterfs/diskglusterfs/diskglusterfs"])
+gfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5-fd17-4fcc-afed-76b0d7fccde4/diskglusterfs/diskglusterfs"])
 gfs6 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.3", "--format", "qcow2"])
-gfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--backing_file", "/var/lib/libvirt/cstor/poolglusterfs/poolglusterfs/diskglusterfs/diskglusterfs"])
+gfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--backing_file", "/var/lib/libvirt/cstor/poolglusterfs/abc/07098ca5-fd17-4fcc-afed-76b0d7fccde4/diskglusterfs"])
 gfs8 = parser.parse_args(["resizeDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--capacity", "2147483648"])
 gfs9 = parser.parse_args(["cloneDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--newname", "diskglusterfsclone", "--format", "qcow2"])
 gfs10 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfsclone"])
@@ -1333,19 +1346,19 @@ gfs11 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolg
 gfs12 = parser.parse_args(["stopPool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 
-test_args.append(dir1)
-test_args.append(dir2)
-test_args.append(dir3)
-test_args.append(dir4)
-test_args.append(dir5)
-test_args.append(dir6)
-test_args.append(dir7)
-test_args.append(dir8)
-test_args.append(dir9)
-test_args.append(dir10)
-test_args.append(dir11)
-test_args.append(dir12)
-test_args.append(dir13)
+# test_args.append(dir1)
+# test_args.append(dir2)
+# test_args.append(dir3)
+# test_args.append(dir4)
+# test_args.append(dir5)
+# test_args.append(dir6)
+# test_args.append(dir7)
+# test_args.append(dir8)
+# test_args.append(dir9)
+# test_args.append(dir10)
+# test_args.append(dir11)
+# test_args.append(dir12)
+# test_args.append(dir13)
 
 # test_args.append(uus1)
 # test_args.append(uus2)
@@ -1368,19 +1381,19 @@ test_args.append(dir13)
 # test_args.append(vdiskfs12)
 # test_args.append(vdiskfs13)
 #
-# test_args.append(nfs1)
-# test_args.append(nfs2)
-# test_args.append(nfs3)
-# test_args.append(nfs4)
-# test_args.append(nfs5)
-# test_args.append(nfs6)
-# test_args.append(nfs7)
-# test_args.append(nfs8)
-# test_args.append(nfs9)
-# test_args.append(nfs10)
-# test_args.append(nfs11)
-# test_args.append(nfs12)
-# test_args.append(nfs13)
+test_args.append(nfs1)
+test_args.append(nfs2)
+test_args.append(nfs3)
+test_args.append(nfs4)
+test_args.append(nfs5)
+test_args.append(nfs6)
+test_args.append(nfs7)
+test_args.append(nfs8)
+test_args.append(nfs9)
+test_args.append(nfs10)
+test_args.append(nfs11)
+test_args.append(nfs12)
+test_args.append(nfs13)
 #
 # test_args.append(gfs1)
 # test_args.append(gfs2)

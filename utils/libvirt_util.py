@@ -876,7 +876,7 @@ def runCmdRaiseException(cmd):
 if __name__ == '__main__':
     # pprint(vm_info("750646e8c17a49d0b83c1c797811e078"))
     # print(get_boot_disk_path("750646e8c17a49d0b83c1c797811e078"))
-    # print(get_pool_xml('pool1'))
+    # print(get_pool_xml('default'))
     # print _get_pool("pool1").info()
     # pool = _get_pool('pooltest')
     # lines = pool.XMLDesc()
