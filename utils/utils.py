@@ -563,7 +563,7 @@ def get_pool_info(pool_):
     if 'available' in result.keys():
         del result['available']
 
-    xml_dict = runCmdAndSplitKvToJson('virsh pool-dumpxml ' + pool_)
+    xml_dict = runCmdAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
     result['capacity'] = int(xml_dict['pool']['capacity']['text'])
     result['path'] = xml_dict['pool']['target']['path']
     return result
