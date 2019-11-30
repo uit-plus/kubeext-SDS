@@ -2,14 +2,6 @@
 
 import uuid
 
-from utils.utils import randomUUID
+from utils.utils import runCmd
 
-name = 'test_name'
-# namespace = 'test_namespace'
-namespace = uuid.NAMESPACE_URL
-
-# print uuid.uuid1()
-# print uuid.uuid3(namespace,name)
-# print uuid.uuid4()
-print uuid.uuid5(namespace,name)
-print randomUUID()
+runCmd('kubesds-adm createPool  --opt nolock --url 192.168.96.250:/home/nfs --content vmd   --type nfs --pool nfspoola1a')
