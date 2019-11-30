@@ -1182,6 +1182,7 @@ def customize(params):
     try:
         op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
         op.execute()
+        print {"result": {"code": 0, "msg": "customize  successful."}, "data": {}}
     except ExecuteException, e:
         logger.debug("customize")
         logger.debug(params)
@@ -1272,6 +1273,7 @@ def migrate(params):
 
         op = Operation('virsh migrate --live --undefinesource --persistent %s qemu+ssh://%s/system tcp://%s' % (params.domain, params.ip, params.ip), {})
         op.execute()
+        print {"result": {"code": 0, "msg": "migrate vm %s successful." % params.domain}, "data": {}}
     except ExecuteException, e:
         logger.debug("migrate")
         logger.debug(params)
