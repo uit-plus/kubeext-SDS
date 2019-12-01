@@ -35,6 +35,10 @@ LOG = '/var/log/kubesds.log'
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
+VIRTCTL_LOG = '/var/log/virtctl.log'
+
+virtctl_logger = logger.set_logger(os.path.basename(__file__), VIRTCTL_LOG)
+
 DEFAULT_PORT = '19999'
 
 def runCmdWithResult(cmd):
@@ -78,6 +82,9 @@ def runCmdWithResult(cmd):
             logger.debug(cmd)
             logger.debug(msg)
             logger.debug(traceback.format_exc())
+            virtctl_logger.debug(cmd)
+            virtctl_logger.debug(msg)
+            virtctl_logger.debug(traceback.format_exc())
             if msg.strip() != '':
                 raise ExecuteException('RunCmdError', msg)
     finally:
