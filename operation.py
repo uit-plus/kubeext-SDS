@@ -81,11 +81,9 @@ def createPool(params):
                 op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
                                                               'url': params.url}, with_result=True)
             elif params.type == "nfs":
-                kv = {"poolname": params.uuid, "url": params.url}
+                kv = {"poolname": params.uuid, "url": params.url, "opt": params.opt}
                 if params.path:
                     kv["path"] = params.path
-                if params.opt:
-                    kv["opt"] = params.opt
                 op = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
             elif params.type == "glusterfs":
                 kv = {"poolname": params.uuid, "url": params.url}
@@ -109,7 +107,7 @@ def createPool(params):
             else:
                 POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.pool)
             if not os.path.isdir(POOL_PATH):
-                raise ExecuteException('', 'cant not get pooladd-localfs mount path')
+                raise ExecuteException('', 'cant not get cstor mount path')
             # step1 define pool
             op1 = Operation("virsh pool-define-as", {"name": params.pool, "type": "dir", "target": POOL_PATH})
             op1.execute()
@@ -127,7 +125,7 @@ def createPool(params):
             op3 = Operation("virsh pool-start", {"pool": params.pool})
             op3.execute()
 
-            with open(POOL_PATH +'/content', 'w') as f:
+            with open(POOL_PATH + '/content', 'w') as f:
                 f.write(params.content)
 
             result = get_pool_info(params.pool)
@@ -163,30 +161,17 @@ def createPool(params):
         exit(1)
 
 def deletePool(params):
-    result = None
     try:
         if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             if is_pool_started(params.pool):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
-            if params.type == 'localfs':
-                pool_path = get_pool_info(params.pool)['path']
-                files = os.listdir(pool_path)
-                content = ""
-                if len(files) == 1 and 'content' in files:
-                    with open('%s/content' % pool_path, 'r') as f:
-                        content = f.read()
-                    op = Operation('rm -f %s/content' % pool_path, {})
-                    op.execute()
-
+            if params.type == 'localfs' or params.type == "vdiskfs":
                 op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
                 cstor = op.execute()
                 if cstor['result']['code'] != 0:
-                    if content != "":
-                        with open('%s/content' % pool_path, 'w') as f:
-                            content = f.write(content)
                     raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
-            if params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
+            if params.type == "nfs" or params.type == "glusterfs":
                 uuid = get_cstor_real_poolname(params.pool)
                 op = Operation('cstor-cli pool-remove ', {'poolname': uuid}, with_result=True)
                 cstor = op.execute()
@@ -196,12 +181,13 @@ def deletePool(params):
             if is_pool_defined(params.pool):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
                 op2.execute()
-            result = {"msg": "delete pool "+params.pool+" success"}
         elif params.type == "uus":
             kv = {"poolname": params.pool}
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
-            result = op.execute()
-        print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": result})
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+        print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": {}})
     except ExecuteException, e:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
