@@ -33,11 +33,7 @@ from libvirt_util import is_pool_started, _get_pool, is_pool_defined, _get_defin
 
 LOG = '/var/log/kubesds.log'
 
-kubesds_logger = logger.set_logger(os.path.basename(__file__), LOG)
-
-VIRTCTL_LOG = '/var/log/virtctl.log'
-
-virtctl_logger = logger.set_logger(os.path.basename(__file__), VIRTCTL_LOG)
+logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 DEFAULT_PORT = '19999'
 
@@ -55,13 +51,13 @@ def runCmdWithResult(cmd):
                     continue
                 msg = msg + str.strip(line)
             msg = str.strip(msg)
-            kubesds_logger.debug(msg)
+            logger.debug(msg)
             try:
                 result = loads(msg)
                 return result
             except Exception:
-                kubesds_logger.debug(cmd)
-                kubesds_logger.debug(traceback.format_exc())
+                logger.debug(cmd)
+                logger.debug(traceback.format_exc())
                 error_msg = ''
                 for index, line in enumerate(std_err):
                     if not str.strip(line):
@@ -79,12 +75,9 @@ def runCmdWithResult(cmd):
                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
                 else:
                     msg = msg + str.strip(line) + ', '
-            kubesds_logger.debug(cmd)
-            kubesds_logger.debug(msg)
-            kubesds_logger.debug(traceback.format_exc())
-            virtctl_logger.debug(cmd)
-            virtctl_logger.debug(msg)
-            virtctl_logger.debug(traceback.format_exc())
+            logger.debug(cmd)
+            logger.debug(msg)
+            logger.debug(traceback.format_exc())
             if msg.strip() != '':
                 raise ExecuteException('RunCmdError', msg)
     finally:
@@ -102,7 +95,7 @@ def runCmdAndTransferXmlToJson(cmd):
 
 def runCmdAndSplitKvToJson(cmd):
     if not cmd:
-        #         kubesds_logger.debug('No CMD to execute.')
+        #         logger.debug('No CMD to execute.')
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -126,7 +119,7 @@ def runCmdAndSplitKvToJson(cmd):
                 else:
                     error_msg = error_msg + str.strip(line)
             error_msg = str.strip(error_msg)
-            kubesds_logger.debug(error_msg)
+            logger.debug(error_msg)
             if error_msg.strip() != '':
                 raise ExecuteException('RunCmdError', error_msg)
     finally:
@@ -155,13 +148,13 @@ def runCmdAndGetOutput(cmd):
                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
                 else:
                     msg = msg + str.strip(line) + ', '
-            kubesds_logger.debug(cmd)
-            kubesds_logger.debug(msg)
-            kubesds_logger.debug(traceback.format_exc())
+            logger.debug(cmd)
+            logger.debug(msg)
+            logger.debug(traceback.format_exc())
             if msg.strip() != '':
                 raise ExecuteException('RunCmdError', msg)
     except Exception:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
     finally:
         p.stdout.close()
         p.stderr.close()
@@ -175,7 +168,7 @@ Run back-end command in subprocess.
 def runCmd(cmd):
     std_err = None
     if not cmd:
-        #         kubesds_logger.debug('No CMD to execute.')
+        #         logger.debug('No CMD to execute.')
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -190,8 +183,8 @@ def runCmd(cmd):
             #                     msg = msg + str.strip(line) + '. '
             #                 else:
             #                     msg = msg + str.strip(line) + ', '
-            #             kubesds_logger.debug(str.strip(msg))
-            kubesds_logger.debug(std_out)
+            #             logger.debug(str.strip(msg))
+            logger.debug(std_out)
         if std_err:
             #             msg = ''
             #             for index, line in enumerate(std_err):
@@ -201,7 +194,7 @@ def runCmd(cmd):
             #                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
             #                 else:
             #                     msg = msg + str.strip(line) + ', '
-            kubesds_logger.error(std_err)
+            logger.error(std_err)
             #             raise ExecuteException('VirtctlError', str.strip(msg))
             raise ExecuteException('VirtctlError', std_err)
         #         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
@@ -212,7 +205,7 @@ def runCmd(cmd):
 
 
 def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
-    kubesds_logger.debug(cmd)
+    logger.debug(cmd)
     std_err = None
     if not cmd:
         return
@@ -225,7 +218,7 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
             std_out = p.stdout.readlines()
             std_err = p.stderr.readlines()
         if std_err:
-            kubesds_logger.error(std_err)
+            logger.error(std_err)
             raise ExecuteException(head, std_err)
         return std_out
     finally:
@@ -233,34 +226,34 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
         p.stderr.close()
 
 def rpcCall(cmd):
-    kubesds_logger.debug(cmd)
+    logger.debug(cmd)
     try:
         host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
         client = cmdcall_pb2_grpc.CmdCallStub(channel)
         response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
-        kubesds_logger.debug(response.json)
+        logger.debug(response.json)
         jsondict = loads(str(response.json))
     except grpc.RpcError, e:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         # ouch!
         # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
-        kubesds_logger.debug(e.details())
+        logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
         # should print `INVALID_ARGUMENT`
-        kubesds_logger.debug(status_code.name)
+        logger.debug(status_code.name)
         # should print `(3, 'invalid argument')`
-        kubesds_logger.debug(status_code.value)
+        logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
             # do your stuff here
             pass
         raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
     except Exception:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
 
     if jsondict['result']['code'] != 0:
@@ -268,7 +261,7 @@ def rpcCall(cmd):
 
 
 def rpcCallWithResult(cmd):
-    kubesds_logger.debug(cmd)
+    logger.debug(cmd)
     try:
         host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
@@ -279,30 +272,30 @@ def rpcCallWithResult(cmd):
         result = loads(str(response.json))
         return result
     except grpc.RpcError, e:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         # ouch!
         # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
-        kubesds_logger.debug(e.details())
+        logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
         # should print `INVALID_ARGUMENT`
-        kubesds_logger.debug(status_code.name)
+        logger.debug(status_code.name)
         # should print `(3, 'invalid argument')`
-        kubesds_logger.debug(status_code.value)
+        logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
             # do your stuff here
             pass
         raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
     except Exception:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
 
 def rpcCallAndTransferXmlToJson(cmd):
-    kubesds_logger.debug(cmd)
+    logger.debug(cmd)
     try:
         host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
@@ -312,30 +305,30 @@ def rpcCallAndTransferXmlToJson(cmd):
         result = loads(str(response.json))
         return result
     except grpc.RpcError, e:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         # ouch!
         # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
-        kubesds_logger.debug(e.details())
+        logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
         # should print `INVALID_ARGUMENT`
-        kubesds_logger.debug(status_code.name)
+        logger.debug(status_code.name)
         # should print `(3, 'invalid argument')`
-        kubesds_logger.debug(status_code.value)
+        logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
             # do your stuff here
             pass
         raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
     except Exception:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
 
 def rpcCallAndTransferKvToJson(cmd):
-    kubesds_logger.debug(cmd)
+    logger.debug(cmd)
     try:
         host = get_docker0_IP()
         channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
@@ -345,25 +338,25 @@ def rpcCallAndTransferKvToJson(cmd):
         result = loads(str(response.json))
         return result
     except grpc.RpcError, e:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         # ouch!
         # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
-        kubesds_logger.debug(e.details())
+        logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
         # should print `INVALID_ARGUMENT`
-        kubesds_logger.debug(status_code.name)
+        logger.debug(status_code.name)
         # should print `(3, 'invalid argument')`
-        kubesds_logger.debug(status_code.value)
+        logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
             # do your stuff here
             pass
         raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
     except Exception:
-        kubesds_logger.debug(traceback.format_exc())
+        logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
 
