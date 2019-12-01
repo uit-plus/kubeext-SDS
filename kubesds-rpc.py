@@ -93,7 +93,11 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             result = op.execute()
             logger.debug(request)
             logger.debug(result)
-            return cmdcall_pb2.CallResponse(json=dumps(result))
+            if result['result']['code'] == 0:
+                return cmdcall_pb2.CallResponse(json=dumps(result))
+            else:
+                result['result']['msg'] = 'call cmd failure %s' % traceback.format_exc()
+                return cmdcall_pb2.CallResponse(json=dumps(result))
         except ExecuteException:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
