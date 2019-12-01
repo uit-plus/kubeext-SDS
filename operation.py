@@ -12,7 +12,7 @@ from utils.utils import *
 from utils import logger
 
 
-LOG = "/var/log/virtctl.log"
+LOG = "/var/log/kubesds.log"
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
