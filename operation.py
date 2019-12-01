@@ -514,14 +514,14 @@ def deleteDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while delete disk " + params.vol + ". "+e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while delete disk " + params.vol + ". "+e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("deleteDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while delete disk "}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while delete disk "}, "data": {}})
         exit(1)
 
 def resizeDisk(params):
@@ -564,14 +564,14 @@ def resizeDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while resize disk " + params.vol + ". "+e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while resize disk " + params.vol + ". "+e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("resizeDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while resize disk " + params.vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while resize disk " + params.vol}, "data": {}})
         exit(1)
 
 def cloneDisk(params):
@@ -641,14 +641,14 @@ def cloneDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while clone disk " + params.vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while clone disk " + params.vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while clone disk " + params.vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while clone disk " + params.vol}, "data": {}})
         exit(1)
 
 def showDisk(params):
@@ -695,14 +695,14 @@ def showDisk(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while show disk " + params.vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while show disk " + params.vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("showDisk " + params.vol)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while show disk " + params.vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while show disk " + params.vol}, "data": {}})
         exit(1)
 
 def showDiskSnapshot(params):
@@ -729,14 +729,14 @@ def showDiskSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while show disk snapshot " + params.name + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while show disk snapshot " + params.name + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("showDiskSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while show disk snapshot " + params.name}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while show disk snapshot " + params.name}, "data": {}})
         exit(1)
 
 def createSnapshot(params):
@@ -768,14 +768,14 @@ def createSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("createSnapshot " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol}, "data": {}})
         exit(1)
 
 def deleteSnapshot(params):
@@ -801,14 +801,14 @@ def deleteSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while delete Snapshot " + params.snapshot + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while delete Snapshot " + params.snapshot + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while delete Snapshot " + params.snapshot}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while delete Snapshot " + params.snapshot}, "data": {}})
         exit(1)
 
 def revertSnapshot(params):
@@ -832,14 +832,14 @@ def revertSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while revert Snapshot " + params.backing_vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while revert Snapshot " + params.backing_vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("revertSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while revert Snapshot " + params.backing_vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while revert Snapshot " + params.backing_vol}, "data": {}})
         exit(1)
 
 def showSnapshot(params):
@@ -865,14 +865,14 @@ def showSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while show Snapshot " + params.backing_vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while show Snapshot " + params.backing_vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("showSnapshot " + params.snapshot)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while show Snapshot " + params.backing_vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while show Snapshot " + params.backing_vol}, "data": {}})
         exit(1)
 
 def createExternalSnapshot(params):
@@ -959,14 +959,14 @@ def createExternalSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("createExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}})
         exit(1)
 
 # create snapshot on params.name, then rename snapshot to current
@@ -1026,14 +1026,14 @@ def revertExternalSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}})
         exit(1)
 
 def deleteExternalSnapshot(params):
@@ -1137,14 +1137,14 @@ def deleteExternalSnapshot(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("deleteExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}})
         exit(1)
 
 def updateDiskCurrent(params):
@@ -1168,31 +1168,31 @@ def updateDiskCurrent(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while updateDiskCurrent. " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while updateDiskCurrent. " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("updateDiskCurrent " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while updateDiskCurrent."}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while updateDiskCurrent."}, "data": {}})
         exit(1)
 
 def customize(params):
     try:
         op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
         op.execute()
-        print {"result": {"code": 0, "msg": "customize  successful."}, "data": {}}
+        print dumps({"result": {"code": 0, "msg": "customize  successful."}, "data": {}})
     except ExecuteException, e:
         logger.debug("customize")
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while customize."}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while customize."}, "data": {}})
         exit(1)
 
 def createDiskFromImage(params):
@@ -1254,14 +1254,14 @@ def createDiskFromImage(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while createDiskFromImage. " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while createDiskFromImage. " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("createDiskFromImage " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while createDiskFromImage."}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while createDiskFromImage."}, "data": {}})
         exit(1)
 
 def migrate(params):
@@ -1280,18 +1280,18 @@ def migrate(params):
                 params.domain, params.ip, params.ip), {})
             op.execute()
 
-        print {"result": {"code": 0, "msg": "migrate vm %s successful." % params.domain}, "data": {}}
+        print dumps({"result": {"code": 0, "msg": "migrate vm %s successful." % params.domain}, "data": {}})
     except ExecuteException, e:
         logger.debug("migrate")
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 400, "msg": "error occur while migrate. " + e.message}, "data": {}}
+        print dumps({"result": {"code": 400, "msg": "error occur while migrate. " + e.message}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("migrate " + params.domain)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print {"result": {"code": 300, "msg": "error occur while migrate."}, "data": {}}
+        print dumps({"result": {"code": 300, "msg": "error occur while migrate."}, "data": {}})
         exit(1)
 
 def xmlToJson(xmlStr):
