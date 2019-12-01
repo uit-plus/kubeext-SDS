@@ -1271,8 +1271,15 @@ def migrate(params):
         if not is_vm_disk_not_shared_storage(params.domain):
             raise ExecuteException('', 'error: still has disk not create in shared storage.')
 
-        op = Operation('virsh migrate --live --undefinesource --persistent %s qemu+ssh://%s/system tcp://%s' % (params.domain, params.ip, params.ip), {})
-        op.execute()
+        if params.offline:
+            op = Operation('virsh migrate --live --undefinesource --persistent %s qemu+ssh://%s/system tcp://%s' % (
+            params.domain, params.ip, params.ip), {})
+            op.execute()
+        else:
+            op = Operation('virsh migrate --offline --undefinesource --persistent %s qemu+ssh://%s/system tcp://%s' % (
+            params.domain, params.ip, params.ip), {})
+            op.execute()
+
         print {"result": {"code": 0, "msg": "migrate vm %s successful." % params.domain}, "data": {}}
     except ExecuteException, e:
         logger.debug("migrate")

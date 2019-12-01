@@ -1277,6 +1277,8 @@ parser_migrate.add_argument("--domain", metavar="[DOMAIN]", type=str,
                             help="vm domain to migrate")
 parser_migrate.add_argument("--ip", metavar="[IP]", type=str,
                             help="storage pool type to use")
+parser_migrate.add_argument("--offline", metavar="[OFFLINE]", type=bool, nargs='?', const=True,
+                            help="support migrate offline")
 # set default func
 parser_migrate.set_defaults(func=migrateParser)
 
