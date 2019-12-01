@@ -81,9 +81,11 @@ def createPool(params):
                 op = Operation('cstor-cli pooladd-localfs ', {'poolname': params.pool,
                                                               'url': params.url}, with_result=True)
             elif params.type == "nfs":
-                kv = {"poolname": params.uuid, "url": params.url, "opt": params.opt}
+                kv = {"poolname": params.uuid, "url": params.url}
                 if params.path:
                     kv["path"] = params.path
+                if params.opt:
+                    kv["opt"] = params.opt
                 op = Operation("cstor-cli pooladd-nfs", kv, with_result=True)
             elif params.type == "glusterfs":
                 kv = {"poolname": params.uuid, "url": params.url}
@@ -166,26 +168,30 @@ def deletePool(params):
         if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
             if is_pool_started(params.pool):
                 raise ExecuteException('RunCmdError', 'pool '+params.pool+' still active, plz stop it first.')
-            pool_path = get_pool_info(params.pool)['path']
-            files = os.listdir(pool_path)
-            content = ""
-            if len(files) == 1 and 'content' in files:
-                with open('%s/content' % pool_path, 'r') as f:
-                    content = f.read()
-                op = Operation('rm -f %s/content' % pool_path, {})
-                op.execute()
+            if params.type == 'localfs':
+                pool_path = get_pool_info(params.pool)['path']
+                files = os.listdir(pool_path)
+                content = ""
+                if len(files) == 1 and 'content' in files:
+                    with open('%s/content' % pool_path, 'r') as f:
+                        content = f.read()
+                    op = Operation('rm -f %s/content' % pool_path, {})
+                    op.execute()
 
-            if params.type == "nfs" or params.type == "glusterfs":
+                op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
+                cstor = op.execute()
+                if cstor['result']['code'] != 0:
+                    if content != "":
+                        with open('%s/content' % pool_path, 'w') as f:
+                            content = f.write(content)
+                    raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+
+            if params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
                 uuid = get_cstor_real_poolname(params.pool)
                 op = Operation('cstor-cli pool-remove ', {'poolname': uuid}, with_result=True)
-            else:
-                op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                if content != "":
-                    with open('%s/content' % pool_path, 'w') as f:
-                        content = f.write(content)
-                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+                cstor = op.execute()
+                if cstor['result']['code'] != 0:
+                    raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
 
             if is_pool_defined(params.pool):
                 op2 = Operation("virsh pool-undefine", {"pool": params.pool})
