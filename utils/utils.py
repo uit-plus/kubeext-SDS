@@ -233,18 +233,18 @@ def rpcCall(cmd):
         response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
         logger.debug(response.json)
         jsondict = loads(str(response.json))
-    except grpc.RpcError, e:
+    except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print the gRPC error message
+        # lets print(the gRPC error message)
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print `INVALID_ARGUMENT`
+        # should print(`INVALID_ARGUMENT`)
         logger.debug(status_code.name)
-        # should print `(3, 'invalid argument')`
+        # should print(`(3, 'invalid argument')`)
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -270,18 +270,18 @@ def rpcCallWithResult(cmd):
         client = cmdcall_pb2_grpc.CmdCallStub(channel)
         result = loads(str(response.json))
         return result
-    except grpc.RpcError, e:
+    except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print the gRPC error message
+        # lets print(the gRPC error message)
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print `INVALID_ARGUMENT`
+        # should print(`INVALID_ARGUMENT`)
         logger.debug(status_code.name)
-        # should print `(3, 'invalid argument')`
+        # should print(`(3, 'invalid argument')`)
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -303,18 +303,18 @@ def rpcCallAndTransferXmlToJson(cmd):
         response = client.CallAndTransferXmlToJson(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
         return result
-    except grpc.RpcError, e:
+    except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print the gRPC error message
+        # lets print(the gRPC error message)
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print `INVALID_ARGUMENT`
+        # should print(`INVALID_ARGUMENT`)
         logger.debug(status_code.name)
-        # should print `(3, 'invalid argument')`
+        # should print(`(3, 'invalid argument')`)
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -336,18 +336,18 @@ def rpcCallAndTransferKvToJson(cmd):
         response = client.CallAndSplitKVToJson(cmdcall_pb2.CallRequest(cmd=cmd))
         result = loads(str(response.json))
         return result
-    except grpc.RpcError, e:
+    except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print the gRPC error message
+        # lets print(the gRPC error message)
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print `INVALID_ARGUMENT`
+        # should print(`INVALID_ARGUMENT`)
         logger.debug(status_code.name)
-        # should print `(3, 'invalid argument')`
+        # should print(`(3, 'invalid argument')`)
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -423,7 +423,7 @@ class CDaemon:
     save_path:
     '''
 
-    def __init__(self, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=022,
+    def __init__(self, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=0o22,
                  verbose=1):
         self.stdin = stdin
         self.stdout = stdout
@@ -439,7 +439,7 @@ class CDaemon:
             pid = os.fork()
             if pid > 0:
                 sys.exit(0)
-        except OSError, e:
+        except OSError as e:
             sys.stderr.write('fork #1 failed: %d (%s)\n' % (e.errno, e.strerror))
             sys.exit(1)
 
@@ -451,17 +451,17 @@ class CDaemon:
             pid = os.fork()
             if pid > 0:
                 sys.exit(0)
-        except OSError, e:
+        except OSError as e:
             sys.stderr.write('fork #2 failed: %d (%s)\n' % (e.errno, e.strerror))
             sys.exit(1)
 
         sys.stdout.flush()
         sys.stderr.flush()
 
-        si = file(self.stdin, 'r')
-        so = file(self.stdout, 'a+')
+        si = open(self.stdin, 'r')
+        so = open(self.stdout, 'a+')
         if self.stderr:
-            se = file(self.stderr, 'a+', 0)
+            se = open(self.stderr, 'a+', 0)
         else:
             se = so
 
@@ -476,15 +476,15 @@ class CDaemon:
         signal.signal(signal.SIGINT, sig_handler)
 
         if self.verbose >= 1:
-            print 'daemon process started ...'
+            print('daemon process started ...')
 
         atexit.register(self.del_pid)
         pid = str(os.getpid())
-        file(self.pidfile, 'w+').write('%s\n' % pid)
+        open(self.pidfile, 'w+').write('%s\n' % pid)
 
     def get_pid(self):
         try:
-            pf = file(self.pidfile, 'r')
+            pf = open(self.pidfile, 'r')
             pid = int(pf.read().strip())
             pf.close()
         except IOError:
@@ -499,7 +499,7 @@ class CDaemon:
 
     def start(self, *args, **kwargs):
         if self.verbose >= 1:
-            print 'ready to starting ......'
+            print('ready to starting ......')
         # check for a pid file to see if the daemon already runs
         pid = self.get_pid()
         if pid:
@@ -512,7 +512,7 @@ class CDaemon:
 
     def stop(self):
         if self.verbose >= 1:
-            print 'stopping ...'
+            print('stopping ...')
         pid = self.get_pid()
         if not pid:
             msg = 'pid file [%s] does not exist. Not running?\n' % self.pidfile
@@ -529,16 +529,16 @@ class CDaemon:
                 i = i + 1
                 if i % 10 == 0:
                     os.kill(pid, signal.SIGHUP)
-        except OSError, err:
+        except OSError as err:
             err = str(err)
             if err.find('No such process') > 0:
                 if os.path.exists(self.pidfile):
                     os.remove(self.pidfile)
             else:
-                print str(err)
+                print(str(err))
                 sys.exit(1)
             if self.verbose >= 1:
-                print 'Stopped!'
+                print('Stopped!')
 
     def restart(self, *args, **kwargs):
         self.stop()
@@ -551,7 +551,7 @@ class CDaemon:
 
     def run(self, *args, **kwargs):
         'NOTE: override the method in subclass'
-        print 'base class run()'
+        print('base class run()')
 
 
 def singleton(pid_filename):
@@ -574,7 +574,7 @@ def singleton(pid_filename):
 
             try:
                 pidfile.close()
-            except IOError, err:
+            except IOError as err:
                 if err.errno != 9:
                     return
             os.remove(pid_filename)
@@ -642,7 +642,7 @@ def get_disk_info(ss_path):
         try:
             result = runCmdWithResult('qemu-img info --output json ' + ss_path)
         except:
-            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
+            print({"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}})
             exit(1)
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
@@ -655,7 +655,7 @@ def get_sn_chain(ss_path):
         try:
             result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
         except:
-            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
+            print({"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}})
             exit(1)
     return result
 
@@ -687,7 +687,7 @@ class DiskImageHelper(object):
         get_backing_file_cmd = "qemu-img info %s" % file
         try:
             out = runCmdRaiseException(get_backing_file_cmd, use_read=True)
-        except Exception, e:
+        except Exception as e:
             if raise_it:
                 raise e
             get_backing_file_cmd = "qemu-img info -U %s" % file
@@ -744,7 +744,7 @@ def change_vm_os_disk_file(vm, source, target):
     return False
 
 def is_shared_storage(file):
-    cmd = 'df %s | awk \'{print $1}\' | sed -n "2, 1p"' % file
+    cmd = 'df %s | awk \'{print($1}\' | sed -n "2, 1p"' % file
     fs = runCmdAndGetOutput(cmd)
     fs = fs.strip()
     if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
@@ -790,15 +790,15 @@ def is_vm_disk_driver_cache_none(vm):
     return True
 
 if __name__ == '__main__':
-    print get_volume_size('pooluitdir', 'vm006')
-# print is_vm_disk_not_shared_storage('vm006')
-# print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
-# print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
+    print(get_volume_size('pooluitdir', 'vm006'))
+# print(is_vm_disk_not_shared_storage('vm006'))
+# print(change_vm_os_disk_open('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1'))
+# print(get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3'))
 
-# print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
+# print(os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest'))
 
-# print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
+# print(get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1'))
 
-# print get_pool_info('test1')
+# print(get_pool_info('test1'))
 
-# print get_sn_chain_path('/var/lib/libvirt/pooltest/disktest/0e8e48d9-b6ab-4477-999d-0e57b521a51b')
+# print(get_sn_chain_path('/var/lib/libvirt/pooltest/disktest/0e8e48d9-b6ab-4477-999d-0e57b521a51b'))

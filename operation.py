@@ -112,7 +112,7 @@ def createPool(params):
                 try:
                     op2 = Operation("virsh pool-autostart", {"pool": params.pool})
                     op2.execute()
-                except ExecuteException, e:
+                except ExecuteException as e:
                     op_cancel = Operation("virsh pool-undefine", {"--pool": params.pool})
                     op_cancel.execute()
                     raise e
@@ -139,20 +139,20 @@ def createPool(params):
             result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"],
                       "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID(), "content": 'vmd'}
 
-        print dumps({"result": {"code": 0, "msg": "create pool "+params.pool+" successful."}, "data": result})
-    except ExecuteException, e:
+        print(dumps({"result": {"code": 0, "msg": "create pool "+params.pool+" successful."}, "data": result}))
+    except ExecuteException as e:
         logger.debug("createPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while create pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while create pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("createPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while create pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while create pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def deletePool(params):
@@ -182,20 +182,20 @@ def deletePool(params):
             cstor = op.execute()
             if cstor['result']['code'] != 0:
                 raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
-        print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": {}})
-    except ExecuteException, e:
+        print(dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while delete pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while delete pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("deletePool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while delete pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while delete pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def startPool(params):
@@ -212,23 +212,22 @@ def startPool(params):
                 result["state"] = "active"
             else:
                 result["state"] = "inactive"
-            print dumps(
-                {"result": {"code": 0, "msg": "start pool " + params.pool + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "start pool " + params.pool + " successful."}, "data": result}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("startPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while start pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while start pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("startPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while start pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while start pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def autoStartPool(params):
@@ -246,23 +245,22 @@ def autoStartPool(params):
                 result["state"] = "active"
             else:
                 result["state"] = "inactive"
-            print dumps(
-                {"result": {"code": 0, "msg": "autoStart pool " + params.pool + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "autoStart pool " + params.pool + " successful."}, "data": result}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("autoStartPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while autoStart pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while autoStart pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("autoStartPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while autoStart pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while autoStart pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def unregisterPool(params):
@@ -270,23 +268,22 @@ def unregisterPool(params):
         if params.type == "localfs":
             deletePool(params)
         elif params.type == "nfs" or params.type == "glusterfs":
-            print dumps(
-                {"result": {"code": 500, "msg": params.pool + " is nfs or glusterfs." + "unregister pool " + params.pool + " will make pool be deleted, but mount point still exist."}, "data": {}})
+            print(dumps({"result": {"code": 500, "msg": params.pool + " is nfs or glusterfs." + "unregister pool " + params.pool + " will make pool be deleted, but mount point still exist."}, "data": {}}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("unregisterPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while unregister pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while unregister pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("unregisterPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while unregister pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while unregister pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def stopPool(params):
@@ -301,23 +298,22 @@ def stopPool(params):
                 result["state"] = "active"
             else:
                 result["state"] = "inactive"
-            print dumps(
-                {"result": {"code": 0, "msg": "stop pool " + params.pool + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "stop pool " + params.pool + " successful."}, "data": result}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("stopPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while stop pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while stop pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("stopPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while stop pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while stop pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def showPool(params):
@@ -342,20 +338,20 @@ def showPool(params):
 
             result = {"name": params.pool, "pooltype": uus_poolinfo['data']['pooltype'], "capacity": uus_poolinfo["data"]["total"],
                       "autostart": "yes", "path": uus_poolinfo["data"]["url"], "state": "active", "uuid": randomUUID()}
-        print dumps({"result": {"code": 0, "msg": "show pool "+params.pool+" successful."}, "data": result})
-    except ExecuteException, e:
+        print(dumps({"result": {"code": 0, "msg": "show pool "+params.pool+" successful."}, "data": result}))
+    except ExecuteException as e:
         logger.debug("showPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while show pool " + params.pool + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while show pool " + params.pool + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("showPool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while show pool " + params.pool + "."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while show pool " + params.pool + "."}, "data": {}}))
         exit(1)
 
 def createDisk(params):
@@ -397,13 +393,13 @@ def createDisk(params):
 
             result['disk'] = params.vol
             result["pool"] = params.pool
-            print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result}))
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol, "size": params.capacity}
             op1 = Operation("cstor-cli vdisk-create", kv, with_result=True)
             diskinfo = op1.execute()
             if diskinfo["result"]["code"] != 0:
-                print dumps(diskinfo)
+                print(dumps(diskinfo))
                 exit(1)
 
             kv = {"poolname": params.pool, "name": params.vol, "uni": diskinfo["data"]["uni"]}
@@ -415,9 +411,9 @@ def createDisk(params):
                 op3 = Operation("cstor-cli vdisk-remove", kv, with_result=True)
                 rmDiskInfo = op3.execute()
                 if rmDiskInfo["result"]["code"] == 0:
-                    print dumps({"result": {"code": 1, "msg": "error: create disk success but can not prepare disk" + params.vol + "."}, "data": {}})
+                    print(dumps({"result": {"code": 1, "msg": "error: create disk success but can not prepare disk" + params.vol + "."}, "data": {}}))
                 else:
-                    print dumps({"result": {"code": 1, "msg": "error: can not prepare disk and roll back fail(can not delete the disk)" + params.vol + ". "}, "data": {}})
+                    print(dumps({"result": {"code": 1, "msg": "error: can not prepare disk and roll back fail(can not delete the disk)" + params.vol + ". "}, "data": {}}))
                 exit(1)
             else:
                 result = {
@@ -428,21 +424,20 @@ def createDisk(params):
                     "uni": diskinfo["data"]["uni"],
                     "uuid": randomUUID(),
                 }
-                print dumps({"result": {"code": 0,
-                                        "msg": "create disk "+params.pool+" success."}, "data": result})
-    except ExecuteException, e:
+                print(dumps({"result": {"code": 0, "msg": "create disk "+params.pool+" success."}, "data": result}))
+    except ExecuteException as e:
         logger.debug("createDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while create disk " + params.vol + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while create disk " + params.vol + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("createDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while create disk " + params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while create disk " + params.vol}, "data": {}}))
         exit(1)
 
 def deleteDisk(params):
@@ -476,39 +471,39 @@ def deleteDisk(params):
 
             op = Operation("rm -rf " + disk_dir, {})
             op.execute()
-            print dumps({"result": {"code": 0, "msg": "delete volume " + params.vol + " success."}, "data": {}})
+            print(dumps({"result": {"code": 0, "msg": "delete volume " + params.vol + " success."}, "data": {}}))
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol}
             op1 = Operation("cstor-cli vdisk-show", kv, with_result=True)
             diskinfo = op1.execute()
             if diskinfo["result"]["code"] != 0:
-                print dumps(diskinfo)
+                print(dumps(diskinfo))
                 exit(1)
 
             kv = {"poolname": params.pool, "name": params.vol, "uni": diskinfo["data"]["uni"]}
             op = Operation("cstor-cli vdisk-release", kv, True)
             releaseInfo = op.execute()
             if releaseInfo["result"]["code"] != 0:
-                print dumps(releaseInfo)
+                print(dumps(releaseInfo))
                 exit(1)
 
             kv = {"poolname": params.pool, "name": params.vol}
             op = Operation("cstor-cli vdisk-remove", kv, with_result=True)
             result = op.execute()
-            print dumps(result)
-    except ExecuteException, e:
+            print(dumps(result))
+    except ExecuteException as e:
         logger.debug("deleteDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while delete disk " + params.vol + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while delete disk " + params.vol + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("deleteDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while delete disk "}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while delete disk "}, "data": {}}))
         exit(1)
 
 def resizeDisk(params):
@@ -541,24 +536,24 @@ def resizeDisk(params):
 
             result['disk'] = params.vol
             result["pool"] = params.pool
-            print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result}))
 
         elif params.type == "uus":
             raise ExecuteException("", "not support operation for uus and vdiskfs.")
 
-    except ExecuteException, e:
+    except ExecuteException as e:
         logger.debug("resizeDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while resize disk " + params.vol + ". "+e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while resize disk " + params.vol + ". "+e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("resizeDisk " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while resize disk " + params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while resize disk " + params.vol}, "data": {}}))
         exit(1)
 
 def cloneDisk(params):
@@ -620,22 +615,22 @@ def cloneDisk(params):
 
             result['disk'] = params.newname
             result["pool"] = params.pool
-            print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result}))
         elif params.type == "uus":
             raise ExecuteException("", "not support operation for uus and vdiskfs.")
-    except ExecuteException, e:
+    except ExecuteException as e:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while clone disk " + params.vol + ". " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while clone disk " + params.vol + ". " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("deletePool " + params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while clone disk " + params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while clone disk " + params.vol}, "data": {}}))
         exit(1)
 
 def showDisk(params):
@@ -658,8 +653,7 @@ def showDisk(params):
             result['disk'] = params.vol
             result["pool"] = params.pool
             result["current"] = config["current"]
-            print dumps(
-                {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result}))
         elif params.type == "uus":
             kv = {"poolname": params.pool, "name": params.vol}
             op = Operation("cstor-cli vdisk-show", kv, True)
@@ -675,21 +669,20 @@ def showDisk(params):
                 "current": diskinfo["data"]["path"]
             }
 
-            print dumps({"result": {"code": 0,
-                                    "msg": "show disk " + params.pool + " success."}, "data": result})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 0, "msg": "show disk " + params.pool + " success."}, "data": result}))
+    except ExecuteException as e:
         logger.debug("showDisk " + params.vol)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while show disk " + params.vol + ". " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while show disk " + params.vol + ". " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("showDisk " + params.vol)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while show disk " + params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while show disk " + params.vol}, "data": {}}))
         exit(1)
 
 def showDiskSnapshot(params):
@@ -707,23 +700,22 @@ def showDiskSnapshot(params):
             result = get_disk_info(snapshot_path)
             result['disk'] = params.vol
             result["pool"] = params.pool
-            print dumps(
-                {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": result}))
         elif params.type == "uus":
             raise ExecuteException("", "not support operation for uus and vdiskfs.")
-    except ExecuteException, e:
+    except ExecuteException as e:
         logger.debug("showDiskSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while show disk snapshot " + params.name + ". " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while show disk snapshot " + params.name + ". " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("showDiskSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while show disk snapshot " + params.name}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while show disk snapshot " + params.name}, "data": {}}))
         exit(1)
 
 def createExternalSnapshot(params):
@@ -763,9 +755,7 @@ def createExternalSnapshot(params):
                 result['disk'] = config['name']
                 result["pool"] = params.pool
                 # result["current"] = DiskImageHelper.get_backing_file(ss_path)
-                print dumps(
-                    {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
-                     "data": result})
+                print(dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},"data": result}))
             else:
                 specs = get_disks_spec(params.domain)
                 disk_config = get_disk_config(params.pool, params.vol)
@@ -800,24 +790,22 @@ def createExternalSnapshot(params):
                 result = get_disk_info(ss_path)
                 result['disk'] = config['name']
                 result["pool"] = params.pool
-                print dumps(
-                    {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
-                     "data": result})
+                print(dumps({"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},"data": result}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("createExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("createExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while createExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}))
         exit(1)
 
 # create snapshot on params.name, then rename snapshot to current
@@ -869,22 +857,22 @@ def revertExternalSnapshot(params):
             result['disk'] = config['name']
             result["pool"] = params.pool
 
-            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while revertExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}))
         exit(1)
 
 def deleteExternalSnapshot(params):
@@ -909,7 +897,7 @@ def deleteExternalSnapshot(params):
 
             disk_config = get_disk_config(params.pool, params.vol)
 
-            # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
+            # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file) as except current.
             snapshots_to_delete = []
             files = os.listdir(disk_config['dir'] + '/snapshots')
             for df in files:
@@ -978,24 +966,24 @@ def deleteExternalSnapshot(params):
 
             result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
                       'need_to_modify': config['current'], "pool": params.pool}
-            print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result})
+            print(dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."}, "data": result}))
 
 
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("deleteExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol + ". " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("deleteExternalSnapshot " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while deleteExternalSnapshot " + params.name +" on "+ params.vol}, "data": {}}))
         exit(1)
 
 def updateDiskCurrent(params):
@@ -1011,39 +999,39 @@ def updateDiskCurrent(params):
                     config['current'] = current
                 with open(config_path, "w") as f:
                     dump(config, f)
-                print dumps({"result": {"code": 0, "msg": "updateDiskCurrent successful."}, "data": {}})
+                print(dumps({"result": {"code": 0, "msg": "updateDiskCurrent successful."}, "data": {}}))
         elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-    except ExecuteException, e:
+            print(dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("updateDiskCurrent")
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while updateDiskCurrent. " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while updateDiskCurrent. " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("updateDiskCurrent " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while updateDiskCurrent."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while updateDiskCurrent."}, "data": {}}))
         exit(1)
 
 def customize(params):
     try:
         op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
         op.execute()
-        print dumps({"result": {"code": 0, "msg": "customize  successful."}, "data": {}})
-    except ExecuteException, e:
+        print(dumps({"result": {"code": 0, "msg": "customize  successful."}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("customize")
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while customize. " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while customize."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while customize."}, "data": {}}))
         exit(1)
 
 def createDiskFromImage(params):
@@ -1053,7 +1041,7 @@ def createDiskFromImage(params):
         dest = '%s/%s' % (dest_dir, params.name)
         dest_config_file = '%s/config.json' % (dest_dir)
         if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir, 0711)
+            os.makedirs(dest_dir, 0o711)
         if os.path.exists(dest_config_file):
             raise Exception('Path %s already in use, aborting copy.' % dest_dir)
 
@@ -1097,22 +1085,20 @@ def createDiskFromImage(params):
         result = get_disk_info(dest)
         result['disk'] = config['name']
         result["pool"] = params.targetPool
-        print dumps(
-            {"result": {"code": 0, "msg": "createDiskFromImage " + params.name + " successful."},
-             "data": result})
-    except ExecuteException, e:
+        print(dumps({"result": {"code": 0, "msg": "createDiskFromImage " + params.name + " successful."},"data": result}))
+    except ExecuteException as e:
         logger.debug("createDiskFromImage")
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while createDiskFromImage. " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while createDiskFromImage. " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("createDiskFromImage " + params.name)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while createDiskFromImage."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while createDiskFromImage."}, "data": {}}))
         exit(1)
 
 def migrate(params):
@@ -1134,18 +1120,18 @@ def migrate(params):
                 params.domain, params.ip, params.ip), {})
             op.execute()
 
-        print dumps({"result": {"code": 0, "msg": "migrate vm %s successful." % params.domain}, "data": {}})
-    except ExecuteException, e:
+        print(dumps({"result": {"code": 0, "msg": "migrate vm %s successful." % params.domain}, "data": {}}))
+    except ExecuteException as e:
         logger.debug("migrate")
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while migrate. " + e.message}, "data": {}})
+        print(dumps({"result": {"code": 400, "msg": "error occur while migrate. " + e.message}, "data": {}}))
         exit(1)
     except Exception:
         logger.debug("migrate " + params.domain)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while migrate."}, "data": {}})
+        print(dumps({"result": {"code": 300, "msg": "error occur while migrate."}, "data": {}}))
         exit(1)
 
 def xmlToJson(xmlStr):
