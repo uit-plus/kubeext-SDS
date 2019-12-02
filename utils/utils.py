@@ -28,8 +28,7 @@ import cmdcall_pb2
 import cmdcall_pb2_grpc
 import logger
 from exception import ExecuteException
-from netutils import get_docker0_IP, get_host_ip
-from libvirt_util import is_pool_started, _get_pool, is_pool_defined, _get_defined_pool
+from netutils import get_docker0_IP
 
 LOG = '/var/log/kubesds.log'
 
@@ -374,6 +373,46 @@ def randomUUIDFromName(name):
 
     return str(uuid.uuid5(namespace, name))
 
+def is_pool_started(pool):
+    poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
+    if poolInfo['state'] == 'running':
+        return True
+    return False
+
+def is_pool_exists(pool):
+    poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
+    if poolInfo and pool == poolInfo['name']:
+        return True
+    return False
+
+def is_pool_defined(pool):
+    poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
+    if poolInfo['persistent'] == 'yes':
+        return True
+    return False
+
+def is_vm_active(domain):
+    output = runCmdAndGetOutput('virsh list')
+    lines = output.splitlines()
+    for line in lines:
+        if domain in line.split():
+            return True
+    return False
+
+def get_volume_size(pool, vol):
+    disk_config = get_disk_config(pool, vol)
+    disk_info = get_disk_info(disk_config['current'])
+    return int(disk_info['virtual_size'])
+
+def get_disks_spec(domain):
+    output = runCmdAndGetOutput('virsh domblklist %s' % domain)
+    lines = output.splitlines()
+    spec = {}
+    for i in range(2, len(lines)):
+        kv = lines[i].split()
+        if len(kv) == 2:
+            spec[kv[1]] = kv[0]
+    return spec
 
 class CDaemon:
     '''
@@ -750,6 +789,8 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
+if __name__ == '__main__':
+    print get_volume_size('pooluitdir', 'vm006')
 # print is_vm_disk_not_shared_storage('vm006')
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')

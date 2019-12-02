@@ -1,14 +1,8 @@
-import os
-import traceback
-import uuid
 from xml.etree.ElementTree import fromstring
 from xmljson import badgerfish as bf
-from json import dumps, loads
 from sys import exit
 
 from netutils import get_host_IP
-from utils.exception import *
-from utils.libvirt_util import get_volume_xml, get_disks_spec, is_vm_active
 from utils.utils import *
 from utils import logger
 
@@ -730,142 +724,6 @@ def showDiskSnapshot(params):
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({"result": {"code": 300, "msg": "error occur while show disk snapshot " + params.name}, "data": {}})
-        exit(1)
-
-def createSnapshot(params):
-    try:
-        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("virsh vol-create-as ", {'pool': params.pool, 'name': params.snapshot, 'capacity': params.capacity,
-                                                    'format': params.format, 'backing-vol': params.backing_vol,
-                                                    'backing-vol-format': params.backing_vol_format})
-            op.execute()
-            # get snapshot info
-            vol_xml = get_volume_xml(params.pool, params.snapshot)
-            result = loads(xmlToJson(vol_xml))['volume']
-            print dumps(
-                {"result": {"code": 0, "msg": "create snapshot " + params.snapshot + " successful."}, "data": result})
-
-        elif params.type == "uus":
-            if params.vmname is None:
-                op = Operation("cstor-cli vdisk-add-ss",
-                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-            else:
-                op = Operation("cstor-cli vdisk-add-ss",
-                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot, 'vmname': params.vmname}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-    except ExecuteException, e:
-        logger.debug("createSnapshot " + params.snapshot)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol + ". " + e.message}, "data": {}})
-        exit(1)
-    except Exception:
-        logger.debug("createSnapshot " + params.pool)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while create Snapshot " + params.snapshot +" on "+ params.backing_vol}, "data": {}})
-        exit(1)
-
-def deleteSnapshot(params):
-    try:
-        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
-            op = Operation("virsh vol-delete ", {'pool': params.pool, 'vol': params.snapshot})
-            op.execute()
-            print dumps({"result": {"code": 0, "msg": "delete snapshot " + params.snapshot + " success."}, "data": {}})
-        elif params.type == "uus":
-            if params.vmname is None:
-                op = Operation("cstor-cli vdisk-rm-ss",
-                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-            else:
-                op = Operation("cstor-cli vdisk-rm-ss",
-                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot,
-                                'vmname': params.vmname}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-    except ExecuteException, e:
-        logger.debug("deleteSnapshot " + params.snapshot)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while delete Snapshot " + params.snapshot + ". " + e.message}, "data": {}})
-        exit(1)
-    except Exception:
-        logger.debug("deletePool " + params.pool)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while delete Snapshot " + params.snapshot}, "data": {}})
-        exit(1)
-
-def revertSnapshot(params):
-    try:
-        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
-            print dumps({"result": {"code": 1, "msg": "not support operation."}, "data": {}})
-        elif params.type == "uus":
-            if params.vmname is None:
-                op = Operation("cstor-cli vdisk-rr-ss",
-                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-            else:
-                op = Operation("cstor-cli vdisk-rr-ss",
-                               {"poolname": params.pool, "name": params.backing_vol, "sname": params.snapshot,
-                                'vmname': params.vmname}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-    except ExecuteException, e:
-        logger.debug("revertSnapshot " + params.snapshot)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while revert Snapshot " + params.backing_vol + ". " + e.message}, "data": {}})
-        exit(1)
-    except Exception:
-        logger.debug("revertSnapshot " + params.snapshot)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while revert Snapshot " + params.backing_vol}, "data": {}})
-        exit(1)
-
-def showSnapshot(params):
-    try:
-        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs":
-            vol_xml = get_volume_xml(params.pool, params.snapshot)
-            result = loads(xmlToJson(vol_xml))['volume']
-            print dumps(
-                {"result": {"code": 0, "msg": "get snapshot info " + params.snapshot + " successful."}, "data": result})
-        elif params.type == "uus":
-            if params.vmname is None:
-                op = Operation("cstor-cli vdisk-show-ss",
-                               {"pool": params.pool, "name": params.backing_vol, "sname": params.snapshot}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-            else:
-                op = Operation("cstor-cli vdisk-show-ss",
-                               {"pool": params.pool, "name": params.backing_vol, "sname": params.snapshot, 'vmname': params.vmname}, True)
-                ssInfo = op.execute()
-                print dumps(ssInfo)
-    except ExecuteException, e:
-        logger.debug("showSnapshot " + params.snapshot)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while show Snapshot " + params.backing_vol + ". " + e.message}, "data": {}})
-        exit(1)
-    except Exception:
-        logger.debug("showSnapshot " + params.snapshot)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while show Snapshot " + params.backing_vol}, "data": {}})
         exit(1)
 
 def createExternalSnapshot(params):
