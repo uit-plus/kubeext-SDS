@@ -6,6 +6,7 @@ from xmljson import badgerfish as bf
 from json import dumps, loads
 from sys import exit
 
+from netutils import get_host_IP
 from utils.exception import *
 from utils.libvirt_util import get_volume_xml, get_disks_spec, is_vm_active
 from utils.utils import *
@@ -1262,6 +1263,9 @@ def migrate(params):
             raise ExecuteException('', 'error: disk driver cache is not none')
         if not is_vm_disk_not_shared_storage(params.domain):
             raise ExecuteException('', 'error: still has disk not create in shared storage.')
+
+        if params.ip in get_host_IP():
+            raise ExecuteException('', 'error: not valid ip address.')
 
         if params.offline:
             op = Operation('virsh migrate --offline --undefinesource --persistent %s qemu+ssh://%s/system tcp://%s' % (
