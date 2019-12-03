@@ -415,7 +415,11 @@ def createDisk(params):
         if params.type != 'uus':
             result = qemu_create_disk(params.pool, params.vol, params.format, params.capacity)
             uni = result["uni"]
-            prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)
+            if params.type == 'nfs' or params.type == 'glusterfs':
+                uuid = get_cstor_real_poolname(params.pool)
+                prepareInfo = cstor_prepare_disk(uuid, params.vol, uni)
+            else:
+                prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)
         else:
             uni = createInfo["data"]["uni"]
             prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)

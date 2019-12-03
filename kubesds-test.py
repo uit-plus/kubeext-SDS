@@ -1096,13 +1096,13 @@ vdiskfs11 = parser.parse_args(["deleteDisk", "--type", "vdiskfs", "--pool", "poo
 vdiskfs12 = parser.parse_args(["stopPool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 vdiskfs13 = parser.parse_args(["deletePool", "--type", "vdiskfs", "--pool", "poolvdiskfs"])
 
-nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "133.133.135.30:/home/nfs", "--opt", "nolock", "--content", "vmd", "--path", "abc", "--uuid", "07098ca5-fd17-4fcc-afee-76b0d7fccde4"])
+nfs1 = parser.parse_args(["createPool", "--type", "nfs", "--pool", "poolnfs", "--url", "133.133.135.30:/home/nfs", "--opt", "nolock", "--content", "vmd", "--path", "abc", "--uuid", "07098ca5fd174fccafee76b0d7fccde4"])
 nfs2 = parser.parse_args(["createDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--capacity", "1073741824", "--format", "qcow2"])
 nfs3 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2"])
 nfs4 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.2", "--format", "qcow2"])
-nfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5-fd17-4fcc-afee-76b0d7fccde4/disknfs/disknfs"])
+nfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5fd174fccafee76b0d7fccde4/disknfs/disknfs"])
 nfs6 = parser.parse_args(["createExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.3", "--format", "qcow2"])
-nfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5-fd17-4fcc-afee-76b0d7fccde4/disknfs/disknfs"])
+nfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--name", "disknfs.1", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5fd174fccafee76b0d7fccde4/disknfs/disknfs"])
 nfs8 = parser.parse_args(["resizeDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--capacity", "2147483648"])
 nfs9 = parser.parse_args(["cloneDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfs", "--newname", "disknfsclone", "--format", "qcow2"])
 nfs10 = parser.parse_args(["deleteDisk", "--type", "nfs", "--pool", "poolnfs", "--vol", "disknfsclone"])
@@ -1110,13 +1110,13 @@ nfs11 = parser.parse_args(["deleteDisk", "--type", "nfs", "--pool", "poolnfs", "
 nfs12 = parser.parse_args(["stopPool", "--type", "nfs", "--pool", "poolnfs"])
 nfs13 = parser.parse_args(["deletePool", "--type", "nfs", "--pool", "poolnfs"])
 
-gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "192.168.3.100:nfsvol", "--content", "vmd", "--path", "abc", "--uuid", "07098ca5-fd17-4fcc-afee-76b0d7fccde4"])
+gfs1 = parser.parse_args(["createPool", "--type", "glusterfs", "--pool", "poolglusterfs", "--url", "192.168.3.100:nfsvol", "--content", "vmd", "--path", "abc", "--uuid", "07098ca5fd174fccafee76b0d7fccde4"])
 gfs2 = parser.parse_args(["createDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--capacity", "1073741824", "--format", "qcow2"])
 gfs3 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2"])
 gfs4 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.2", "--format", "qcow2"])
-gfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5-fd17-4fcc-afee-76b0d7fccde4/diskglusterfs/diskglusterfs"])
+gfs5 = parser.parse_args(["revertExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--format", "qcow2", "--backing_file", "/var/lib/libvirt/cstor/abc/07098ca5fd174fccafee76b0d7fccde4/diskglusterfs/diskglusterfs"])
 gfs6 = parser.parse_args(["createExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.3", "--format", "qcow2"])
-gfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--backing_file", "/var/lib/libvirt/cstor/poolglusterfs/abc/07098ca5-fd17-4fcc-afee-76b0d7fccde4/diskglusterfs"])
+gfs7 = parser.parse_args(["deleteExternalSnapshot", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--name", "diskglusterfs.1", "--backing_file", "/var/lib/libvirt/cstor/poolglusterfs/abc/07098ca5fd174fccafee76b0d7fccde4/diskglusterfs"])
 gfs8 = parser.parse_args(["resizeDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--capacity", "2147483648"])
 gfs9 = parser.parse_args(["cloneDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfs", "--newname", "diskglusterfsclone", "--format", "qcow2"])
 gfs10 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolglusterfs", "--vol", "diskglusterfsclone"])
@@ -1214,7 +1214,7 @@ for args in test_args:
     #     ["createDisk", "--type", "localfs", "--pool", "vmdi", "--vol", "vm006", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
     # args = parser.parse_args(
-    #     ["createDiskFromImage", "--type", "localfs", "--targetPool", "vmdi", "--name", "vm006copyrw", "--source", "/var/lib/libvirt/cstor/07098ca5-fd17-4fcc-afed-76b0d7fccde9/07098ca5-fd17-4fcc-afed-76b0d7fccde9/wyw222/wyw222", "--full_copy"])
+    #     ["createDiskFromImage", "--type", "localfs", "--targetPool", "vmdi", "--name", "vm006copyrw", "--source", "/var/lib/libvirt/cstor/07098ca5fd174fccafed76b0d7fccde9/07098ca5-fd17-4fcc-afed-76b0d7fccde9/wyw222/wyw222", "--full_copy"])
     # args.func(args)
 
     # args = parser.parse_args(
