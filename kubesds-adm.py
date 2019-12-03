@@ -778,7 +778,7 @@ def createDiskFromImageParser(args):
     if args.source is None:
         print dumps({"result": {"code": 100, "msg": "less arg, source must be set"}, "data": {}})
         exit(3)
-
+	createDiskFromImage(args)
 
 def migrateParser(args):
     if args.ip is None:
