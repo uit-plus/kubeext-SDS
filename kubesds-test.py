@@ -1124,19 +1124,19 @@ gfs11 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolg
 gfs12 = parser.parse_args(["stopPool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 
-# test_args.append(dir1)
-# test_args.append(dir2)
-# test_args.append(dir3)
-# test_args.append(dir4)
-# test_args.append(dir5)
-# test_args.append(dir6)
-# test_args.append(dir7)
-# test_args.append(dir8)
-# test_args.append(dir9)
-# test_args.append(dir10)
-# test_args.append(dir11)
-# test_args.append(dir12)
-# test_args.append(dir13)
+test_args.append(dir1)
+test_args.append(dir2)
+test_args.append(dir3)
+test_args.append(dir4)
+test_args.append(dir5)
+test_args.append(dir6)
+test_args.append(dir7)
+test_args.append(dir8)
+test_args.append(dir9)
+test_args.append(dir10)
+test_args.append(dir11)
+test_args.append(dir12)
+test_args.append(dir13)
 
 # test_args.append(uus1)
 # test_args.append(uus2)
@@ -1159,19 +1159,19 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(vdiskfs12)
 # test_args.append(vdiskfs13)
 #
-# test_args.append(nfs1)
-# test_args.append(nfs2)
-# test_args.append(nfs3)
-# test_args.append(nfs4)
-# test_args.append(nfs5)
-# test_args.append(nfs6)
-# test_args.append(nfs7)
-# test_args.append(nfs8)
-# test_args.append(nfs9)
-# test_args.append(nfs10)
-# test_args.append(nfs11)
-# test_args.append(nfs12)
-# test_args.append(nfs13)
+test_args.append(nfs1)
+test_args.append(nfs2)
+test_args.append(nfs3)
+test_args.append(nfs4)
+test_args.append(nfs5)
+test_args.append(nfs6)
+test_args.append(nfs7)
+test_args.append(nfs8)
+test_args.append(nfs9)
+test_args.append(nfs10)
+test_args.append(nfs11)
+test_args.append(nfs12)
+test_args.append(nfs13)
 #
 # test_args.append(gfs1)
 # test_args.append(gfs2)
@@ -1188,12 +1188,12 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(gfs13)
 
 
-# for args in test_args:
-#     try:
-#         args.func(args)
-#     except TypeError:
-#         print traceback.format_exc()
-#         logger.debug(traceback.format_exc())
+for args in test_args:
+    try:
+        args.func(args)
+    except TypeError:
+        print traceback.format_exc()
+        logger.debug(traceback.format_exc())
 
 
 # try:
@@ -1203,7 +1203,7 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 #     # print "argument number not enough"
 #     logger.debug(traceback.format_exc())
 
-try:
+# try:
 #     args = parser.parse_args(
 #         ["migrate", "--domain", "vm006", "--ip", "133.133.135.22"])
 #     args.func(args)
@@ -1213,9 +1213,9 @@ try:
     # args = parser.parse_args(
     #     ["createDisk", "--type", "localfs", "--pool", "vmdi", "--vol", "vm006", "--capacity", "10737418240", "--format", "qcow2"])
     # args.func(args)
-    args = parser.parse_args(
-        ["createDiskFromImage", "--type", "localfs", "--targetPool", "vmdi", "--name", "vm006copyrw", "--source", "/var/lib/libvirt/cstor/07098ca5-fd17-4fcc-afed-76b0d7fccde9/07098ca5-fd17-4fcc-afed-76b0d7fccde9/wyw222/wyw222", "--full_copy"])
-    args.func(args)
+    # args = parser.parse_args(
+    #     ["createDiskFromImage", "--type", "localfs", "--targetPool", "vmdi", "--name", "vm006copyrw", "--source", "/var/lib/libvirt/cstor/07098ca5-fd17-4fcc-afed-76b0d7fccde9/07098ca5-fd17-4fcc-afed-76b0d7fccde9/wyw222/wyw222", "--full_copy"])
+    # args.func(args)
 
     # args = parser.parse_args(
     #     ["createExternalSnapshot", "--type", "localfs", "--pool", "vmdi", "--format", "qcow2", "--name", "vm006.1", "--vol", "vm006"])
@@ -1242,6 +1242,6 @@ try:
     # args = parser.parse_args(
     #     ["updateDiskCurrent", "--type", "localfs", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
     # args.func(args)
-except TypeError:
-    print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-    print traceback.format_exc()
+# except TypeError:
+#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
+#     print traceback.format_exc()
