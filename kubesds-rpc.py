@@ -47,7 +47,7 @@ class Operation(object):
     def get_cmd(self):
         cmd = self.cmd
         for key in self.params.keys():
-            cmd = cmd + " --" + key + " " + self.params[key] + " "
+            cmd = "%s --%s %s " % (cmd, key, self.params[key])
         return cmd
 
     def execute(self):
@@ -75,14 +75,14 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
 
             logger.debug(request)
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 0, 'msg': 'call cmd ' + cmd + ' successful.'}, 'data': {}}))
+                json=dumps({'result': {'code': 0, 'msg': 'call cmd %s successful.' % cmd}, 'data': {}}))
         except ExecuteException:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure. %s' % traceback.format_exc()}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure. %s' % traceback.format_exc()}, 'data': {}}))
 
     def CallWithResult(self, request, context):
         try:
@@ -101,10 +101,10 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
         except ExecuteException:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
 
     def CallAndTransferXmlToJson(self, request, context):
         try:
@@ -119,10 +119,10 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
         except ExecuteException:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
 
     def CallAndSplitKVToJson(self, request, context):
         try:
@@ -137,10 +137,10 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
         except ExecuteException:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure ' + traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure '+traceback.format_exc()}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
 
 def run_server():
     # 多线程服务器
@@ -150,8 +150,7 @@ def run_server():
     # 注册本地服务,方法CmdCallServicer只有这个是变的
     cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
     # 监听端口
-    print get_docker0_IP() + ':' + DEFAULT_PORT
-    logger.debug(get_docker0_IP() + ':' + DEFAULT_PORT)
+    logger.debug("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
     server.add_insecure_port(get_docker0_IP() + ':' + DEFAULT_PORT)
     # 开始接收请求进行服务
     server.start()
