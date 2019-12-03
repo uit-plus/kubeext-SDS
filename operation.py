@@ -45,6 +45,9 @@ class Operation(object):
             return runCmd(cmd)
 
 
+# def execute(f_name, params):
+#     getattr()
+
 
 # class Executor(object):
 #     def __init__(self, ops):
@@ -152,7 +155,7 @@ def createPool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while create pool " + params.pool + "."}, "data": {}})
+        print dumps({"result": {"code": 300, "msg": "error occur while create pool %s. traceback: %s" % (params.pool, traceback.format_exc())}, "data": {}})
         exit(1)
 
 def deletePool(params):
@@ -195,7 +198,7 @@ def deletePool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while delete pool " + params.pool + "."}, "data": {}})
+        print dumps({"result": {"code": 300, "msg": "error occur while delete pool %s. trackback: %s" % (params.pool, traceback.format_exc())}, "data": {}})
         exit(1)
 
 def startPool(params):
@@ -221,14 +224,14 @@ def startPool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while start pool " + params.pool + ". "+e.message}, "data": {}})
+        print dumps({"result": {"code": 400, "msg": "error occur while start pool %s. error: %s" % (params.pool, e.message)}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("startPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while start pool " + params.pool + "."}, "data": {}})
+        print dumps({"result": {"code": 300, "msg": "error occur while start pool %s. trackback: %s" % (params.pool, traceback.format_exc())}, "data": {}})
         exit(1)
 
 def autoStartPool(params):
@@ -255,39 +258,16 @@ def autoStartPool(params):
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while autoStart pool " + params.pool + ". "+e.message}, "data": {}})
+        print dumps({"result": {"code": 400, "msg": "error occur while autoStart pool %s. error: %s" % (params.pool, e.message)}, "data": {}})
         exit(1)
     except Exception:
         logger.debug("autoStartPool "+ params.pool)
         logger.debug(params.type)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while autoStart pool " + params.pool + "."}, "data": {}})
+        print dumps({"result": {"code": 300, "msg": "error occur while autoStart pool %s. trackback: %s" % (params.pool, traceback.format_exc())}, "data": {}})
         exit(1)
 
-def unregisterPool(params):
-    try:
-        if params.type == "localfs":
-            deletePool(params)
-        elif params.type == "nfs" or params.type == "glusterfs":
-            print dumps(
-                {"result": {"code": 500, "msg": params.pool + " is nfs or glusterfs." + "unregister pool " + params.pool + " will make pool be deleted, but mount point still exist."}, "data": {}})
-        elif params.type == "uus":
-            print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-    except ExecuteException, e:
-        logger.debug("unregisterPool " + params.pool)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while unregister pool " + params.pool + ". "+e.message}, "data": {}})
-        exit(1)
-    except Exception:
-        logger.debug("unregisterPool "+ params.pool)
-        logger.debug(params.type)
-        logger.debug(params)
-        logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while unregister pool " + params.pool + "."}, "data": {}})
-        exit(1)
 
 def stopPool(params):
     try:
@@ -358,78 +338,80 @@ def showPool(params):
         print dumps({"result": {"code": 300, "msg": "error occur while show pool " + params.pool + "."}, "data": {}})
         exit(1)
 
+def cstor_prepare_disk(pool, vol, uni):
+    kv = {"poolname": pool, "name": vol, "uni": uni}
+    op = Operation("cstor-cli vdisk-prepare", kv, with_result=True)
+    prepareInfo = op.execute()
+    # delete the disk
+    if prepareInfo["result"]["code"] != 0:
+        kv = {"poolname": pool, "name": vol}
+        op3 = Operation("cstor-cli vdisk-remove", kv, with_result=True)
+        rmDiskInfo = op3.execute()
+        if rmDiskInfo["result"]["code"] != 0:
+            raise ExecuteException(rmDiskInfo["result"]["code"], 'cstor raise exception while prepare disk: %s and try delete disk fail: %s' % (prepareInfo['result']['msg'], rmDiskInfo["result"]["msg"]))
+        raise ExecuteException(prepareInfo["result"]["code"], 'cstor raise exception while prepare disk: %s' % prepareInfo['result']['msg'])
+
+    return prepareInfo
+def cstor_create_disk(pool, vol, capacity):
+    op = Operation('cstor-cli vdisk-create ', {'poolname': pool, 'name': vol,
+                                               'size': capacity}, with_result=True)
+    createInfo = op.execute()
+    if createInfo['result']['code'] != 0:
+        raise ExecuteException(createInfo['result']['code'], 'cstor raise exception: %s' % createInfo['result']['msg'])
+
+    return createInfo
+
+
+def qemu_create_disk(pool, vol, format, capacity):
+    pool_info = get_pool_info(pool)
+    if not os.path.isdir(pool_info['path']):
+        raise ExecuteException('', 'can not get virsh pool path.')
+    # create disk dir and create disk in dir.
+    disk_dir = "%s/%s" % (pool_info['path'], vol)
+    if os.path.isdir(disk_dir):
+        raise ExecuteException('', 'error: disk dir has exist.')
+    os.makedirs(disk_dir)
+    disk_path = "%s/%s" % (disk_dir, vol)
+    op = Operation('qemu-img create -f %s %s %s' % (format, disk_path, capacity), {})
+    op.execute()
+
+    config = {}
+    config['name'] = vol
+    config['dir'] = disk_dir
+    config['current'] = disk_path
+
+    with open(disk_dir + '/config.json', "w") as f:
+        dump(config, f)
+    result = get_disk_info(disk_path)
+    result['disk'] = vol
+    result["pool"] = pool
+    result["uni"] = disk_path
+    return result
+
+
 def createDisk(params):
     try:
-        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
-            if params.type == "nfs" or params.type == "glusterfs":
-                uuid = get_cstor_real_poolname(params.pool)
-                op = Operation('cstor-cli vdisk-create ', {'poolname': uuid, 'name': params.vol,
-                                                           'size': params.capacity}, with_result=True)
-            else:
-                op = Operation('cstor-cli vdisk-create ', {'poolname': params.pool, 'name': params.vol,
-                                                           'size': params.capacity}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+        if params.type == "nfs" or params.type == "glusterfs":
+            uuid = get_cstor_real_poolname(params.pool)
+            createInfo = cstor_create_disk(uuid, params.vol, params.capacity)
+        else:
+            createInfo = cstor_create_disk(params.pool, params.vol, params.capacity)
 
-            pool_info = get_pool_info(params.pool)
-            if not os.path.isdir(pool_info['path']):
-                raise ExecuteException('', 'can not get pool path.')
-            # create disk dir and create disk in dir.
-            disk_dir = pool_info['path'] + '/' + params.vol
-            if os.path.isdir(disk_dir):
-                raise ExecuteException('', 'error: disk dir has exist.')
-            os.makedirs(disk_dir)
-            disk_path = disk_dir + '/' + params.vol
-            op1 = Operation('qemu-img create -f ' + params.format + ' ' + disk_path + ' ' + params.capacity, {})
-            op1.execute()
-
-            config = {}
-            config['name'] = params.vol
-            config['dir'] = disk_dir
-            config['current'] = disk_path
-
-            with open(disk_dir + '/config.json', "w") as f:
-                dump(config, f)
-
-            result = get_disk_info(disk_path)
-            # vol_xml = get_volume_xml(params.pool, params.vol)
-
-            result['disk'] = params.vol
-            result["pool"] = params.pool
-            print dumps({"result": {"code": 0, "msg": "create disk "+params.vol+" successful."}, "data": result})
-        elif params.type == "uus":
-            kv = {"poolname": params.pool, "name": params.vol, "size": params.capacity}
-            op1 = Operation("cstor-cli vdisk-create", kv, with_result=True)
-            diskinfo = op1.execute()
-            if diskinfo["result"]["code"] != 0:
-                print dumps(diskinfo)
-                exit(1)
-
-            kv = {"poolname": params.pool, "name": params.vol, "uni": diskinfo["data"]["uni"]}
-            op2 = Operation("cstor-cli vdisk-prepare", kv, with_result=True)
-            prepareInfo = op2.execute()
-            # delete the disk
-            if prepareInfo["result"]["code"] != 0:
-                kv = {"poolname": params.pool, "name": params.vol}
-                op3 = Operation("cstor-cli vdisk-remove", kv, with_result=True)
-                rmDiskInfo = op3.execute()
-                if rmDiskInfo["result"]["code"] == 0:
-                    print dumps({"result": {"code": 1, "msg": "error: create disk success but can not prepare disk" + params.vol + "."}, "data": {}})
-                else:
-                    print dumps({"result": {"code": 1, "msg": "error: can not prepare disk and roll back fail(can not delete the disk)" + params.vol + ". "}, "data": {}})
-                exit(1)
-            else:
-                result = {
-                    "disk": params.vol,
-                    "pool": params.pool,
-                    "virtual_size": params.capacity,
-                    "filename": prepareInfo["data"]["path"],
-                    "uni": diskinfo["data"]["uni"],
-                    "uuid": randomUUID(),
-                }
-                print dumps({"result": {"code": 0,
-                                        "msg": "create disk "+params.pool+" success."}, "data": result})
+        if params.type != 'uus':
+            result = qemu_create_disk(params.pool, params.vol, params.format, params.capacity)
+            uni = result["uni"]
+            prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)
+        else:
+            uni = createInfo["data"]["uni"]
+            prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)
+            result = {
+                "disk": params.vol,
+                "pool": params.pool,
+                "virtual_size": params.capacity,
+                "filename": prepareInfo["data"]["path"],
+                "uni": createInfo["data"]["uni"]
+            }
+        print dumps({"result": {"code": 0, "msg": "create disk %s successful." % params.vol}, "data": result})
     except ExecuteException, e:
         logger.debug("createDisk " + params.pool)
         logger.debug(params.type)
@@ -636,6 +618,53 @@ def cloneDisk(params):
         logger.debug(params)
         logger.debug(traceback.format_exc())
         print dumps({"result": {"code": 300, "msg": "error occur while clone disk " + params.vol}, "data": {}})
+        exit(1)
+
+def prepareDisk(params):
+    try:
+        op = Operation('cstor-cli vdisk-prepare ', {'poolname': params.pool, 'name': params.vol,
+                                                 'uni': params.uni}, with_result=True)
+        cstor = op.execute()
+        if cstor['result']['code'] != 0:
+            raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+    except ExecuteException, e:
+        logger.debug("prepareDisk " + params.vol)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps(
+            {"result": {"code": 400, "msg": "error occur while prepare disk " + params.name + ". " + e.message},
+             "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug("prepareDisk " + params.vol)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while prepare disk " + params.name}, "data": {}})
+        exit(1)
+def releaseDisk(params):
+    try:
+        op = Operation('cstor-cli vdisk-prepare ', {'poolname': params.pool, 'name': params.vol,
+                                                 'uni': params.uni}, with_result=True)
+        cstor = op.execute()
+        if cstor['result']['code'] != 0:
+            raise ExecuteException('', 'cstor raise exception: ' + cstor['result']['msg'])
+    except ExecuteException, e:
+        logger.debug("releaseDisk " + params.vol)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps(
+            {"result": {"code": 400, "msg": "error occur while release disk " + params.name + ". " + e.message},
+             "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug("releaseDisk " + params.vol)
+        logger.debug(params.type)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while release disk " + params.name}, "data": {}})
         exit(1)
 
 def showDisk(params):

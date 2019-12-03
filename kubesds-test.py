@@ -335,31 +335,6 @@ def autoStartPoolParser(args):
 
     autoStartPool(args)
 
-
-def unregisterPoolParser(args):
-    if args.type is None:
-        print dumps({"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}})
-        exit(1)
-    if args.type not in ["localfs", "uus", "nfs", "glusterfs", "vdiskfs"]:
-        print dumps({"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}})
-        exit(2)
-    if args.pool is None:
-        print dumps({"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}})
-        exit(3)
-
-    if args.type == "localfs" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
-        check_cstor_pool_not_exist(args.pool)
-        check_virsh_pool_not_exist(args.pool)
-        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
-        check_pool_type(args.pool, args.type)
-
-    elif args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-        exit(3)
-
-    unregisterPool(args)
-
-
 def stopPoolParser(args):
     if args.type is None:
         print dumps({"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}})
@@ -779,6 +754,10 @@ def createDiskFromImageParser(args):
         print dumps({"result": {"code": 100, "msg": "less arg, source must be set"}, "data": {}})
         exit(3)
 
+# def argCheck(args, regex):
+#     for arg in args:
+#         print arg
+#         print type(arg)
 
 def migrateParser(args):
     if args.ip is None:
@@ -869,16 +848,6 @@ parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool, 
 
 # set default func
 parser_autostart_pool.set_defaults(func=autoStartPoolParser)
-
-# -------------------- add unregisterPool cmd ----------------------------------
-parser_unregister_pool = subparsers.add_parser("unregisterPool", help="unregisterPool help")
-parser_unregister_pool.add_argument("--type", metavar="[localfs|uus|nfs|glusterfs|vdiskfs]", type=str,
-                                    help="storage pool type to use")
-
-parser_unregister_pool.add_argument("--pool", metavar="[POOL]", type=str,
-                                    help="storage pool name to unregister")
-# set default func
-parser_unregister_pool.set_defaults(func=unregisterPoolParser)
 
 # -------------------- add stopPool cmd ----------------------------------
 parser_stop_pool = subparsers.add_parser("stopPool", help="stopPool help")
@@ -1154,19 +1123,19 @@ gfs11 = parser.parse_args(["deleteDisk", "--type", "glusterfs", "--pool", "poolg
 gfs12 = parser.parse_args(["stopPool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolglusterfs"])
 
-# test_args.append(dir1)
-# test_args.append(dir2)
-# test_args.append(dir3)
-# test_args.append(dir4)
-# test_args.append(dir5)
-# test_args.append(dir6)
-# test_args.append(dir7)
-# test_args.append(dir8)
-# test_args.append(dir9)
-# test_args.append(dir10)
-# test_args.append(dir11)
-# test_args.append(dir12)
-# test_args.append(dir13)
+test_args.append(dir1)
+test_args.append(dir2)
+test_args.append(dir3)
+test_args.append(dir4)
+test_args.append(dir5)
+test_args.append(dir6)
+test_args.append(dir7)
+test_args.append(dir8)
+test_args.append(dir9)
+test_args.append(dir10)
+test_args.append(dir11)
+test_args.append(dir12)
+test_args.append(dir13)
 
 # test_args.append(uus1)
 # test_args.append(uus2)
@@ -1189,19 +1158,19 @@ gfs13 = parser.parse_args(["deletePool", "--type", "glusterfs", "--pool", "poolg
 # test_args.append(vdiskfs12)
 # test_args.append(vdiskfs13)
 #
-test_args.append(nfs1)
-test_args.append(nfs2)
-test_args.append(nfs3)
-test_args.append(nfs4)
-test_args.append(nfs5)
-test_args.append(nfs6)
-test_args.append(nfs7)
-test_args.append(nfs8)
-test_args.append(nfs9)
-test_args.append(nfs10)
-test_args.append(nfs11)
-test_args.append(nfs12)
-test_args.append(nfs13)
+# test_args.append(nfs1)
+# test_args.append(nfs2)
+# test_args.append(nfs3)
+# test_args.append(nfs4)
+# test_args.append(nfs5)
+# test_args.append(nfs6)
+# test_args.append(nfs7)
+# test_args.append(nfs8)
+# test_args.append(nfs9)
+# test_args.append(nfs10)
+# test_args.append(nfs11)
+# test_args.append(nfs12)
+# test_args.append(nfs13)
 #
 # test_args.append(gfs1)
 # test_args.append(gfs2)
@@ -1222,6 +1191,7 @@ for args in test_args:
     try:
         args.func(args)
     except TypeError:
+        print traceback.format_exc()
         logger.debug(traceback.format_exc())
 
 
@@ -1273,4 +1243,4 @@ for args in test_args:
     # args.func(args)
 # except TypeError:
 #     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-#     logger.debug(traceback.format_exc())
+#     print traceback.format_exc()
