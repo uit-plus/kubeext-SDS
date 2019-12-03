@@ -336,30 +336,6 @@ def autoStartPoolParser(args):
     autoStartPool(args)
 
 
-def unregisterPoolParser(args):
-    if args.type is None:
-        print dumps({"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}})
-        exit(1)
-    if args.type not in ["localfs", "uus", "nfs", "glusterfs", "vdiskfs"]:
-        print dumps({"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}})
-        exit(2)
-    if args.pool is None:
-        print dumps({"result": {"code": 100, "msg": "less arg, pool must be set"}, "data": {}})
-        exit(3)
-
-    if args.type == "localfs" or args.type == "nfs" or args.type == "glusterfs" or args.type == "vdiskfs":
-        check_cstor_pool_not_exist(args.pool)
-        check_virsh_pool_not_exist(args.pool)
-        # if pool type is nfs or gluster, maybe cause virsh pool delete but cstor pool still exist
-        check_pool_type(args.pool, args.type)
-
-    elif args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-        exit(3)
-
-    unregisterPool(args)
-
-
 def stopPoolParser(args):
     if args.type is None:
         print dumps({"result": {"code": 100, "msg": "less arg type must be set"}, "data": {}})
@@ -869,16 +845,6 @@ parser_autostart_pool.add_argument("--disable", metavar="[DISABLE]", type=bool, 
 
 # set default func
 parser_autostart_pool.set_defaults(func=autoStartPoolParser)
-
-# -------------------- add unregisterPool cmd ----------------------------------
-parser_unregister_pool = subparsers.add_parser("unregisterPool", help="unregisterPool help")
-parser_unregister_pool.add_argument("--type", metavar="[localfs|uus|nfs|glusterfs|vdiskfs]", type=str,
-                                    help="storage pool type to use")
-
-parser_unregister_pool.add_argument("--pool", metavar="[POOL]", type=str,
-                                    help="storage pool name to unregister")
-# set default func
-parser_unregister_pool.set_defaults(func=unregisterPoolParser)
 
 # -------------------- add stopPool cmd ----------------------------------
 parser_stop_pool = subparsers.add_parser("stopPool", help="stopPool help")
