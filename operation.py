@@ -722,7 +722,7 @@ def showDisk(params):
             result = {
                 "disk": params.vol,
                 "pool": params.pool,
-                "virtual_size": params.capacity,
+                "virtual_size": diskinfo["data"]["size"],
                 "filename": diskinfo["data"]["path"],
                 "uni": diskinfo["data"]["uni"]
             }
