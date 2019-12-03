@@ -98,10 +98,10 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             else:
                 result['result']['msg'] = 'rpc call kubesds-adm cmd failure %s' % result['result']['msg']
                 return cmdcall_pb2.CallResponse(json=dumps(result))
-        except ExecuteException:
+        except ExecuteException, e:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % e.message}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % traceback.format_exc()}, 'data': {}}))

@@ -68,12 +68,7 @@ def runCmdWithResult(cmd):
         if std_err:
             msg = ''
             for index, line in enumerate(std_err):
-                if not str.strip(line):
-                    continue
-                if index == len(std_err) - 1:
-                    msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-                else:
-                    msg = msg + str.strip(line) + ', '
+                msg = msg + line + ', '
             logger.debug(cmd)
             logger.debug(msg)
             logger.debug(traceback.format_exc())
