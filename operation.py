@@ -1104,7 +1104,6 @@ def createDiskFromImage(params):
                     op = Operation('rm -rf %s' % dest_dir, {})
                     op.execute()
                 raise Exception('Execute "qemu-img rebase -f qcow2 %s" failed!' % (dest))
-
         else:
             if params.source.find('snapshots') >= 0:
                 source_disk_dir = os.path.dirname(os.path.dirname(params.source))
