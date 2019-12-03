@@ -98,7 +98,7 @@ def createPool(params):
 
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
             if params.type == "nfs" or params.type == "glusterfs":
                 POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.uuid)
@@ -139,7 +139,7 @@ def createPool(params):
             op = Operation("cstor-cli pooladd-uus", kv, with_result=True)
             uus_poolinfo = op.execute()
             if uus_poolinfo['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 uus_poolinfo['result']['code'], uus_poolinfo['result']['msg'], uus_poolinfo['obj']))
 
             result = {"name": params.pool, "pooltype": "uus", "capacity": uus_poolinfo["data"]["total"],
@@ -170,7 +170,7 @@ def deletePool(params):
                 op = Operation('cstor-cli pool-remove ', {'poolname': params.pool}, with_result=True)
                 cstor = op.execute()
                 if cstor['result']['code'] != 0:
-                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
             if params.type == "nfs" or params.type == "glusterfs":
@@ -178,7 +178,7 @@ def deletePool(params):
                 op = Operation('cstor-cli pool-remove ', {'poolname': uuid}, with_result=True)
                 cstor = op.execute()
                 if cstor['result']['code'] != 0:
-                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                         cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
             if is_pool_defined(params.pool):
@@ -189,7 +189,7 @@ def deletePool(params):
             op = Operation("cstor-cli pool-remove", kv, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
         print dumps({"result": {"code": 0, "msg": "delete pool "+params.pool+" successful."}, "data": {}})
     except ExecuteException, e:
@@ -326,7 +326,7 @@ def showPool(params):
             op = Operation("cstor-cli pool-show", kv, with_result=True)
             uus_poolinfo = op.execute()
             if uus_poolinfo['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     uus_poolinfo['result']['code'], uus_poolinfo['result']['msg'], uus_poolinfo['obj']))
 
             result = {"name": params.pool, "pooltype": uus_poolinfo['data']['pooltype'], "capacity": uus_poolinfo["data"]["total"],
@@ -358,11 +358,11 @@ def cstor_prepare_disk(pool, vol, uni):
         rmDiskInfo = op3.execute()
         if rmDiskInfo["result"]["code"] != 0:
             raise ExecuteException(rmDiskInfo["result"]["code"],
-                                   'cstor raise exception while prepare disk, cstor error code: %d, msg: %s, obj %s and try delete disk fail, cstor error code: %d, msg: %s, obj %s' % (
+                                   'cstor raise exception while prepare disk, cstor error code: %d, msg: %s, obj: %s and try delete disk fail, cstor error code: %d, msg: %s, obj: %s' % (
                                    prepareInfo['result']['code'], prepareInfo['result']['msg'], prepareInfo['obj'],
                                    rmDiskInfo["result"]["code"], rmDiskInfo["result"]["msg"], rmDiskInfo['obj']))
         raise ExecuteException(prepareInfo["result"]["code"],
-                               'cstor raise exception while prepare disk, cstor error code: %d, msg: %s, obj %s' % (
+                               'cstor raise exception while prepare disk, cstor error code: %d, msg: %s, obj: %s' % (
                                prepareInfo['result']['code'], prepareInfo['result']['msg'], prepareInfo['obj']))
 
     return prepareInfo
@@ -453,7 +453,7 @@ def deleteDisk(params):
                                with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
@@ -481,14 +481,14 @@ def deleteDisk(params):
             diskinfo = op1.execute()
             if diskinfo["result"]["code"] != 0:
                 if diskinfo['result']['code'] != 0:
-                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                         diskinfo['result']['code'], diskinfo['result']['msg'], diskinfo['obj']))
 
             kv = {"poolname": params.pool, "name": params.vol, "uni": diskinfo["data"]["uni"]}
             op = Operation("cstor-cli vdisk-release", kv, True)
             releaseInfo = op.execute()
             if releaseInfo['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     releaseInfo['result']['code'], releaseInfo['result']['msg'], releaseInfo['obj']))
 
             kv = {"poolname": params.pool, "name": params.vol}
@@ -522,7 +522,7 @@ def resizeDisk(params):
                                                            'size': params.capacity}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
             pool_info = get_pool_info(params.pool)
@@ -573,7 +573,7 @@ def cloneDisk(params):
                                                           'clonename': params.newname}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
             pool_info = get_pool_info(params.pool)
@@ -645,7 +645,7 @@ def prepareDisk(params):
                                                  'uni': params.uni}, with_result=True)
         cstor = op.execute()
         if cstor['result']['code'] != 0:
-            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
     except ExecuteException, e:
         logger.debug("prepareDisk " + params.vol)
@@ -669,7 +669,7 @@ def releaseDisk(params):
                                                  'uni': params.uni}, with_result=True)
         cstor = op.execute()
         if cstor['result']['code'] != 0:
-            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
     except ExecuteException, e:
         logger.debug("releaseDisk " + params.vol)
@@ -698,7 +698,7 @@ def showDisk(params):
                 op = Operation('cstor-cli vdisk-show ', {'poolname': params.pool, 'name': params.vol}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
             pool_info = get_pool_info(params.pool)
             disk_dir = pool_info['path'] + '/' + params.vol
@@ -716,7 +716,7 @@ def showDisk(params):
             op = Operation("cstor-cli vdisk-show", kv, True)
             diskinfo = op.execute()
             if diskinfo['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     diskinfo['result']['code'], diskinfo['result']['msg'], diskinfo['obj']))
 
             result = {
@@ -790,7 +790,7 @@ def createExternalSnapshot(params):
                                                            'sname': params.name}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
             if params.domain is None:
                 disk_config = get_disk_config(params.pool, params.vol)
@@ -889,7 +889,7 @@ def revertExternalSnapshot(params):
                                                           'sname': params.name}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
 
@@ -953,7 +953,7 @@ def deleteExternalSnapshot(params):
                                                           'sname': params.name}, with_result=True)
             cstor = op.execute()
             if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj %s' % (
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                     cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
             if params.domain:
