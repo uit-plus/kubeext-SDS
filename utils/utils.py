@@ -778,7 +778,10 @@ def is_vm_disk_driver_cache_none(vm):
     return True
 
 if __name__ == '__main__':
-    print get_volume_size('pooluitdir', 'vm006')
+    try:
+        runCmd('virsh pool-info pooluitdirds')
+    except ExecuteException, e:
+        print e.message
 # print is_vm_disk_not_shared_storage('vm006')
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
