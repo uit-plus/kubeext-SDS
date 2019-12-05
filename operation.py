@@ -347,9 +347,17 @@ def showPool(params):
         print dumps({"result": {"code": 300, "msg": "error occur while show pool " + params.pool + "."}, "data": {}})
         exit(1)
 
-def cstor_prepare_disk(pool, vol, uni):
-    kv = {"poolname": pool, "name": vol, "uni": uni}
-    op = Operation("cstor-cli vdisk-prepare", kv, with_result=True)
+def cstor_prepare_disk(params, uni):
+    pool = params.pool
+    vol = params.vol
+    if params.type in ['nfs', 'glusterfs']:
+        uuid = get_cstor_real_poolname(params.pool)
+        kv = {"poolname": uuid, "name": vol, "uni": uni}
+        op = Operation("cstor-cli vdisk-prepare", kv, with_result=True)
+    else:
+        kv = {"poolname": pool, "name": vol, "uni": uni}
+        op = Operation("cstor-cli vdisk-prepare", kv, with_result=True)
+
     prepareInfo = op.execute()
     # delete the disk
     if prepareInfo["result"]["code"] != 0:
@@ -361,6 +369,10 @@ def cstor_prepare_disk(pool, vol, uni):
                                    'cstor raise exception while prepare disk, cstor error code: %d, msg: %s, obj: %s and try delete disk fail, cstor error code: %d, msg: %s, obj: %s' % (
                                    prepareInfo['result']['code'], prepareInfo['result']['msg'], prepareInfo['obj'],
                                    rmDiskInfo["result"]["code"], rmDiskInfo["result"]["msg"], rmDiskInfo['obj']))
+        if params.type != "uus":
+            disk_dir = get_disk_dir(pool, vol)
+            op = Operation('rm -rf %s' % disk_dir, {})
+            op.execute()
         raise ExecuteException(prepareInfo["result"]["code"],
                                'cstor raise exception while prepare disk, cstor error code: %d, msg: %s, obj: %s' % (
                                prepareInfo['result']['code'], prepareInfo['result']['msg'], prepareInfo['obj']))
@@ -376,6 +388,12 @@ def cstor_create_disk(pool, vol, capacity):
 
     return createInfo
 
+def get_disk_dir(pool, vol):
+    pool_info = get_pool_info(pool)
+    if not os.path.isdir(pool_info['path']):
+        raise ExecuteException('', 'can not get virsh pool path.')
+    # create disk dir and create disk in dir.
+    disk_dir = "%s/%s" % (pool_info['path'], vol)
 
 def qemu_create_disk(pool, vol, format, capacity):
     pool_info = get_pool_info(pool)
@@ -416,10 +434,9 @@ def createDisk(params):
             result = qemu_create_disk(params.pool, params.vol, params.format, params.capacity)
             uni = result["uni"]
             if params.type == 'nfs' or params.type == 'glusterfs':
-                uuid = get_cstor_real_poolname(params.pool)
-                prepareInfo = cstor_prepare_disk(uuid, params.vol, uni)
+                prepareInfo = cstor_prepare_disk(params, uni)
             else:
-                prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)
+                prepareInfo = cstor_prepare_disk(params, uni)
         else:
             uni = createInfo["data"]["uni"]
             prepareInfo = cstor_prepare_disk(params.pool, params.vol, uni)
@@ -645,12 +662,18 @@ def cloneDisk(params):
 
 def prepareDisk(params):
     try:
-        op = Operation('cstor-cli vdisk-prepare ', {'poolname': params.pool, 'name': params.vol,
-                                                 'uni': params.uni}, with_result=True)
+        if params.type in ["nfs", "glusterfs"]:
+            uuid = get_cstor_real_poolname(params.pool)
+            op = Operation('cstor-cli vdisk-prepare ', {'poolname': uuid, 'name': params.vol,
+                                                        'uni': params.uni}, with_result=True)
+        else:
+            op = Operation('cstor-cli vdisk-prepare ', {'poolname': params.pool, 'name': params.vol,
+                                                        'uni': params.uni}, with_result=True)
         cstor = op.execute()
         if cstor['result']['code'] != 0:
             raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+        print dumps({"result": {"code": 0, "msg": "prepare disk " + params.vol + " successful."}, "data": {}})
     except ExecuteException, e:
         logger.debug("prepareDisk " + params.vol)
         logger.debug(params.type)
@@ -667,14 +690,22 @@ def prepareDisk(params):
         logger.debug(traceback.format_exc())
         print dumps({"result": {"code": 300, "msg": "error occur while prepare disk " + params.name}, "data": {}})
         exit(1)
+def cstor_release_disk(params):
+    if params.type in ["nfs", "glusterfs"]:
+        uuid = get_cstor_real_poolname(params.pool)
+        op = Operation('cstor-cli vdisk-release ', {'poolname': uuid, 'name': params.vol,
+                                                    'uni': params.uni}, with_result=True)
+    else:
+        op = Operation('cstor-cli vdisk-release ', {'poolname': params.pool, 'name': params.vol,
+                                                    'uni': params.uni}, with_result=True)
+    cstor = op.execute()
+    if cstor['result']['code'] != 0:
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 def releaseDisk(params):
     try:
-        op = Operation('cstor-cli vdisk-prepare ', {'poolname': params.pool, 'name': params.vol,
-                                                 'uni': params.uni}, with_result=True)
-        cstor = op.execute()
-        if cstor['result']['code'] != 0:
-            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
-                cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+        cstor_release_disk(params)
+        print dumps({"result": {"code": 0, "msg": "release disk " + params.vol + " successful."}, "data": {}})
     except ExecuteException, e:
         logger.debug("releaseDisk " + params.vol)
         logger.debug(params.type)
@@ -880,56 +911,57 @@ def createExternalSnapshot(params):
 # create snapshot on params.name, then rename snapshot to current
 def revertExternalSnapshot(params):
     try:
-        if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
-            if params.domain and is_vm_active(params.domain):
-                raise ExecuteException('', 'domain %s is still active, plz stop it first.')
-
-            if params.type == "nfs" or params.type == "glusterfs":
-                uuid = get_cstor_real_poolname(params.pool)
-                op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': uuid, 'name': params.vol,
-                                                           'sname': params.name}, with_result=True)
-            else:
-                op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': params.pool, 'name': params.vol,
-                                                          'sname': params.name}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0:
-                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
-                    cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-
-
-            disk_config = get_disk_config(params.pool, params.vol)
-            if check_disk_in_use(disk_config['current']):
-                raise ExecuteException('', 'error: current disk in use, plz check or set real domain field.')
-
-            ss_path = disk_config['dir'] + '/snapshots/' + params.name
-            if ss_path is None:
-                raise ExecuteException('', 'error: can not get snapshot backing file.')
-
-            uuid = randomUUID().replace('-', '')
-            new_file_path = os.path.dirname(params.backing_file)+'/'+uuid
-            op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
-                            (params.format, params.backing_file, params.format, new_file_path), {})
-            op1.execute()
-            # change vm disk
-            if params.domain and not change_vm_os_disk_file(params.domain, disk_config['current'], new_file_path):
-                op2 = Operation('rm -f %s' % new_file_path, {})
-                op2.execute()
-                raise ExecuteException('', 'can not change disk source in domain xml')
-
-            # modify json file, make os_event_handler to modify data on api server .
-            with open(disk_config['dir'] + '/config.json', "r") as f:
-                config = load(f)
-                config['current'] = new_file_path
-            with open(disk_config['dir'] + '/config.json', "w") as f:
-                dump(config, f)
-
-            result = get_disk_info(config['current'])
-            result['disk'] = config['name']
-            result["pool"] = params.pool
-
-            print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."}, "data": result})
-        elif params.type == "uus":
+        if params.type == "uus":
             print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}})
+            exit(1)
+
+        if params.domain and is_vm_active(params.domain):
+            raise ExecuteException('', 'domain %s is still active, plz stop it first.')
+
+        if params.type == "nfs" or params.type == "glusterfs":
+            uuid = get_cstor_real_poolname(params.pool)
+            op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': uuid, 'name': params.vol,
+                                                      'sname': params.name}, with_result=True)
+        else:
+            op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': params.pool, 'name': params.vol,
+                                                      'sname': params.name}, with_result=True)
+        cstor = op.execute()
+        if cstor['result']['code'] != 0:
+            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+                cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+
+        disk_config = get_disk_config(params.pool, params.vol)
+        if check_disk_in_use(disk_config['current']):
+            raise ExecuteException('', 'error: current disk in use, plz check or set real domain field.')
+
+        ss_path = disk_config['dir'] + '/snapshots/' + params.name
+        if ss_path is None:
+            raise ExecuteException('', 'error: can not get snapshot backing file.')
+
+        uuid = randomUUID().replace('-', '')
+        new_file_path = os.path.dirname(params.backing_file) + '/' + uuid
+        op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
+                        (params.format, params.backing_file, params.format, new_file_path), {})
+        op1.execute()
+        # change vm disk
+        if params.domain and not change_vm_os_disk_file(params.domain, disk_config['current'], new_file_path):
+            op2 = Operation('rm -f %s' % new_file_path, {})
+            op2.execute()
+            raise ExecuteException('', 'can not change disk source in domain xml')
+
+        # modify json file, make os_event_handler to modify data on api server .
+        with open(disk_config['dir'] + '/config.json', "r") as f:
+            config = load(f)
+            config['current'] = new_file_path
+        with open(disk_config['dir'] + '/config.json', "w") as f:
+            dump(config, f)
+
+        result = get_disk_info(config['current'])
+        result['disk'] = config['name']
+        result["pool"] = params.pool
+
+        print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."},
+                     "data": result})
     except ExecuteException, e:
         logger.debug("revertExternalSnapshot " + params.name)
         logger.debug(params.type)
