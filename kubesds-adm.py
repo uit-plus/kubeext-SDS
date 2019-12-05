@@ -1,6 +1,6 @@
 import argparse
-
 from operation import *
+
 from utils import logger
 
 LOG = "/var/log/kubesds.log"
@@ -8,6 +8,25 @@ LOG = "/var/log/kubesds.log"
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 SUPPORT_STORAGE_TYPE = ["localfs", "uus", "nfs", "glusterfs", "vdiskfs"]
+
+def execute(f_name, params):
+    moudle = __import__('operation')
+    func = getattr(moudle, f_name)
+    try:
+        func(params)
+    except ExecuteException, e:
+        logger.debug(f_name)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 400, "msg": "error occur while %s. %s" % (f_name, e.message)},
+                     "data": {}})
+        exit(1)
+    except Exception:
+        logger.debug(f_name)
+        logger.debug(params)
+        logger.debug(traceback.format_exc())
+        print dumps({"result": {"code": 300, "msg": "error occur while %s. traceback: %s" % (f_name, traceback.format_exc())}, "data": {}})
+        exit(1)
 
 def check_storage_type(args):
     if args.type not in SUPPORT_STORAGE_TYPE:
@@ -250,7 +269,7 @@ def createPoolParser(args):
         # check virsh pool, only for nfs, glusterfs and vdiskfs
         check_virsh_pool_exist(args.pool)
 
-    createPool(args)
+    execute('createPool', args)
 
 
 def deletePoolParser(args):
@@ -267,7 +286,7 @@ def deletePoolParser(args):
     elif args.type == "uus":
         check_cstor_pool_not_exist(args.pool)
 
-    deletePool(args)
+    execute('deletePool', args)
 
 
 def startPoolParser(args):
@@ -282,8 +301,7 @@ def startPoolParser(args):
     elif args.type == "uus":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
         exit(3)
-
-    startPool(args)
+    execute('startPool', args)
 
 
 def autoStartPoolParser(args):
@@ -299,7 +317,7 @@ def autoStartPoolParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
         exit(3)
 
-    autoStartPool(args)
+    execute('autoStartPool', args)
 
 
 def stopPoolParser(args):
@@ -315,7 +333,7 @@ def stopPoolParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
         exit(3)
 
-    stopPool(args)
+    execute('stopPool', args)
 
 
 def showPoolParser(args):
@@ -329,8 +347,7 @@ def showPoolParser(args):
     elif args.type == "uus":
         check_cstor_pool_not_exist(args.pool)
 
-    showPool(args)
-
+    execute('showPool', args)
 
 def createDiskParser(args):
     check_storage_type(args)
@@ -352,7 +369,7 @@ def createDiskParser(args):
         check_cstor_pool_not_exist(args.pool)
         check_cstor_disk_exist(args.pool, args.vol)
 
-    createDisk(args)
+    execute('createDisk', args)
 
 
 def deleteDiskParser(args):
@@ -367,7 +384,7 @@ def deleteDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
 
-    deleteDisk(args)
+    execute('deleteDisk', args)
 
 
 def resizeDiskParser(args):
@@ -386,7 +403,7 @@ def resizeDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
 
-    resizeDisk(args)
+    execute('resizeDisk', args)
 
 
 def cloneDiskParser(args):
@@ -403,7 +420,7 @@ def cloneDiskParser(args):
         check_cstor_disk_not_exist(args.pool, args.vol)
         check_cstor_disk_exist(args.pool, args.newname)
 
-    cloneDisk(args)
+    execute('cloneDisk', args)
 
 def showDiskParser(args):
     check_storage_type(args)
@@ -417,7 +434,7 @@ def showDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
 
-    showDisk(args)
+    execute('showDisk', args)
 
 def prepareDiskParser(args):
     check_storage_type(args)
@@ -430,7 +447,7 @@ def prepareDiskParser(args):
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
 
-    prepareDisk(args)
+    execute('prepareDisk', args)
 
 def releaseDiskParser(args):
     check_storage_type(args)
@@ -441,7 +458,8 @@ def releaseDiskParser(args):
         check_cstor_pool_not_exist(args.pool)
         check_virsh_pool_not_exist(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
-    releaseDisk(args)
+
+    execute('releaseDisk', args)
 
 def showDiskSnapshotParser(args):
     check_storage_type(args)
@@ -455,7 +473,7 @@ def showDiskSnapshotParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
 
-    showDiskSnapshot(args)
+    execute('showDiskSnapshot', args)
 
 
 def createExternalSnapshotParser(args):
@@ -483,7 +501,7 @@ def createExternalSnapshotParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
         exit(1)
 
-    createExternalSnapshot(args)
+    execute('createExternalSnapshot', args)
 
 
 def revertExternalSnapshotParser(args):
@@ -517,7 +535,7 @@ def revertExternalSnapshotParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
 
-    revertExternalSnapshot(args)
+    execute('revertExternalSnapshot', args)
 
 
 def deleteExternalSnapshotParser(args):
@@ -538,7 +556,7 @@ def deleteExternalSnapshotParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
 
-    deleteExternalSnapshot(args)
+    execute('deleteExternalSnapshot', args)
 
 
 def updateDiskCurrentParser(args):
@@ -554,17 +572,16 @@ def updateDiskCurrentParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
 
-    updateDiskCurrent(args)
+    execute('updateDiskCurrent', args)
 
 
 def customizeParser(args):
-    customize(args)
+    execute('customize', args)
 
 def createDiskFromImageParser(args):
     check_storage_type(args)
 
-    createDiskFromImage(args)
-
+    execute('createDiskFromImage', args)
 def migrateParser(args):
     if args.ip is None:
         print dumps({"result": {"code": 100, "msg": "less arg, ip must be set"}, "data": {}})
@@ -572,7 +589,7 @@ def migrateParser(args):
     if not re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}$', args.ip):
         print dumps({"result": {"code": 100, "msg": "ip is not right"}, "data": {}})
         exit(3)
-    migrate(args)
+    execute('migrate', args)
 
 
 # --------------------------- cmd line parser ---------------------------------------
