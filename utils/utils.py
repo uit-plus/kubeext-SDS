@@ -180,18 +180,11 @@ def runCmd(cmd):
             #             logger.debug(str.strip(msg))
             logger.debug(std_out)
         if std_err:
-            #             msg = ''
-            #             for index, line in enumerate(std_err):
-            #                 if not str.strip(line):
-            #                     continue
-            #                 if index == len(std_err) - 1:
-            #                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-            #                 else:
-            #                     msg = msg + str.strip(line) + ', '
-            logger.error(std_err)
-            #             raise ExecuteException('VirtctlError', str.strip(msg))
-            raise ExecuteException('VirtctlError', std_err)
-        #         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
+            msg = ''
+            for index, line in enumerate(std_err):
+                msg = msg + line
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
         return
     finally:
         p.stdout.close()
