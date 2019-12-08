@@ -28,7 +28,7 @@ class Operation(object):
     def get_cmd(self):
         cmd = self.cmd
         for key in self.params.keys():
-            cmd = cmd + " --" + key + " " + self.params[key] + " "
+            cmd = "%s --%s %s" % (cmd, key, self.params[key])
         return cmd
 
     def execute(self):
@@ -116,7 +116,7 @@ def createPool(params):
         op3 = Operation("virsh pool-start", {"pool": params.pool})
         op3.execute()
 
-        with open(POOL_PATH + '/content', 'w') as f:
+        with open("%s/content" % POOL_PATH, 'w') as f:
             f.write(params.content)
 
         result = get_pool_info(params.pool)

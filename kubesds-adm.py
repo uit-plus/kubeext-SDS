@@ -41,8 +41,11 @@ def get_cstor_pool_info(pool):
 
 def check_pool_type(pool, type):
     pool_info = get_pool_info(pool)
-    uuid = os.path.basename(pool_info['path'])
-    poolInfo = get_cstor_pool_info(uuid)
+    if type == 'nfs' or type == 'glusterfs':
+        uuid = os.path.basename(pool_info['path'])
+        poolInfo = get_cstor_pool_info(uuid)
+    else:
+        poolInfo = get_cstor_pool_info(pool)
     if type == "localfs":
         if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
             print dumps({"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}})

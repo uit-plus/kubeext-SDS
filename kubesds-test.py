@@ -41,8 +41,11 @@ def get_cstor_pool_info(pool):
 
 def check_pool_type(pool, type):
     pool_info = get_pool_info(pool)
-    uuid = os.path.basename(pool_info['path'])
-    poolInfo = get_cstor_pool_info(uuid)
+    if type == 'nfs' or type == 'glusterfs':
+        uuid = os.path.basename(pool_info['path'])
+        poolInfo = get_cstor_pool_info(uuid)
+    else:
+        poolInfo = get_cstor_pool_info(pool)
     if type == "localfs":
         if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
             print dumps({"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}})
@@ -902,7 +905,7 @@ test_args = []
 
 dir1 = parser.parse_args(["createPool", "--type", "localfs", "--pool", "pooldir", "--url", "/mnt/localfs/pooldir", "--content", "vmd"])
 dir2 = parser.parse_args(["createDisk", "--type", "localfs", "--pool", "pooldir", "--vol", "diskdir", "--capacity", "1073741824", "--format", "qcow2"])
-dir3= parser.parse_args(["prepareDisk", "--type", "nfs", "--pool", "pooldir", "--vol", "diskdir", "--uni", "/mnt/localfs/pooldir/pooldir/diskdir/diskdir"])
+dir3 = parser.parse_args(["prepareDisk", "--type", "localfs", "--pool", "pooldir", "--vol", "diskdir", "--uni", "/mnt/localfs/pooldir/pooldir/diskdir/diskdir"])
 dir4 = parser.parse_args(["createExternalSnapshot", "--type", "localfs", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2"])
 dir5 = parser.parse_args(["createExternalSnapshot", "--type", "localfs", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.2", "--format", "qcow2"])
 dir6 = parser.parse_args(["revertExternalSnapshot", "--type", "localfs", "--pool", "pooldir", "--vol", "diskdir", "--name", "diskdir.1", "--format", "qcow2", "--backing_file", "/mnt/localfs/pooldir/pooldir/diskdir/diskdir"])
