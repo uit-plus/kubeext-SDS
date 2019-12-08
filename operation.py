@@ -28,7 +28,7 @@ class Operation(object):
     def get_cmd(self):
         cmd = self.cmd
         for key in self.params.keys():
-            cmd = "%s --%s --%s " % (cmd, key, self.params[key])
+            cmd = "%s --%s %s " % (cmd, key, self.params[key])
         return cmd
 
     def execute(self):
