@@ -2,6 +2,7 @@
 Run back-end command in subprocess.
 '''
 import atexit
+import fcntl
 import os
 import re
 import random
@@ -27,10 +28,9 @@ import cmdcall_pb2
 import cmdcall_pb2_grpc
 import logger
 from exception import ExecuteException
-from netutils import get_docker0_IP, get_host_ip
-from libvirt_util import is_pool_started, _get_pool, is_pool_defined, _get_defined_pool
+from netutils import get_docker0_IP
 
-LOG = 'kubesds.log'
+LOG = '/var/log/kubesds.log'
 
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
@@ -53,6 +53,15 @@ def runCmdWithResult(cmd):
             logger.debug(msg)
             try:
                 result = loads(msg)
+                if result['result']['code'] != 0:
+                    if std_err:
+                        error_msg = ''
+                        for index, line in enumerate(std_err):
+                            if not str.strip(line):
+                                continue
+                            error_msg = error_msg + str.strip(line)
+                        error_msg = str.strip(error_msg).replace('"', "'")
+                        result['result']['msg'] = '%s. cstor error output: %s' % (result['result']['msg'], error_msg)
                 return result
             except Exception:
                 logger.debug(cmd)
@@ -68,12 +77,7 @@ def runCmdWithResult(cmd):
         if std_err:
             msg = ''
             for index, line in enumerate(std_err):
-                if not str.strip(line):
-                    continue
-                if index == len(std_err) - 1:
-                    msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-                else:
-                    msg = msg + str.strip(line) + ', '
+                msg = msg + line + ', '
             logger.debug(cmd)
             logger.debug(msg)
             logger.debug(traceback.format_exc())
@@ -185,18 +189,11 @@ def runCmd(cmd):
             #             logger.debug(str.strip(msg))
             logger.debug(std_out)
         if std_err:
-            #             msg = ''
-            #             for index, line in enumerate(std_err):
-            #                 if not str.strip(line):
-            #                     continue
-            #                 if index == len(std_err) - 1:
-            #                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-            #                 else:
-            #                     msg = msg + str.strip(line) + ', '
-            logger.error(std_err)
-            #             raise ExecuteException('VirtctlError', str.strip(msg))
-            raise ExecuteException('VirtctlError', std_err)
-        #         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
+            msg = ''
+            for index, line in enumerate(std_err):
+                msg = msg + line
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
         return
     finally:
         p.stdout.close()
@@ -373,176 +370,216 @@ def randomUUIDFromName(name):
 
     return str(uuid.uuid5(namespace, name))
 
+def is_pool_started(pool):
+    poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
+    if poolInfo['state'] == 'running':
+        return True
+    return False
 
-# class CDaemon:
-#     '''
-#     a generic daemon class.
-#     usage: subclass the CDaemon class and override the run() method
-#     stderr:
-#     verbose:
-#     save_path:
-#     '''
-#
-#     def __init__(self, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=022,
-#                  verbose=1):
-#         self.stdin = stdin
-#         self.stdout = stdout
-#         self.stderr = stderr
-#         self.pidfile = save_path
-#         self.home_dir = home_dir
-#         self.verbose = verbose
-#         self.umask = umask
-#         self.daemon_alive = True
-#
-#     def daemonize(self):
-#         try:
-#             pid = os.fork()
-#             if pid > 0:
-#                 sys.exit(0)
-#         except OSError, e:
-#             sys.stderr.write('fork #1 failed: %d (%s)\n' % (e.errno, e.strerror))
-#             sys.exit(1)
-#
-#         os.chdir(self.home_dir)
-#         os.setsid()
-#         os.umask(self.umask)
-#
-#         try:
-#             pid = os.fork()
-#             if pid > 0:
-#                 sys.exit(0)
-#         except OSError, e:
-#             sys.stderr.write('fork #2 failed: %d (%s)\n' % (e.errno, e.strerror))
-#             sys.exit(1)
-#
-#         sys.stdout.flush()
-#         sys.stderr.flush()
-#
-#         si = file(self.stdin, 'r')
-#         so = file(self.stdout, 'a+')
-#         if self.stderr:
-#             se = file(self.stderr, 'a+', 0)
-#         else:
-#             se = so
-#
-#         os.dup2(si.fileno(), sys.stdin.fileno())
-#         os.dup2(so.fileno(), sys.stdout.fileno())
-#         os.dup2(se.fileno(), sys.stderr.fileno())
-#
-#         def sig_handler(signum, frame):
-#             self.daemon_alive = False
-#
-#         signal.signal(signal.SIGTERM, sig_handler)
-#         signal.signal(signal.SIGINT, sig_handler)
-#
-#         if self.verbose >= 1:
-#             print 'daemon process started ...'
-#
-#         atexit.register(self.del_pid)
-#         pid = str(os.getpid())
-#         file(self.pidfile, 'w+').write('%s\n' % pid)
-#
-#     def get_pid(self):
-#         try:
-#             pf = file(self.pidfile, 'r')
-#             pid = int(pf.read().strip())
-#             pf.close()
-#         except IOError:
-#             pid = None
-#         except SystemExit:
-#             pid = None
-#         return pid
-#
-#     def del_pid(self):
-#         if os.path.exists(self.pidfile):
-#             os.remove(self.pidfile)
-#
-#     def start(self, *args, **kwargs):
-#         if self.verbose >= 1:
-#             print 'ready to starting ......'
-#         # check for a pid file to see if the daemon already runs
-#         pid = self.get_pid()
-#         if pid:
-#             msg = 'pid file %s already exists, is it already running?\n'
-#             sys.stderr.write(msg % self.pidfile)
-#             sys.exit(1)
-#         # start the daemon
-#         self.daemonize()
-#         self.run(*args, **kwargs)
-#
-#     def stop(self):
-#         if self.verbose >= 1:
-#             print 'stopping ...'
-#         pid = self.get_pid()
-#         if not pid:
-#             msg = 'pid file [%s] does not exist. Not running?\n' % self.pidfile
-#             sys.stderr.write(msg)
-#             if os.path.exists(self.pidfile):
-#                 os.remove(self.pidfile)
-#             return
-#         # try to kill the daemon process
-#         try:
-#             i = 0
-#             while 1:
-#                 os.kill(pid, signal.SIGTERM)
-#                 time.sleep(0.1)
-#                 i = i + 1
-#                 if i % 10 == 0:
-#                     os.kill(pid, signal.SIGHUP)
-#         except OSError, err:
-#             err = str(err)
-#             if err.find('No such process') > 0:
-#                 if os.path.exists(self.pidfile):
-#                     os.remove(self.pidfile)
-#             else:
-#                 print str(err)
-#                 sys.exit(1)
-#             if self.verbose >= 1:
-#                 print 'Stopped!'
-#
-#     def restart(self, *args, **kwargs):
-#         self.stop()
-#         self.start(*args, **kwargs)
-#
-#     def is_running(self):
-#         pid = self.get_pid()
-#         # print(pid)
-#         return pid and os.path.exists('/proc/%d' % pid)
-#
-#     def run(self, *args, **kwargs):
-#         'NOTE: override the method in subclass'
-#         print 'base class run()'
-#
-#
-# def singleton(pid_filename):
-#     def decorator(f):
-#         @wraps(f)
-#         def decorated(*args, **kwargs):
-#             pid = str(os.getpid())
-#             pidfile = open(pid_filename, 'a+')
-#             try:
-#                 fcntl.flock(pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-#             except IOError:
-#                 return
-#             pidfile.seek(0)
-#             pidfile.truncate()
-#             pidfile.write(pid)
-#             pidfile.flush()
-#             pidfile.seek(0)
-#
-#             ret = f(*args, **kwargs)
-#
-#             try:
-#                 pidfile.close()
-#             except IOError, err:
-#                 if err.errno != 9:
-#                     return
-#             os.remove(pid_filename)
-#             return ret
-#
-#         return decorated
-#
-#     return decorator
+def is_pool_exists(pool):
+    poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
+    if poolInfo and pool == poolInfo['name']:
+        return True
+    return False
+
+def is_pool_defined(pool):
+    poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
+    if poolInfo['persistent'] == 'yes':
+        return True
+    return False
+
+def is_vm_active(domain):
+    output = runCmdAndGetOutput('virsh list')
+    lines = output.splitlines()
+    for line in lines:
+        if domain in line.split():
+            return True
+    return False
+
+def get_volume_size(pool, vol):
+    disk_config = get_disk_config(pool, vol)
+    disk_info = get_disk_info(disk_config['current'])
+    return int(disk_info['virtual_size'])
+
+def get_disks_spec(domain):
+    output = runCmdAndGetOutput('virsh domblklist %s' % domain)
+    lines = output.splitlines()
+    spec = {}
+    for i in range(2, len(lines)):
+        kv = lines[i].split()
+        if len(kv) == 2:
+            spec[kv[1]] = kv[0]
+    return spec
+
+class CDaemon:
+    '''
+    a generic daemon class.
+    usage: subclass the CDaemon class and override the run() method
+    stderr:
+    verbose:
+    save_path:
+    '''
+
+    def __init__(self, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=022,
+                 verbose=1):
+        self.stdin = stdin
+        self.stdout = stdout
+        self.stderr = stderr
+        self.pidfile = save_path
+        self.home_dir = home_dir
+        self.verbose = verbose
+        self.umask = umask
+        self.daemon_alive = True
+
+    def daemonize(self):
+        try:
+            pid = os.fork()
+            if pid > 0:
+                sys.exit(0)
+        except OSError, e:
+            sys.stderr.write('fork #1 failed: %d (%s)\n' % (e.errno, e.strerror))
+            sys.exit(1)
+
+        os.chdir(self.home_dir)
+        os.setsid()
+        os.umask(self.umask)
+
+        try:
+            pid = os.fork()
+            if pid > 0:
+                sys.exit(0)
+        except OSError, e:
+            sys.stderr.write('fork #2 failed: %d (%s)\n' % (e.errno, e.strerror))
+            sys.exit(1)
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        si = file(self.stdin, 'r')
+        so = file(self.stdout, 'a+')
+        if self.stderr:
+            se = file(self.stderr, 'a+', 0)
+        else:
+            se = so
+
+        os.dup2(si.fileno(), sys.stdin.fileno())
+        os.dup2(so.fileno(), sys.stdout.fileno())
+        os.dup2(se.fileno(), sys.stderr.fileno())
+
+        def sig_handler(signum, frame):
+            self.daemon_alive = False
+
+        signal.signal(signal.SIGTERM, sig_handler)
+        signal.signal(signal.SIGINT, sig_handler)
+
+        if self.verbose >= 1:
+            print 'daemon process started ...'
+
+        atexit.register(self.del_pid)
+        pid = str(os.getpid())
+        file(self.pidfile, 'w+').write('%s\n' % pid)
+
+    def get_pid(self):
+        try:
+            pf = file(self.pidfile, 'r')
+            pid = int(pf.read().strip())
+            pf.close()
+        except IOError:
+            pid = None
+        except SystemExit:
+            pid = None
+        return pid
+
+    def del_pid(self):
+        if os.path.exists(self.pidfile):
+            os.remove(self.pidfile)
+
+    def start(self, *args, **kwargs):
+        if self.verbose >= 1:
+            print 'ready to starting ......'
+        # check for a pid file to see if the daemon already runs
+        pid = self.get_pid()
+        if pid:
+            msg = 'pid file %s already exists, is it already running?\n'
+            sys.stderr.write(msg % self.pidfile)
+            sys.exit(1)
+        # start the daemon
+        self.daemonize()
+        self.run(*args, **kwargs)
+
+    def stop(self):
+        if self.verbose >= 1:
+            print 'stopping ...'
+        pid = self.get_pid()
+        if not pid:
+            msg = 'pid file [%s] does not exist. Not running?\n' % self.pidfile
+            sys.stderr.write(msg)
+            if os.path.exists(self.pidfile):
+                os.remove(self.pidfile)
+            return
+        # try to kill the daemon process
+        try:
+            i = 0
+            while 1:
+                os.kill(pid, signal.SIGTERM)
+                time.sleep(0.1)
+                i = i + 1
+                if i % 10 == 0:
+                    os.kill(pid, signal.SIGHUP)
+        except OSError, err:
+            err = str(err)
+            if err.find('No such process') > 0:
+                if os.path.exists(self.pidfile):
+                    os.remove(self.pidfile)
+            else:
+                print str(err)
+                sys.exit(1)
+            if self.verbose >= 1:
+                print 'Stopped!'
+
+    def restart(self, *args, **kwargs):
+        self.stop()
+        self.start(*args, **kwargs)
+
+    def is_running(self):
+        pid = self.get_pid()
+        # print(pid)
+        return pid and os.path.exists('/proc/%d' % pid)
+
+    def run(self, *args, **kwargs):
+        'NOTE: override the method in subclass'
+        print 'base class run()'
+
+
+def singleton(pid_filename):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            pid = str(os.getpid())
+            pidfile = open(pid_filename, 'a+')
+            try:
+                fcntl.flock(pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except IOError:
+                return
+            pidfile.seek(0)
+            pidfile.truncate()
+            pidfile.write(pid)
+            pidfile.flush()
+            pidfile.seek(0)
+
+            ret = f(*args, **kwargs)
+
+            try:
+                pidfile.close()
+            except IOError, err:
+                if err.errno != 9:
+                    return
+            os.remove(pid_filename)
+            return ret
+
+        return decorated
+
+    return decorator
 
 
 def get_IP():
@@ -552,7 +589,7 @@ def get_IP():
 
 
 def get_pool_info(pool_):
-    result = rpcCallAndTransferKvToJson('virsh pool-info ' + pool_)
+    result = runCmdAndSplitKvToJson('virsh pool-info ' + pool_)
     # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
     # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
     # result['code'] = 0
@@ -562,7 +599,7 @@ def get_pool_info(pool_):
     if 'available' in result.keys():
         del result['available']
 
-    xml_dict = rpcCallAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
+    xml_dict = runCmdAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
     result['capacity'] = int(xml_dict['pool']['capacity']['text'])
     result['path'] = xml_dict['pool']['target']['path']
     return result
@@ -749,6 +786,12 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
+if __name__ == '__main__':
+    try:
+        result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
+        print result
+    except ExecuteException, e:
+        print e.message
 # print is_vm_disk_not_shared_storage('vm006')
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
