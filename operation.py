@@ -66,7 +66,10 @@ class Operation(object):
 
 def createPool(params):
     #  {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "mountpath": "/Disk240", "proto": "localfs", "url": "/dev/sdb1", "poolname": "pool1", "free": 223363817472, "disktype": "file", "maintain": "normal", "used": 768970752, "total": 236152303616}, "obj":"pooladd"}
-    kv = {"type": params.type, "poolname": params.uuid, "url": params.url, "opt": params.opt, "uuid": params.pool}
+    if params.type == 'localfs':
+        kv = {"type": params.type, "poolname": params.pool, "url": params.url}
+    else:
+        kv = {"type": params.type, "poolname": params.uuid, "url": params.url, "opt": params.opt, "uuid": params.pool}
     op = Operation("cstor-cli pool-add", kv, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -78,7 +81,10 @@ def createPool(params):
                   "autostart": "yes", "path": cstor["data"]["url"], "state": "active", "uuid": randomUUID(),
                   "content": 'vmd'}
     else:
-        POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.pool)
+        if params.type == 'localfs':
+            POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.pool)
+        else:
+            POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.uuid)
         if not os.path.isdir(POOL_PATH):
             raise ExecuteException('', 'cant not get cstor mount path')
         # step1 define pool

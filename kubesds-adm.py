@@ -41,6 +41,12 @@ def check_storage_type(args):
         print dumps({"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}})
         exit(2)
 
+def check_pool_active(pool):
+    pool_info = get_pool_info(pool)
+    if pool_info['state'] != 'running':
+        print dumps({"result": {"code": 221, "msg": "pool is not active, plz startPool"}, "data": {}})
+        exit(3)
+
 def get_cstor_pool_info(pool):
     op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
     result = op.execute()
@@ -90,8 +96,6 @@ def check_pool(f_name, args):
             if args.type != 'uus':
                 if is_pool_exists(args.pool):
                     raise ConditionException(201, "virsh pool %s has exist" % args.pool)
-            if is_cstor_pool_exist(args):
-                raise ConditionException(204, "cstor pool %s has exist" % args.pool)
         else:
             if not is_cstor_pool_exist(args):
                 raise ConditionException(204, "cstor pool %s not exist" % args.pool)
@@ -110,7 +114,6 @@ def check_pool(f_name, args):
 
 def is_cstor_pool_exist(args):
     if args.type in ['nfs', 'glusterfs']:
-
         pool = get_cstor_real_poolname(args.pool)
     else:
         pool = args.pool
@@ -138,7 +141,7 @@ def check_virsh_disk_exist(pool, diskname):
     pool_info = get_pool_info(pool)
     if os.path.isdir('%s/%s' % (pool_info['path'], diskname)):
         print dumps({"result": {"code": 207, "msg": "virsh disk " + diskname + " has exist in pool " + pool}, "data": {}})
-
+        exit(1)
 def check_virsh_disk_not_exist(pool, diskname):
     pool_info = get_pool_info(pool)
     if not os.path.isdir(pool_info['path'] + '/' + diskname):
@@ -251,6 +254,7 @@ def createDiskParser(args):
         if args.format is None:
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(4)
+        check_pool_active(args.pool)
         check_virsh_disk_exist(args.pool, args.vol)
 
     execute('createDisk', args)
@@ -260,6 +264,7 @@ def deleteDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
 
     execute('deleteDisk', args)
@@ -269,6 +274,7 @@ def resizeDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_size(args.pool, args.vol, args.capacity)
 
@@ -280,6 +286,7 @@ def cloneDiskParser(args):
         check_cstor_disk_not_exist(args.pool, args.vol)
         check_cstor_disk_exist(args.pool, args.newname)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
         check_virsh_disk_exist(args.pool, args.newname)
 
@@ -299,6 +306,7 @@ def prepareDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
 
     execute('prepareDisk', args)
@@ -308,6 +316,7 @@ def releaseDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_not_exist(args.pool, args.vol)
 
     execute('releaseDisk', args)
@@ -317,6 +326,7 @@ def showDiskSnapshotParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(args.pool, args.vol)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
 
     execute('showDiskSnapshot', args)
@@ -329,6 +339,7 @@ def createExternalSnapshotParser(args):
         if args.format is None:
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(3)
+        check_pool_active(args.pool)
         check_virsh_disk_snapshot_exist(args.pool, args.vol, args.name)
 
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
@@ -353,6 +364,7 @@ def revertExternalSnapshotParser(args):
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(3)
 
+        check_pool_active(args.pool)
         check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
 
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
@@ -377,6 +389,7 @@ def deleteExternalSnapshotParser(args):
         print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
         exit(1)
     else:
+        check_pool_active(args.pool)
         check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
 
         disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol

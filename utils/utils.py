@@ -53,15 +53,17 @@ def runCmdWithResult(cmd):
             logger.debug(msg)
             try:
                 result = loads(msg)
-                if result['result']['code'] != 0:
-                    if std_err:
-                        error_msg = ''
-                        for index, line in enumerate(std_err):
-                            if not str.strip(line):
-                                continue
-                            error_msg = error_msg + str.strip(line)
-                        error_msg = str.strip(error_msg).replace('"', "'")
-                        result['result']['msg'] = '%s. cstor error output: %s' % (result['result']['msg'], error_msg)
+                if isinstance(result, dict) and 'result' in result.keys():
+                    if result['result']['code'] != 0:
+                        if std_err:
+                            error_msg = ''
+                            for index, line in enumerate(std_err):
+                                if not str.strip(line):
+                                    continue
+                                error_msg = error_msg + str.strip(line)
+                            error_msg = str.strip(error_msg).replace('"', "'")
+                            result['result']['msg'] = '%s. cstor error output: %s' % (
+                            result['result']['msg'], error_msg)
                 return result
             except Exception:
                 logger.debug(cmd)
@@ -787,11 +789,12 @@ def is_vm_disk_driver_cache_none(vm):
     return True
 
 if __name__ == '__main__':
-    try:
-        result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
-        print result
-    except ExecuteException, e:
-        print e.message
+    # try:
+    #     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
+    #     print result
+    # except ExecuteException, e:
+    #     print e.message
+    print get_pool_info('pooltest11122')
 # print is_vm_disk_not_shared_storage('vm006')
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
