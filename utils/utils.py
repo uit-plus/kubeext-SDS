@@ -19,10 +19,7 @@ from json import loads, dumps, load, dump
 import grpc
 import xmltodict
 
-try:
-    import xml.etree.CElementTree as ET
-except:
-    import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 import cmdcall_pb2
 import cmdcall_pb2_grpc
@@ -133,6 +130,7 @@ def runCmdAndSplitKvToJson(cmd):
 
 
 def runCmdAndGetOutput(cmd):
+    logger.debug(cmd)
     if not cmd:
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -409,7 +407,7 @@ def get_disks_spec(domain):
     spec = {}
     for i in range(2, len(lines)):
         kv = lines[i].split()
-        if len(kv) == 2:
+        if len(kv) == 2 and kv[0].find('hd') < 0:
             spec[kv[1]] = kv[0]
     return spec
 
@@ -643,6 +641,7 @@ def get_disk_info(ss_path):
         except:
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
+    result['uni'] = ss_path
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
@@ -794,7 +793,7 @@ if __name__ == '__main__':
     #     print result
     # except ExecuteException, e:
     #     print e.message
-    print get_pool_info('pooltest11122')
+    print get_disks_spec('vm003')
 # print is_vm_disk_not_shared_storage('vm006')
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
