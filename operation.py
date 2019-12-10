@@ -248,14 +248,15 @@ def qemu_create_disk(pool, vol, format, capacity):
     config['name'] = vol
     config['dir'] = disk_dir
     config['current'] = disk_path
+    config['poolname'] = pool
 
     with open(disk_dir + '/config.json', "w") as f:
         dump(config, f)
     result = get_disk_info(disk_path)
     result['disk'] = vol
-    result["pool"] = pool
     result["uni"] = disk_path
     result['current'] = disk_path
+    result['poolname'] = pool
     return result
 
 
@@ -366,9 +367,10 @@ def resizeDisk(params):
 
 def cloneDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
+    pool = pool_info['poolname']
     disk_info = get_vol_info_from_k8s(params.vol)
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-    op = Operation('cstor-cli vdisk-clone ', {'poolname': pool_info['poolname'], 'name': params.vol,
+    op = Operation('cstor-cli vdisk-clone ', {'poolname': pool, 'name': params.vol,
                                               'clonename': params.newname}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -412,7 +414,7 @@ def cloneDisk(params):
         config['name'] = params.newname
         config['dir'] = clone_disk_dir
         config['current'] = clone_disk_path
-
+        config['poolname'] = pool
         with open(clone_disk_dir + '/config.json', "w") as f:
             dump(config, f)
 
@@ -420,7 +422,7 @@ def cloneDisk(params):
         # vol_xml = get_volume_xml(params.pool, params.vol)
 
         result['disk'] = params.newname
-        result["poolname"] = pool_info['poolname']
+        result["poolname"] = pool
         result["uni"] = clone_disk_path
         result["current"] = clone_disk_path
         print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
@@ -471,10 +473,10 @@ def releaseDisk(params):
     print dumps({"result": {"code": 0, "msg": "release disk " + params.vol + " successful."}, "data": {}})
 
 def showDisk(params):
-    disk_info = get_vol_info_from_k8s(params.vol)
-    pool = disk_info['poolname']
+    pool_info = get_pool_info_from_k8s(params.pool)
+    pool = pool_info['poolname']
     if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
-        op = Operation('cstor-cli vdisk-show ', {'poolname': disk_info['poolname'], 'name': params.vol}, with_result=True)
+        op = Operation('cstor-cli vdisk-show ', {'poolname': pool, 'name': params.vol}, with_result=True)
         cstor = op.execute()
         if cstor['result']['code'] != 0:
             raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
@@ -486,11 +488,9 @@ def showDisk(params):
 
         result = get_disk_info(config['current'])
         result['disk'] = params.vol
-        result["poolname"] = disk_info['poolname']
+        result["poolname"] = pool
         result["uni"] = config['current']
         result["current"] = config['current']
-        print dumps(
-            {"result": {"code": 0, "msg": "show disk " + params.vol + " successful."}, "data": result})
     elif params.type == "uus":
         kv = {"poolname": pool, "name": params.vol}
         op = Operation("cstor-cli vdisk-show", kv, True)
@@ -508,7 +508,7 @@ def showDisk(params):
         }
 
     print dumps({"result": {"code": 0,
-                                "msg": "show disk %s success." % params.pool}, "data": disk_info})
+                                "msg": "show disk %s success." % params.pool}, "data": result})
 
 def showDiskSnapshot(params):
     if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":

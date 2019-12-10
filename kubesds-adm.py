@@ -83,10 +83,12 @@ def check_pool(f_name, args):
                 if is_cstor_pool_exist(args.uuid):
                     raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
         else:
-            if not is_cstor_pool_exist(args.uuid):
-                raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
-            if not is_pool_exists(args.uuid):
-                raise ConditionException(203, "virsh pool %s not exist" % args.uuid)
+            pool_info = get_pool_info_from_k8s(args.pool)
+            pool = pool_info['poolname']
+            if not is_cstor_pool_exist(pool):
+                raise ConditionException(204, "cstor pool %s not exist" % pool)
+            if not is_pool_exists(pool):
+                raise ConditionException(203, "virsh pool %s not exist" % pool)
     except ExecuteException, e1:
         logger.debug(traceback.format_exc())
         print dumps({"result": {"code": 202, "msg": "check_pool, cant get pool info. %s" % e1.message}, "data": {}})
@@ -230,9 +232,7 @@ def showPoolParser(args):
 def createDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
-    if args.type == "uus":
-        check_cstor_disk_exist(pool, args.vol)
-    else:
+    if args.type != "uus":
         if args.format is None:
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(4)
@@ -269,9 +269,16 @@ def resizeDiskParser(args):
 def cloneDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
+
+    try:
+        disk_info = get_vol_info_from_k8s(args.newname)
+        print dumps({"result": {"code": 500, "msg": "vol %s has exist in k8s." % args.newname}, "data": {}})
+        exit(1)
+    except:
+        pass
+
     # check cstor disk
     check_cstor_disk_not_exist(pool, args.vol)
-    check_cstor_disk_exist(pool, args.newname)
     if args.type != "uus":
         check_pool_active(pool)
         check_virsh_disk_not_exist(pool, args.vol)
