@@ -322,7 +322,8 @@ def createDisk(params):
             "pool": params.pool,
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"],
-            "uni": createInfo["data"]["uni"]
+            "uni": createInfo["data"]["uni"],
+            "current": prepareInfo["data"]["path"],
         }
     print dumps({"result": {"code": 0, "msg": "create disk %s successful." % params.vol}, "data": result})
 
@@ -409,6 +410,7 @@ def resizeDisk(params):
 
         result['disk'] = params.vol
         result["pool"] = params.pool
+        result["uni"] = config['current']
         print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
 
     elif params.type == "uus":

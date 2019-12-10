@@ -642,6 +642,7 @@ def get_disk_info(ss_path):
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
     result['uni'] = ss_path
+    result['current'] = ss_path
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
