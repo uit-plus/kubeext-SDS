@@ -133,7 +133,6 @@ def runCmdAndSplitKvToJson(cmd):
 
 
 def runCmdAndGetOutput(cmd):
-    logger.debug(cmd)
     if not cmd:
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
