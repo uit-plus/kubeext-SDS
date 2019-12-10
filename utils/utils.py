@@ -604,6 +604,23 @@ def get_pool_info(pool_):
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
+def get_pool_info_from_k8s(pool):
+    result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
+    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
+        return result['spec']['pool']
+    raise ExecuteException('', 'can not get pool info from k8s')
+
+def get_vol_info_from_k8s(vol):
+    result = runCmdWithResult('kubectl get vmd -o json %s' % vol)
+    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get vol info from k8s')
+
+def get_snapshot_info_from_k8s(snapshot):
+    result = runCmdWithResult('kubectl get vmdsn -o json %s' % snapshot)
+    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get snapshot info from k8s')
 
 def get_disk_config(pool, vol):
     poolInfo = get_pool_info(pool)
@@ -641,8 +658,6 @@ def get_disk_info(ss_path):
         except:
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
-    result['uni'] = ss_path
-    result['current'] = ss_path
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
@@ -794,8 +809,10 @@ if __name__ == '__main__':
     #     print result
     # except ExecuteException, e:
     #     print e.message
-    print get_disks_spec('vm003')
+    # print get_snapshot_info_from_k8s('disktestd313.2')
+    print get_pool_info(' node22-poolnfs')
 # print is_vm_disk_not_shared_storage('vm006')
+
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 
