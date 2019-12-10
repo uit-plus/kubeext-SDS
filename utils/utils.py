@@ -53,6 +53,17 @@ def runCmdWithResult(cmd):
             logger.debug(msg)
             try:
                 result = loads(msg)
+                if isinstance(result, dict) and 'result' in result.keys():
+                    if result['result']['code'] != 0:
+                        if std_err:
+                            error_msg = ''
+                            for index, line in enumerate(std_err):
+                                if not str.strip(line):
+                                    continue
+                                error_msg = error_msg + str.strip(line)
+                            error_msg = str.strip(error_msg).replace('"', "'")
+                            result['result']['msg'] = '%s. cstor error output: %s' % (
+                            result['result']['msg'], error_msg)
                 return result
             except Exception:
                 logger.debug(cmd)
@@ -122,6 +133,7 @@ def runCmdAndSplitKvToJson(cmd):
 
 
 def runCmdAndGetOutput(cmd):
+    logger.debug(cmd)
     if not cmd:
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -398,7 +410,7 @@ def get_disks_spec(domain):
     spec = {}
     for i in range(2, len(lines)):
         kv = lines[i].split()
-        if len(kv) == 2:
+        if len(kv) == 2 and kv[0].find('hd') < 0:
             spec[kv[1]] = kv[0]
     return spec
 
@@ -595,6 +607,23 @@ def get_pool_info(pool_):
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
+def get_pool_info_from_k8s(pool):
+    result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
+    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
+        return result['spec']['pool']
+    raise ExecuteException('', 'can not get pool info from k8s')
+
+def get_vol_info_from_k8s(vol):
+    result = runCmdWithResult('kubectl get vmd -o json %s' % vol)
+    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get vol info from k8s')
+
+def get_snapshot_info_from_k8s(snapshot):
+    result = runCmdWithResult('kubectl get vmdsn -o json %s' % snapshot)
+    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get snapshot info from k8s')
 
 def get_disk_config(pool, vol):
     poolInfo = get_pool_info(pool)
@@ -605,13 +634,12 @@ def get_disk_config(pool, vol):
     with open(config_path, "r") as f:
         config = load(f)
         return config
-    raise ExecuteException('', 'can not get disk config by current')
+
 
 def get_disk_config_by_path(config_path):
     with open(config_path, "r") as f:
         config = load(f)
         return config
-    raise ExecuteException('', 'can not get disk config by current')
 
 
 def get_disk_snapshots(ss_path):
@@ -778,11 +806,15 @@ def is_vm_disk_driver_cache_none(vm):
     return True
 
 if __name__ == '__main__':
-    try:
-        runCmd('virsh pool-info pooluitdirds')
-    except ExecuteException, e:
-        print e.message
+    # try:
+    #     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
+    #     print result
+    # except ExecuteException, e:
+    #     print e.message
+    # print get_snapshot_info_from_k8s('disktestd313.2')
+    print get_pool_info(' node22-poolnfs')
 # print is_vm_disk_not_shared_storage('vm006')
+
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
 # print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
 
