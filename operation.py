@@ -183,6 +183,10 @@ def showPool(params):
     pool = pool_info['poolname']
     if params.type != 'uus':
         result = get_pool_info(pool)
+        if is_pool_started(pool):
+            result['state'] = "active"
+        else:
+            result['state'] = "inactive"
         result['content'] = pool_info["content"]
         result["pooltype"] = pool_info["pooltype"]
         result["poolname"] = pool_info["poolname"]
@@ -519,7 +523,6 @@ def showDiskSnapshot(params):
 
         result = get_disk_info(ss_path)
         result['disk'] = params.vol
-        result["pool"] = pool
         result["poolname"] = ss_info['poolname']
         result['snapshot'] = params.name
         result["uni"] = ss_path
