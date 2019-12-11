@@ -806,7 +806,7 @@ def deleteExternalSnapshot(params):
             dump(config, f)
 
         result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
-                  'need_to_modify': config['current'], "pool": poolname}
+                  'need_to_modify': config['current'], "pool": params.pool, "poolname": poolname}
         print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."},
                      "data": result})
     else:
