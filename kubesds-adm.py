@@ -80,15 +80,16 @@ def check_pool(f_name, args):
             if args.type != 'uus':
                 if is_pool_exists(args.uuid):
                     raise ConditionException(201, "virsh pool %s has exist" % args.uuid)
-                if is_cstor_pool_exist(args.uuid):
-                    raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
+            if is_cstor_pool_exist(args.uuid):
+                raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
         else:
             pool_info = get_pool_info_from_k8s(args.pool)
             pool = pool_info['poolname']
             if not is_cstor_pool_exist(pool):
                 raise ConditionException(204, "cstor pool %s not exist" % pool)
-            if not is_pool_exists(pool):
-                raise ConditionException(203, "virsh pool %s not exist" % pool)
+            if args.type != 'uus':
+                if not is_pool_exists(pool):
+                    raise ConditionException(203, "virsh pool %s not exist" % pool)
     except ExecuteException, e1:
         logger.debug(traceback.format_exc())
         print dumps({"result": {"code": 202, "msg": "check_pool, cannot get pool info. %s" % e1.message}, "data": {}})
