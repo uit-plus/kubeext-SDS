@@ -581,8 +581,6 @@ parser_clone_disk.set_defaults(func=cloneDiskParser)
 
 # -------------------- add prepareDisk cmd ----------------------------------
 parser_prepare_disk = subparsers.add_parser("prepareDisk", help="prepareDisk help")
-parser_prepare_disk.add_argument("--type", required=True, metavar="[localfs|uus|nfs|glusterfs|vdiskfs]", type=str,
-                              help="storage pool type to use")
 parser_prepare_disk.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                               help="storage pool to use")
 parser_prepare_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
