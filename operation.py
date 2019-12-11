@@ -524,7 +524,7 @@ def showDiskSnapshot(params):
         result = get_disk_info(ss_path)
         result['disk'] = params.vol
         result["poolname"] = ss_info['poolname']
-        result['snapshot'] = params.name
+        result['snapshot'] = ss_info['snapshot']
         result["uni"] = ss_path
         print dumps(
             {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": ss_info})
@@ -860,6 +860,7 @@ def createDiskFromImage(params):
     config['name'] = params.name
     config['dir'] = dest_dir
     config['current'] = dest
+    config["poolname"] = pool_info['poolname']
 
     with open(dest_dir + '/config.json', "w") as f:
         dump(config, f)
