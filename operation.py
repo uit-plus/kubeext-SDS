@@ -86,9 +86,11 @@ def createPool(params):
                     "content": 'vmd'
                 }
     else:
+        if not os.path.isdir(cstor['data']['mountpath']):
+            raise ExecuteException('', 'cant not get cstor mount path')
         POOL_PATH = "%s/%s" % (cstor['data']['mountpath'], params.uuid)
         if not os.path.isdir(POOL_PATH):
-            raise ExecuteException('', 'cant not get cstor mount path')
+            os.makedirs(POOL_PATH)
         # step1 define pool
         op1 = Operation("virsh pool-define-as", {"name": params.uuid, "type": "dir", "target": POOL_PATH})
         op1.execute()
