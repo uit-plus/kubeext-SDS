@@ -76,6 +76,7 @@ def createPool(params):
     if params.type == 'uus':
         result = {
                     "pooltype": params.type,
+                    "pool": params.pool,
                     "poolname": params.uuid,
                     "capacity": cstor["data"]["total"],
                     "autostart": "no",
@@ -111,6 +112,7 @@ def createPool(params):
         result = get_pool_info(params.uuid)
         result['content'] = params.content
         result["pooltype"] = params.type
+        result["pool"] = params.pool
         result["poolname"] = params.uuid
         result["state"] = "active"
 
@@ -118,16 +120,16 @@ def createPool(params):
 
 def deletePool(params):
     pool_info = get_pool_info_from_k8s(params.pool)
-    pool = pool_info['poolname']
+    poolname = pool_info['poolname']
     if params.type != "uus":
-        if is_pool_started(pool):
-            raise ExecuteException('RunCmdError', 'pool %s still active, plz stop it first.' % pool)
+        if is_pool_started(poolname):
+            raise ExecuteException('RunCmdError', 'pool %s still active, plz stop it first.' % poolname)
 
-        if is_pool_defined(pool):
-            op2 = Operation("virsh pool-undefine", {"pool": pool})
+        if is_pool_defined(poolname):
+            op2 = Operation("virsh pool-undefine", {"pool": poolname})
             op2.execute()
 
-    op = Operation("cstor-cli pool-remove", {"poolname": pool}, with_result=True)
+    op = Operation("cstor-cli pool-remove", {"poolname": poolname}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
@@ -137,9 +139,9 @@ def deletePool(params):
 
 def startPool(params):
     pool_info = get_pool_info_from_k8s(params.pool)
-    pool = pool_info['poolname']
+    poolname = pool_info['poolname']
     if params.type != "uus":
-        op1 = Operation("virsh pool-start", {"pool": pool})
+        op1 = Operation("virsh pool-start", {"pool": poolname})
         op1.execute()
         pool_info["state"] = "active"
         print dumps(
@@ -150,13 +152,13 @@ def startPool(params):
 def autoStartPool(params):
     if params.type != "uus":
         pool_info = get_pool_info_from_k8s(params.pool)
-        pool = pool_info['poolname']
+        poolname = pool_info['poolname']
         if params.disable:
-            op = Operation("virsh pool-autostart --disable", {"pool": pool})
+            op = Operation("virsh pool-autostart --disable", {"pool": poolname})
             op.execute()
             pool_info["autostart"] = 'no'
         else:
-            op = Operation("virsh pool-autostart", {"pool": pool})
+            op = Operation("virsh pool-autostart", {"pool": poolname})
             op.execute()
             pool_info["autostart"] = 'yes'
         print dumps(
@@ -168,31 +170,32 @@ def autoStartPool(params):
 def stopPool(params):
     if params.type != "uus":
         pool_info = get_pool_info_from_k8s(params.pool)
-        pool = pool_info['poolname']
-        op1 = Operation("virsh pool-destroy", {"pool": pool})
+        poolname = pool_info['poolname']
+        op1 = Operation("virsh pool-destroy", {"pool": poolname})
         op1.execute()
 
         pool_info["state"] = "inactive"
         print dumps(
-            {"result": {"code": 0, "msg": "stop pool %s successful." % pool}, "data": pool_info})
+            {"result": {"code": 0, "msg": "stop pool %s successful." % poolname}, "data": pool_info})
     elif params.type == "uus":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs."}, "data": {}})
 
 def showPool(params):
     pool_info = get_pool_info_from_k8s(params.pool)
-    pool = pool_info['poolname']
+    poolname = pool_info['poolname']
     if params.type != 'uus':
-        result = get_pool_info(pool)
-        if is_pool_started(pool):
+        result = get_pool_info(poolname)
+        if is_pool_started(poolname):
             result['state'] = "active"
         else:
             result['state'] = "inactive"
         result['content'] = pool_info["content"]
         result["pooltype"] = pool_info["pooltype"]
+        result["pool"] = params.pool
         result["poolname"] = pool_info["poolname"]
     else:
         result = pool_info
-    print dumps({"result": {"code": 0, "msg": "show pool %s successful." % pool}, "data": result})
+    print dumps({"result": {"code": 0, "msg": "show pool %s successful." % poolname}, "data": result})
 
 def cstor_prepare_disk(type, pool, vol, uni):
     kv = {"poolname": pool, "name": vol, "uni": uni}
@@ -235,8 +238,8 @@ def get_disk_dir(pool, vol):
     # create disk dir and create disk in dir.
     disk_dir = "%s/%s" % (pool_info['path'], vol)
 
-def qemu_create_disk(pool, vol, format, capacity):
-    pool_info = get_pool_info(pool)
+def qemu_create_disk(pool, poolname, vol, format, capacity):
+    pool_info = get_pool_info(poolname)
     if not os.path.isdir(pool_info['path']):
         raise ExecuteException('', 'can not get virsh pool path.')
     # create disk dir and create disk in dir.
@@ -252,7 +255,8 @@ def qemu_create_disk(pool, vol, format, capacity):
     config['name'] = vol
     config['dir'] = disk_dir
     config['current'] = disk_path
-    config['poolname'] = pool
+    config['pool'] = pool
+    config['poolname'] = poolname
 
     with open(disk_dir + '/config.json', "w") as f:
         dump(config, f)
@@ -260,25 +264,26 @@ def qemu_create_disk(pool, vol, format, capacity):
     result['disk'] = vol
     result["uni"] = disk_path
     result['current'] = disk_path
-    result['poolname'] = pool
+    result['pool'] = pool
+    result['poolname'] = poolname
     return result
 
 
 def createDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
-    pool = pool_info['poolname']
-    createInfo = cstor_create_disk(pool, params.vol, params.capacity)
+    poolname = pool_info['poolname']
+    createInfo = cstor_create_disk(poolname, params.vol, params.capacity)
 
     if params.type != 'uus':
-        result = qemu_create_disk(pool, params.vol, params.format, params.capacity)
+        result = qemu_create_disk(params.pool, poolname, params.vol, params.format, params.capacity)
         uni = result["uni"]
-        prepareInfo = cstor_prepare_disk(params.type, pool, params.vol, uni)
-        result['poolname'] = pool_info['poolname']
+        prepareInfo = cstor_prepare_disk(params.type, poolname, params.vol, uni)
     else:
         uni = createInfo["data"]["uni"]
-        prepareInfo = cstor_prepare_disk(params.type, pool, params.vol, uni)
+        prepareInfo = cstor_prepare_disk(params.type, poolname, params.vol, uni)
         result = {
             "disk": params.vol,
+            "pool": params.pool,
             "poolname": pool_info['poolname'],
             "uni": createInfo["data"]["uni"],
             "current": prepareInfo["data"]["path"],
@@ -289,7 +294,7 @@ def createDisk(params):
 
 def deleteDisk(params):
     disk_info = get_vol_info_from_k8s(params.vol)
-    pool = disk_info['poolname']
+    poolname = disk_info['poolname']
     kv = {"poolname": disk_info['poolname'], "name": params.vol, "uni": disk_info["uni"]}
     op = Operation("cstor-cli vdisk-release", kv, True)
     releaseInfo = op.execute()
@@ -305,7 +310,7 @@ def deleteDisk(params):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
     if params.type != "uus":
-        pool_info = get_pool_info(pool)
+        pool_info = get_pool_info(poolname)
         disk_dir = pool_info['path'] + '/' + params.vol
         snapshots_path = disk_dir + '/snapshots'
         with open(disk_dir + '/config.json', "r") as f:
@@ -353,6 +358,7 @@ def resizeDisk(params):
         result = get_disk_info(config['current'])
 
         result['disk'] = params.vol
+        result["pool"] = params.pool
         result["poolname"] = pool_info['poolname']
         result["uni"] = config['current']
         result["current"] = config['current']
@@ -361,6 +367,7 @@ def resizeDisk(params):
     else:
         result = {
             "disk": params.vol,
+            "pool": params.pool,
             "poolname": pool_info['poolname'],
             "uni": cstor["data"]["uni"],
             "current": prepareInfo["data"]["path"],
@@ -371,10 +378,10 @@ def resizeDisk(params):
 
 def cloneDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
-    pool = pool_info['poolname']
+    poolname = pool_info['poolname']
     disk_info = get_vol_info_from_k8s(params.vol)
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-    op = Operation('cstor-cli vdisk-clone ', {'poolname': pool, 'name': params.vol,
+    op = Operation('cstor-cli vdisk-clone ', {'poolname': poolname, 'name': params.vol,
                                               'clonename': params.newname}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -418,7 +425,8 @@ def cloneDisk(params):
         config['name'] = params.newname
         config['dir'] = clone_disk_dir
         config['current'] = clone_disk_path
-        config['poolname'] = pool
+        config['poolname'] = poolname
+        config['pool'] = params.pool
         with open(clone_disk_dir + '/config.json', "w") as f:
             dump(config, f)
 
@@ -426,7 +434,8 @@ def cloneDisk(params):
         # vol_xml = get_volume_xml(params.pool, params.vol)
 
         result['disk'] = params.newname
-        result["poolname"] = pool
+        result["pool"] = params.pool
+        result["poolname"] = poolname
         result["uni"] = clone_disk_path
         result["current"] = clone_disk_path
         print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
@@ -434,6 +443,7 @@ def cloneDisk(params):
         prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, cstor['data']['uni'])
         result = {
             "disk": params.vol,
+            "pool": params.pool,
             "poolname": pool_info['poolname'],
             "uni": cstor["data"]["uni"],
             "current": prepareInfo["data"]["path"],
@@ -478,25 +488,26 @@ def releaseDisk(params):
 
 def showDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
-    pool = pool_info['poolname']
+    poolname = pool_info['poolname']
     if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
-        op = Operation('cstor-cli vdisk-show ', {'poolname': pool, 'name': params.vol}, with_result=True)
+        op = Operation('cstor-cli vdisk-show ', {'poolname': poolname, 'name': params.vol}, with_result=True)
         cstor = op.execute()
         if cstor['result']['code'] != 0:
             raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-        pool_info = get_pool_info(pool)
+        pool_info = get_pool_info(poolname)
         disk_dir = pool_info['path'] + '/' + params.vol
         with open(disk_dir + '/config.json', "r") as f:
             config = load(f)
 
         result = get_disk_info(config['current'])
         result['disk'] = params.vol
-        result["poolname"] = pool
+        result["pool"] = params.pool
+        result["poolname"] = poolname
         result["uni"] = config['current']
         result["current"] = config['current']
     elif params.type == "uus":
-        kv = {"poolname": pool, "name": params.vol}
+        kv = {"poolname": poolname, "name": params.vol}
         op = Operation("cstor-cli vdisk-show", kv, True)
         diskinfo = op.execute()
         if diskinfo['result']['code'] != 0:
@@ -505,7 +516,8 @@ def showDisk(params):
 
         result = {
             "disk": params.vol,
-            "poolname": pool,
+            "pool": params.pool,
+            "poolname": poolname,
             "virtual_size": diskinfo["data"]["size"],
             "filename": diskinfo["data"]["path"],
             "uni": diskinfo["data"]["uni"]
@@ -517,13 +529,14 @@ def showDisk(params):
 def showDiskSnapshot(params):
     if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
         ss_info = get_snapshot_info_from_k8s(params.name)
-        pool = ss_info['poolname']
-        disk_config = get_disk_config(pool, params.vol)
+        poolname = ss_info['poolname']
+        disk_config = get_disk_config(poolname, params.vol)
         ss_path = '%s/snapshots/%s' % (disk_config['dir'], params.name)
 
         result = get_disk_info(ss_path)
         result['disk'] = params.vol
-        result["poolname"] = ss_info['poolname']
+        result["pool"] = params.pool
+        result["poolname"] = poolname
         result['snapshot'] = ss_info['snapshot']
         result["uni"] = ss_path
         print dumps(
@@ -533,16 +546,16 @@ def showDiskSnapshot(params):
 
 def createExternalSnapshot(params):
     disk_info = get_vol_info_from_k8s(params.vol)
-    pool = disk_info['poolname']
+    poolname = disk_info['poolname']
     if params.type != 'uus':
         # prepare base
-        disk_config = get_disk_config(pool, params.vol)
+        disk_config = get_disk_config(poolname, params.vol)
         ss = os.path.basename(disk_config['current'])
-        cstor_disk_prepare(pool, ss, disk_config['current'])
+        cstor_disk_prepare(poolname, ss, disk_config['current'])
     else:
         # prepare base
-        cstor_disk_prepare(pool, params.vol, disk_info['uni'])
-    op = Operation('cstor-cli vdisk-add-ss ', {'poolname': pool, 'name': params.vol,
+        cstor_disk_prepare(poolname, params.vol, disk_info['uni'])
+    op = Operation('cstor-cli vdisk-add-ss ', {'poolname': poolname, 'name': params.vol,
                                                'sname': params.name}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -550,7 +563,7 @@ def createExternalSnapshot(params):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
     if params.type != "uus":
-        disk_config = get_disk_config(pool, params.vol)
+        disk_config = get_disk_config(poolname, params.vol)
         if params.domain is None:
             if check_disk_in_use(disk_config['current']):
                 raise ExecuteException('', 'disk in using, current file %s is using by another process, '
@@ -565,7 +578,7 @@ def createExternalSnapshot(params):
             op1.execute()
 
             # prepare snapshot
-            cstor_disk_prepare(pool, os.path.basename(ss_path), ss_path)
+            cstor_disk_prepare(poolname, os.path.basename(ss_path), ss_path)
 
             with open(disk_config['dir'] + '/config.json', "r") as f:
                 config = load(f)
@@ -575,6 +588,7 @@ def createExternalSnapshot(params):
 
             result = get_disk_info(ss_path)
             result['disk'] = params.vol
+            result["pool"] = params.pool
             result["poolname"] = disk_info['poolname']
             result['snapshot'] = params.name
             result["uni"] = ss_path
@@ -608,7 +622,7 @@ def createExternalSnapshot(params):
             op.execute()
 
             # prepare snapshot
-            cstor_disk_prepare(pool, os.path.basename(ss_path), ss_path)
+            cstor_disk_prepare(poolname, os.path.basename(ss_path), ss_path)
 
             config_path = os.path.dirname(ss_dir) + '/config.json'
             with open(config_path, "r") as f:
@@ -618,6 +632,7 @@ def createExternalSnapshot(params):
                 dump(config, f)
             result = get_disk_info(ss_path)
             result['disk'] = params.vol
+            result["pool"] = params.pool
             result["poolname"] = disk_info['poolname']
             result['snapshot'] = params.name
             result["uni"] = ss_path
@@ -626,23 +641,23 @@ def createExternalSnapshot(params):
                  "data": result})
     else:
         # prepare snapshot
-        cstor_disk_prepare(pool, params.name, cstor['data']['uni'])
+        cstor_disk_prepare(poolname, params.name, cstor['data']['uni'])
         print dumps(cstor)
 
 # create snapshot on params.name, then rename snapshot to current
 def revertExternalSnapshot(params):
     disk_info = get_pool_info_from_k8s(params.pool)
-    pool = disk_info['poolname']
+    poolname = disk_info['poolname']
 
     if params.type != 'uus':
         # prepare base
-        disk_config = get_disk_config(pool, params.vol)
-        cstor_disk_prepare(pool, os.path.basename(params.backing_file), params.backing_file)
+        disk_config = get_disk_config(poolname, params.vol)
+        cstor_disk_prepare(poolname, os.path.basename(params.backing_file), params.backing_file)
     else:
         # prepare base
-        cstor_disk_prepare(pool, params.vol, disk_info['uni'])
+        cstor_disk_prepare(poolname, params.vol, disk_info['uni'])
 
-    op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': pool, 'name': params.vol,
+    op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': poolname, 'name': params.vol,
                                               'sname': params.name}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -652,7 +667,7 @@ def revertExternalSnapshot(params):
     if params.domain and is_vm_active(params.domain):
         raise ExecuteException('', 'domain %s is still active, plz stop it first.')
 
-    disk_config = get_disk_config(pool, params.vol)
+    disk_config = get_disk_config(poolname, params.vol)
     if check_disk_in_use(disk_config['current']):
         raise ExecuteException('', 'error: current disk in use, plz check or set real domain field.')
 
@@ -680,33 +695,34 @@ def revertExternalSnapshot(params):
 
     result = get_disk_info(config['current'])
     result['disk'] = params.vol
-    result["poolname"] = pool
+    result["pool"] = params.pool
+    result["poolname"] = poolname
     result['snapshot'] = params.name
     result["uni"] = ss_path
 
     # prepare snapshot
     if params.type != 'uus':
-        cstor_disk_prepare(pool, os.path.basename(ss_path), ss_path)
+        cstor_disk_prepare(poolname, os.path.basename(ss_path), ss_path)
     else:
-        cstor_disk_prepare(pool, os.path.basename(ss_path), cstor['data']['uni'])
+        cstor_disk_prepare(poolname, os.path.basename(ss_path), cstor['data']['uni'])
 
     print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."},
                  "data": result})
 
 def deleteExternalSnapshot(params):
     disk_info = get_pool_info_from_k8s(params.pool)
-    pool = disk_info['poolname']
+    poolname = disk_info['poolname']
 
     if params.type != 'uus':
         # prepare base
-        disk_config = get_disk_config(pool, params.vol)
-        cstor_disk_prepare(pool, os.path.basename(params.backing_file), params.backing_file)
-        cstor_disk_prepare(pool, os.path.basename(disk_config['current']), disk_config['current'])
+        disk_config = get_disk_config(poolname, params.vol)
+        cstor_disk_prepare(poolname, os.path.basename(params.backing_file), params.backing_file)
+        cstor_disk_prepare(poolname, os.path.basename(disk_config['current']), disk_config['current'])
     else:
         # prepare base
-        cstor_disk_prepare(pool, params.vol, disk_info['uni'])
+        cstor_disk_prepare(poolname, params.vol, disk_info['uni'])
 
-    op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': pool, 'name': params.vol,
+    op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': poolname, 'name': params.vol,
                                               'sname': params.name}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -716,11 +732,11 @@ def deleteExternalSnapshot(params):
     if params.type != "uus":
         if params.domain:
             specs = get_disks_spec(params.domain)
-            disk_config = get_disk_config(pool, params.vol)
+            disk_config = get_disk_config(poolname, params.vol)
             if disk_config['current'] not in specs.keys():
                 raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
 
-        disk_config = get_disk_config(pool, params.vol)
+        disk_config = get_disk_config(poolname, params.vol)
 
         # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
         snapshots_to_delete = []
@@ -790,7 +806,7 @@ def deleteExternalSnapshot(params):
             dump(config, f)
 
         result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
-                  'need_to_modify': config['current'], "pool": pool}
+                  'need_to_modify': config['current'], "pool": poolname}
         print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."},
                      "data": result})
     else:
@@ -860,12 +876,14 @@ def createDiskFromImage(params):
     config['name'] = params.name
     config['dir'] = dest_dir
     config['current'] = dest
+    config["pool"] = params.pool
     config["poolname"] = pool_info['poolname']
 
     with open(dest_dir + '/config.json', "w") as f:
         dump(config, f)
     result = get_disk_info(dest)
     result['disk'] = params.newname
+    result["pool"] = params.pool
     result["poolname"] = pool_info['poolname']
     result["uni"] = config['current']
     result["current"] = config['current']
