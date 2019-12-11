@@ -958,12 +958,12 @@ def prepare_disk_by_metadataname(uuid):
     return diskinfo
 
 def prepare_disk_by_path(path):
-    output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.pool}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
+    output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
     if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
         logger.debug(output)
     else:
         output = runCmdAndGetOutput(
-            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.pool}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
+            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
         if output is None:
             raise ExecuteException('', 'can not get right disk info from k8s by path.')
     logger.debug(output)
@@ -983,3 +983,6 @@ def prepare_disk_by_path(path):
         pool = os.path.basename(pool_info['path'])
     cstor_disk_prepare(pool, disk, uni)
     return diskinfo
+
+if __name__ == '__main__':
+    prepare_disk_by_path('/var/lib/libvirt/cstor/17098caccd174fccafed76b0d7fccde0/17098caccd174fccafed76b0d7fccde0/disk66666/disk66666')

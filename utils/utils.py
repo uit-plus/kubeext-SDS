@@ -591,7 +591,7 @@ def get_IP():
 
 
 def get_pool_info(pool_):
-    result = runCmdAndSplitKvToJson('virsh pool-info ' + pool_)
+    result = runCmdAndSplitKvToJson('virsh pool-info %s' % pool_)
     # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
     # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
     # result['code'] = 0
@@ -601,7 +601,7 @@ def get_pool_info(pool_):
     if 'available' in result.keys():
         del result['available']
 
-    xml_dict = runCmdAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
+    xml_dict = runCmdAndTransferXmlToJson('virsh pool-dumpxml %s' % pool_)
     result['capacity'] = int(xml_dict['pool']['capacity']['text'])
     result['path'] = xml_dict['pool']['target']['path']
     return result
