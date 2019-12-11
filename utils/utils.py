@@ -75,7 +75,7 @@ def runCmdWithResult(cmd):
                     error_msg = error_msg + str.strip(line)
                 error_msg = str.strip(error_msg)
                 raise ExecuteException('RunCmdError',
-                                       'can not parse cstor-cli output to json----' + msg + '. ' + error_msg)
+                                       'can not parse cstor-cli output to json----%s. %s' % (msg, error_msg))
         if std_err:
             msg = ''
             for index, line in enumerate(std_err):
@@ -591,6 +591,8 @@ def get_IP():
 
 
 def get_pool_info(pool_):
+    if not pool_:
+        raise ExecuteException('', 'missing parameter: no pool name.')
     result = runCmdAndSplitKvToJson('virsh pool-info %s' % pool_)
     # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
     # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
@@ -607,12 +609,16 @@ def get_pool_info(pool_):
     return result
 
 def get_pool_info_from_k8s(pool):
+    if not pool:
+        raise ExecuteException('', 'missing parameter: no pool name.')
     result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
     if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
         return result['spec']['pool']
     raise ExecuteException('', 'can not get pool info from k8s')
 
 def get_vol_info_from_k8s(vol):
+    if not vol:
+        raise ExecuteException('', 'missing parameter: no disk name.')
     result = runCmdWithResult('kubectl get vmd -o json %s' % vol)
     if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
         return result['spec']['volume']
@@ -625,17 +631,21 @@ def get_snapshot_info_from_k8s(snapshot):
     raise ExecuteException('', 'can not get snapshot info from k8s')
 
 def get_disk_config(pool, vol):
+    if not pool or not vol:
+        raise ExecuteException('', 'missing parameter: no pool or disk name.')
     poolInfo = get_pool_info(pool)
     pool_path = poolInfo['path']
     if not os.path.isdir(pool_path):
-        raise ExecuteException('', "can not get pool " + pool + " path.")
-    config_path = pool_path + '/' + vol + '/config.json'
+        raise ExecuteException('', "can not get pool %s path." % pool)
+    config_path = '%s/%s/config.json' % (pool_path, vol)
     with open(config_path, "r") as f:
         config = load(f)
         return config
 
 
 def get_disk_config_by_path(config_path):
+    if not config_path:
+        raise ExecuteException('', 'cannot find "config.json" in disk dir.')
     with open(config_path, "r") as f:
         config = load(f)
         return config
@@ -652,10 +662,10 @@ def get_disk_snapshots(ss_path):
 
 def get_disk_info(ss_path):
     try:
-        result = runCmdWithResult('qemu-img info -U --output json ' + ss_path)
+        result = runCmdWithResult('qemu-img info -U --output json %s' % ss_path)
     except:
         try:
-            result = runCmdWithResult('qemu-img info --output json ' + ss_path)
+            result = runCmdWithResult('qemu-img info --output json %s' % ss_path)
         except:
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
@@ -665,10 +675,10 @@ def get_disk_info(ss_path):
 
 def get_sn_chain(ss_path):
     try:
-        result = runCmdWithResult('qemu-img info -U --backing-chain --output json ' + ss_path)
+        result = runCmdWithResult('qemu-img info -U --backing-chain --output json %s' % ss_path)
     except:
         try:
-            result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
+            result = runCmdWithResult('qemu-img info --backing-chain --output json %s' % ss_path)
         except:
             print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
             exit(1)
@@ -739,6 +749,8 @@ def check_disk_in_use(disk_path):
 
 
 def change_vm_os_disk_file(vm, source, target):
+    if not vm or not source or not target:
+        raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (vm, source, target))
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -758,8 +770,10 @@ def change_vm_os_disk_file(vm, source, target):
                     return True
     return False
 
-def is_shared_storage(file):
-    cmd = 'df %s | awk \'{print $1}\' | sed -n "2, 1p"' % file
+def is_shared_storage(path):
+    if not path:
+        raise ExecuteException('', 'missing parameter: no path.')
+    cmd = 'df %s | awk \'{print $1}\' | sed -n "2, 1p"' % path
     fs = runCmdAndGetOutput(cmd)
     fs = fs.strip()
     if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
@@ -767,6 +781,8 @@ def is_shared_storage(file):
     return False
 
 def is_vm_disk_not_shared_storage(vm):
+    if not vm:
+        raise ExecuteException('', 'missing parameter: no vm name.')
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -781,11 +797,13 @@ def is_vm_disk_not_shared_storage(vm):
                 source_element = disk.find("source")
                 disk_file = source_element.get("file")
                 if not is_shared_storage(disk_file):
-                  return False
+                    return False
 
     return True
 
 def is_vm_disk_driver_cache_none(vm):
+    if not vm:
+        raise ExecuteException('', 'missing parameter: no vm name.')
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 

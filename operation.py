@@ -108,7 +108,7 @@ def createPool(params):
         op3 = Operation("virsh pool-start", {"pool": params.uuid})
         op3.execute()
 
-        with open(POOL_PATH + '/content', 'w') as f:
+        with open('%s/content' % POOL_PATH, 'w') as f:
             f.write(params.content)
 
         result = get_pool_info(params.uuid)
@@ -260,7 +260,7 @@ def qemu_create_disk(pool, poolname, vol, format, capacity):
     config['pool'] = pool
     config['poolname'] = poolname
 
-    with open(disk_dir + '/config.json', "w") as f:
+    with open('%s/config.json' % disk_dir, "w") as f:
         dump(config, f)
     result = get_disk_info(disk_path)
     result['disk'] = vol
@@ -313,26 +313,26 @@ def deleteDisk(params):
 
     if params.type != "uus":
         pool_info = get_pool_info(poolname)
-        disk_dir = pool_info['path'] + '/' + params.vol
-        snapshots_path = disk_dir + '/snapshots'
-        with open(disk_dir + '/config.json', "r") as f:
+        disk_dir = '%s/%s' %(pool_info['path'], params.vol)
+        snapshots_path = '%s/snapshots' % disk_dir
+        with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
         if os.path.exists(snapshots_path):
             for file in os.listdir(snapshots_path):
-                if snapshots_path + '/' + file == config['current']:
+                if '%s/%s' %(snapshots_path, file) == config['current']:
                     continue
                 else:
                     try:
                         # if success, disk has right snapshot, raise ExecuteException
-                        chain = get_sn_chain_path(snapshots_path + '/' + file)
+                        chain = get_sn_chain_path('%s/%s' %(snapshots_path, file))
                     except:
                         continue
                     raise ExecuteException('', 'error: disk %s still has snapshot %s.' % (params.vol, file))
 
-        op = Operation("rm -rf " + disk_dir, {})
+        op = Operation("rm -rf %s" % disk_dir, {})
         op.execute()
 
-    print dumps({"result": {"code": 0, "msg": "delete volume " + params.vol + " success."}, "data": {}})
+    print dumps({"result": {"code": 0, "msg": "delete volume %s success." % params.vol}, "data": {}})
 
 def resizeDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -346,16 +346,16 @@ def resizeDisk(params):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
     if params.type != "uus":
-        disk_dir = pool_info['path'] + '/' + params.vol
-        with open(disk_dir + '/config.json', "r") as f:
+        disk_dir = '%s/%s' %(pool_info['path'], params.vol)
+        with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
 
         disk_info = get_disk_info(config['current'])
         size = int(params.capacity) - int(disk_info['virtual_size'])
-        op = Operation("qemu-img resize " + config['current'] + " +" + str(size), {})
+        op = Operation("qemu-img resize %s %s" %(config['current'], str(size)), {})
         op.execute()
 
-        with open(disk_dir + '/config.json', "w") as f:
+        with open('%s/config.json' % disk_dir, "w") as f:
             dump(config, f)
         result = get_disk_info(config['current'])
 
@@ -364,7 +364,7 @@ def resizeDisk(params):
         result["poolname"] = pool_info['poolname']
         result["uni"] = config['current']
         result["current"] = config['current']
-        print dumps({"result": {"code": 0, "msg": "resize disk " + params.vol + " successful."}, "data": result})
+        print dumps({"result": {"code": 0, "msg": "success resize disk %s." % params.vol}, "data": result})
 
     else:
         result = {
@@ -376,7 +376,7 @@ def resizeDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
-        print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
+        print dumps({"result": {"code": 0, "msg": "success resize disk %s." % params.vol}, "data": result})
 
 def cloneDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -392,15 +392,15 @@ def cloneDisk(params):
 
     if params.type != "uus":
         # create disk dir and create disk in dir.
-        disk_dir = pool_info['path'] + '/' + params.vol
-        clone_disk_dir = pool_info['path'] + '/' + params.newname
-        clone_disk_path = clone_disk_dir + '/' + params.newname
+        disk_dir = '%s/%s' % (pool_info['path'], params.vol)
+        clone_disk_dir = '%s/%s' %(pool_info['path'], params.newname)
+        clone_disk_path = '%s/%s' % (clone_disk_dir, params.newname)
         if not os.path.exists(clone_disk_dir):
             os.makedirs(clone_disk_dir)
         if os.path.exists(clone_disk_path):
             raise ExecuteException('', 'disk already exists, aborting clone.')
 
-        with open(disk_dir + '/config.json', "r") as f:
+        with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
 
         try:
@@ -429,7 +429,7 @@ def cloneDisk(params):
         config['current'] = clone_disk_path
         config['poolname'] = poolname
         config['pool'] = params.pool
-        with open(clone_disk_dir + '/config.json', "w") as f:
+        with open('%s/config.json' % clone_disk_dir, "w") as f:
             dump(config, f)
 
         result = get_disk_info(clone_disk_path)
@@ -440,7 +440,7 @@ def cloneDisk(params):
         result["poolname"] = poolname
         result["uni"] = clone_disk_path
         result["current"] = clone_disk_path
-        print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
+        print dumps({"result": {"code": 0, "msg": "success clone disk %s." % params.vol}, "data": result})
     else:
         prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, cstor['data']['uni'])
         result = {
@@ -452,7 +452,7 @@ def cloneDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
-        print dumps({"result": {"code": 0, "msg": "clone disk " + params.vol + " successful."}, "data": result})
+        print dumps({"result": {"code": 0, "msg": "success clone disk %s." % params.vol}, "data": result})
 
 def cstor_disk_prepare(pool, vol, uni):
     op = Operation('cstor-cli vdisk-prepare ', {'poolname': pool, 'name': vol,
@@ -486,7 +486,7 @@ def cstor_release_disk(params):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 def releaseDisk(params):
     cstor_release_disk(params)
-    print dumps({"result": {"code": 0, "msg": "release disk " + params.vol + " successful."}, "data": {}})
+    print dumps({"result": {"code": 0, "msg": "success release disk %s." % params.vol}, "data": {}})
 
 def showDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -498,8 +498,8 @@ def showDisk(params):
             raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
         pool_info = get_pool_info(poolname)
-        disk_dir = pool_info['path'] + '/' + params.vol
-        with open(disk_dir + '/config.json', "r") as f:
+        disk_dir = '%s/%s' %(pool_info['path'], params.vol)
+        with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
 
         result = get_disk_info(config['current'])
@@ -542,7 +542,7 @@ def showDiskSnapshot(params):
         result['snapshot'] = ss_info['snapshot']
         result["uni"] = ss_path
         print dumps(
-            {"result": {"code": 0, "msg": "show disk snapshot " + params.name + " successful."}, "data": ss_info})
+            {"result": {"code": 0, "msg": "success show disk snapshot %s." % params.name}, "data": ss_info})
     elif params.type == "uus":
         raise ExecuteException("", "not support operation for uus.")
 
@@ -570,10 +570,10 @@ def createExternalSnapshot(params):
             if check_disk_in_use(disk_config['current']):
                 raise ExecuteException('', 'disk in using, current file %s is using by another process, '
                                            'is there a vm using the current file, plz check.' % disk_config['current'])
-            ss_dir = disk_config['dir'] + '/snapshots'
+            ss_dir = '%s/snapshots' % disk_config['dir']
             if not os.path.exists(ss_dir):
                 os.makedirs(ss_dir)
-            ss_path = ss_dir + '/' + params.name
+            ss_path = '%s/%s' %(ss_dir, params.name)
 
             op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
                             (params.format, disk_config['current'], params.format, ss_path), {})
@@ -582,10 +582,10 @@ def createExternalSnapshot(params):
             # prepare snapshot
             cstor_disk_prepare(poolname, os.path.basename(ss_path), ss_path)
 
-            with open(disk_config['dir'] + '/config.json', "r") as f:
+            with open('%s/config.json' % disk_config['dir'], "r") as f:
                 config = load(f)
                 config['current'] = ss_path
-            with open(disk_config['dir'] + '/config.json', "w") as f:
+            with open('%s/config.json' % disk_config['dir'], "w") as f:
                 dump(config, f)
 
             result = get_disk_info(ss_path)
@@ -596,7 +596,7 @@ def createExternalSnapshot(params):
             result["uni"] = ss_path
 
             print dumps(
-                {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
+                {"result": {"code": 0, "msg": "success create disk external snapshot %s." % params.name},
                  "data": result})
         else:
             specs = get_disks_spec(params.domain)
@@ -605,8 +605,8 @@ def createExternalSnapshot(params):
                 raise ExecuteException('', 'domain %s not has disk %s' % (params.domain, params.vol))
 
             vm_disk = specs[disk_config['current']]
-            ss_path = disk_config['dir'] + '/snapshots/' + params.name
-            ss_dir = disk_config['dir'] + '/snapshots'
+            ss_path = '%s/snapshots/%s' %(disk_config['dir'], params.name)
+            ss_dir = '%s/snapshots' % disk_config['dir']
             if not os.path.exists(ss_dir):
                 os.makedirs(ss_dir)
             not_need_snapshot_spec = ''
@@ -626,7 +626,7 @@ def createExternalSnapshot(params):
             # prepare snapshot
             cstor_disk_prepare(poolname, os.path.basename(ss_path), ss_path)
 
-            config_path = os.path.dirname(ss_dir) + '/config.json'
+            config_path = '%s/config.json' % os.path.dirname(ss_dir)
             with open(config_path, "r") as f:
                 config = load(f)
                 config['current'] = ss_path
@@ -639,7 +639,7 @@ def createExternalSnapshot(params):
             result['snapshot'] = params.name
             result["uni"] = ss_path
             print dumps(
-                {"result": {"code": 0, "msg": "create disk external snapshot " + params.name + " successful."},
+                {"result": {"code": 0, "msg": "success create disk external snapshot %s" % params.name},
                  "data": result})
     else:
         # prepare snapshot
@@ -673,12 +673,12 @@ def revertExternalSnapshot(params):
     if check_disk_in_use(disk_config['current']):
         raise ExecuteException('', 'error: current disk in use, plz check or set real domain field.')
 
-    ss_path = disk_config['dir'] + '/snapshots/' + params.name
+    ss_path = '%s/snapshots/%s' %(disk_config['dir'], params.name)
     if ss_path is None:
         raise ExecuteException('', 'error: can not get snapshot backing file.')
 
     uuid = randomUUID().replace('-', '')
-    new_file_path = os.path.dirname(params.backing_file) + '/' + uuid
+    new_file_path = '%s/%s' %(os.path.dirname(params.backing_file), uuid)
     op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
                     (params.format, params.backing_file, params.format, new_file_path), {})
     op1.execute()
@@ -689,10 +689,10 @@ def revertExternalSnapshot(params):
         raise ExecuteException('', 'can not change disk source in domain xml')
 
     # modify json file, make os_event_handler to modify data on api server .
-    with open(disk_config['dir'] + '/config.json', "r") as f:
+    with open('%s/config.json' % disk_config['dir'], "r") as f:
         config = load(f)
         config['current'] = new_file_path
-    with open(disk_config['dir'] + '/config.json', "w") as f:
+    with open('%s/config.json' % disk_config['dir'], "w") as f:
         dump(config, f)
 
     result = get_disk_info(config['current'])
@@ -708,7 +708,7 @@ def revertExternalSnapshot(params):
     else:
         cstor_disk_prepare(poolname, os.path.basename(ss_path), cstor['data']['uni'])
 
-    print dumps({"result": {"code": 0, "msg": "revert disk external snapshot " + params.name + " successful."},
+    print dumps({"result": {"code": 0, "msg": "success revert disk external snapshot %s." % params.name},
                  "data": result})
 
 def deleteExternalSnapshot(params):
@@ -742,10 +742,10 @@ def deleteExternalSnapshot(params):
 
         # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
         snapshots_to_delete = []
-        files = os.listdir(disk_config['dir'] + '/snapshots')
+        files = os.listdir('%s/snapshots' % disk_config['dir'])
         for df in files:
             try:
-                bf_paths = get_sn_chain_path(disk_config['dir'] + '/snapshots/' + df)
+                bf_paths = get_sn_chain_path('%s/snapshots/%s' %(disk_config['dir'], df))
                 if params.backing_file in bf_paths:
                     snapshots_to_delete.append(df)
             except:
@@ -801,15 +801,15 @@ def deleteExternalSnapshot(params):
                 op = Operation('rm -f %s/snapshots/%s' % (disk_config['dir'], df), {})
                 op.execute()
         # modify json file, make os_event_handler to modify data on api server .
-        with open(disk_config['dir'] + '/config.json', "r") as f:
+        with open('%s/config.json' % disk_config['dir'], "r") as f:
             config = load(f)
             config['current'] = config['current']
-        with open(disk_config['dir'] + '/config.json', "w") as f:
+        with open('%s/config.json' % disk_config['dir'], "w") as f:
             dump(config, f)
 
         result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
                   'need_to_modify': config['current'], "pool": params.pool, "poolname": poolname}
-        print dumps({"result": {"code": 0, "msg": "delete disk external snapshot " + params.name + " successful."},
+        print dumps({"result": {"code": 0, "msg": "success delete disk external snapshot %s." % params.name},
                      "data": result})
     else:
         print dumps(cstor)
@@ -818,9 +818,9 @@ def updateDiskCurrent(params):
     if params.type != "uus":
         for current in params.current:
             if params.current.find("snapshots") > 0:
-                config_path = os.path.dirname(os.path.dirname(current)) + '/config.json'
+                config_path = '%s/config.json' % os.path.dirname(os.path.dirname(current))
             else:
-                config_path = os.path.dirname(current) + '/config.json'
+                config_path = '%s/config.json' % os.path.dirname(current)
             with open(config_path, "r") as f:
                 config = load(f)
                 config['current'] = current
@@ -881,7 +881,7 @@ def createDiskFromImage(params):
     config["pool"] = params.pool
     config["poolname"] = pool_info['poolname']
 
-    with open(dest_dir + '/config.json', "w") as f:
+    with open('%s/config.json' % dest_dir, "w") as f:
         dump(config, f)
     result = get_disk_info(dest)
     result['disk'] = params.newname
@@ -890,7 +890,7 @@ def createDiskFromImage(params):
     result["uni"] = config['current']
     result["current"] = config['current']
     print dumps(
-        {"result": {"code": 0, "msg": "createDiskFromImage " + params.name + " successful."},
+        {"result": {"code": 0, "msg": "success createDiskFromImage %s." % params.name},
          "data": result})
 
 def migrate(params):

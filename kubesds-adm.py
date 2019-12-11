@@ -38,13 +38,13 @@ def check(f_name, args):
 
 def check_storage_type(args):
     if hasattr(args, 'type') and args.type not in SUPPORT_STORAGE_TYPE:
-        print dumps({"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}})
+        print dumps({"result": {"code": 100, "msg": "unsupported value type: %s" % args.type}, "data": {}})
         exit(2)
 
 def check_pool_active(pool):
     pool_info = get_pool_info(pool)
     if pool_info['state'] != 'running':
-        print dumps({"result": {"code": 221, "msg": "pool is not active, plz startPool"}, "data": {}})
+        print dumps({"result": {"code": 221, "msg": 'pool is not active, please run "startPool" first'}, "data": {}})
         exit(3)
 
 def get_cstor_pool_info(pool):
@@ -67,7 +67,7 @@ def check_pool_type(args):
             exit(2)
     except ExecuteException:
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 202, "msg": "check_pool_type, cant get pool info from k8s."}, "data": {}})
+        print dumps({"result": {"code": 202, "msg": "check_pool_type, cannot get pool info from k8s."}, "data": {}})
         exit(2)
 
 def check_pool(f_name, args):
@@ -91,7 +91,7 @@ def check_pool(f_name, args):
                 raise ConditionException(203, "virsh pool %s not exist" % pool)
     except ExecuteException, e1:
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 202, "msg": "check_pool, cant get pool info. %s" % e1.message}, "data": {}})
+        print dumps({"result": {"code": 202, "msg": "check_pool, cannot get pool info. %s" % e1.message}, "data": {}})
         exit(2)
     except ConditionException, e2:
         logger.debug(traceback.format_exc())
@@ -122,20 +122,20 @@ def is_virsh_disk_exist(pool, diskname):
 def check_virsh_disk_exist(pool, diskname):
     pool_info = get_pool_info(pool)
     if os.path.isdir('%s/%s' % (pool_info['path'], diskname)):
-        print dumps({"result": {"code": 207, "msg": "virsh disk " + diskname + " has exist in pool " + pool}, "data": {}})
+        print dumps({"result": {"code": 207, "msg": "virsh disk %s is in pool %s" %(diskname,pool)}, "data": {}})
         exit(1)
 def check_virsh_disk_not_exist(pool, diskname):
     pool_info = get_pool_info(pool)
-    if not os.path.isdir(pool_info['path'] + '/' + diskname):
-        print dumps({"result": {"code": 209, "msg": "virsh disk " + diskname + " not exist in pool " + pool}, "data": {}})
+    if not os.path.isdir('%s/%s' % (pool_info['path'], diskname)):
+        print dumps({"result": {"code": 209, "msg": "virsh disk %s is not in pool %s" %(diskname,pool)}, "data": {}})
         exit(5)
 
 def check_virsh_disk_snapshot_exist(pool, diskname, snapshot):
     pool_info = get_pool_info(pool)
-    if os.path.exists(pool_info['path'] + '/' + diskname + '/snapshots/' + snapshot) and \
-            not os.path.exists(pool_info['path'] + '/' + diskname + '/' + snapshot):
+    if os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)) and \
+            not os.path.exists('%s/%s/%s' % (pool_info['path'], diskname, snapshot)):
         print dumps({
-            "result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " has exist in volume " + diskname},
+            "result": {"code": 209, "msg": "virsh disk snapshot %s is in volume %s" % (snapshot, diskname)},
             "data": {}})
         exit(1)
 
@@ -144,19 +144,19 @@ def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     if not os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)) and \
             not os.path.exists('%s/%s/%s' % (pool_info['path'], diskname, snapshot)):
         print dumps({
-            "result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume " + diskname},
+            "result": {"code": 209, "msg": "virsh disk snapshot %s is not in volume %s" % (snapshot, diskname)},
             "data": {}})
         exit(1)
 
 def check_cstor_disk_exist(pool, diskname):
     if is_cstor_disk_exist(pool, diskname):
         print dumps(
-            {"result": {"code": 210, "msg": "cstor disk " + diskname + " has exist in pool " + pool}, "data": {}})
+            {"result": {"code": 210, "msg": "cstor disk %s is in pool %s" % (diskname,pool)}, "data": {}})
         exit(15)
 
 def check_cstor_disk_not_exist(pool, diskname):
     if not is_cstor_disk_exist(pool, diskname):
-        print dumps({"result": {"code": 212, "msg": "cstor disk " + pool + " not exist in pool " + pool}, "data": {}})
+        print dumps({"result": {"code": 212, "msg": "cstor disk %s is not in pool %s" % (diskname,pool)}, "data": {}})
         exit(15)
 
 def check_virsh_disk_size(pool, vol, size):
@@ -168,14 +168,14 @@ def check_cstor_snapshot_exist(pool, vol, snapshot):
     op = Operation("cstor-cli vdisk-show-ss", {"poolname": pool, "name": vol, "sname": snapshot}, True)
     ssInfo = op.execute()
     if ssInfo['result']['code'] == 0:
-        print dumps({"result": {"code": 214, "msg": "snapshot " + snapshot + " has exist."}, "data": {}})
+        print dumps({"result": {"code": 214, "msg": "snapshot %s exists." % snapshot}, "data": {}})
         exit(4)
 
 def check_cstor_snapshot_not_exist(pool, vol, snapshot):
     op = Operation("cstor-cli vdisk-show-ss", {"poolname": pool, "name": vol, "sname": snapshot}, True)
     ssInfo = op.execute()
     if ssInfo['result']['code'] != 0:
-        print dumps({"result": {"code": 216, "msg": "snapshot " + snapshot + " not exist."}, "data": {}})
+        print dumps({"result": {"code": 216, "msg": "snapshot %s not exists." % snapshot}, "data": {}})
         exit(4)
 
 def createPoolParser(args):
@@ -331,14 +331,14 @@ def createExternalSnapshotParser(args):
         check_pool_active(pool)
         check_virsh_disk_snapshot_exist(pool, args.vol, args.name)
 
-        disk_dir = get_pool_info(pool)['path'] + '/' + args.vol
-        config_path = disk_dir + '/config.json'
+        disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
+        config_path = '%s/config.json' % disk_dir
         with open(config_path, "r") as f:
             config = load(f)
         if not os.path.isfile(config['current']):
             print dumps({"result": {"code": 100, "msg": "can not find vol current %s." % config['current']}, "data": {}})
             exit(3)
-        if os.path.isfile(disk_dir + '/snapshots/' + args.name):
+        if os.path.isfile('%s/snapshots/%s' % (disk_dir, args.name)):
             print dumps({"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}})
             exit(3)
 
@@ -357,8 +357,8 @@ def revertExternalSnapshotParser(args):
         check_pool_active(pool)
         check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
-        disk_dir = get_pool_info(pool)['path'] + '/' + args.vol
-        config_path = disk_dir + '/config.json'
+        disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
+        config_path = '%s/config.json' % disk_dir
         with open(config_path, "r") as f:
             config = load(f)
 
@@ -383,8 +383,8 @@ def deleteExternalSnapshotParser(args):
         check_pool_active(pool)
         check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
-        disk_dir = get_pool_info(pool)['path'] + '/' + args.vol
-        ss_path = disk_dir + '/snapshots/' + args.name
+        disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
+        ss_path = '%s/snapshots/%s' %(disk_dir, args.name)
         if not os.path.isfile(ss_path):
             print dumps({"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}})
             exit(3)
@@ -397,7 +397,7 @@ def updateDiskCurrentParser(args):
     else:
         for current in args.current:
             if not os.path.isfile(current):
-                print dumps({"result": {"code": 100, "msg": "current" + current + " file not exist"}, "data": {}})
+                print dumps({"result": {"code": 100, "msg": "disk current path %s not exists!" % current}, "data": {}})
                 exit(3)
 
     execute('updateDiskCurrent', args)
