@@ -297,13 +297,6 @@ def showDiskParser(args):
     execute('showDisk', args)
 
 def prepareDiskParser(args):
-    pool_info = get_pool_info_from_k8s(args.pool)
-    pool = pool_info['poolname']
-    # check cstor disk
-    check_cstor_disk_not_exist(pool, args.vol)
-    if args.type != "uus":
-        check_virsh_disk_not_exist(pool, args.vol)
-
     execute('prepareDisk', args)
 
 def releaseDiskParser(args):
