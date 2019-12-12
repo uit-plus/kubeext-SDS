@@ -63,7 +63,7 @@ def check_pool_type(args):
         if pool_info['pooltype'] == args.type:
             return
         else:
-            print dumps({"result": {"code": 202, "msg": "check_pool_type, pool type is not match. given is %s, actual is %s" % (args.type, pool_info['pooltype'])}, "data": {}})
+            print dumps({"result": {"code": 221, "msg": "check_pool_type, pool type is not match. given is %s, actual is %s" % (args.type, pool_info['pooltype'])}, "data": {}})
             exit(2)
     except ExecuteException:
         logger.debug(traceback.format_exc())
