@@ -95,23 +95,22 @@ def createPool(params):
         op1 = Operation("virsh pool-define-as", {"name": params.uuid, "type": "dir", "target": POOL_PATH})
         op1.execute()
 
-        # step2 autostart pool
-        if params.autostart:
-            try:
+        try:
+            # step2 autostart pool
+            if params.autostart:
                 op2 = Operation("virsh pool-autostart", {"pool": params.uuid})
                 op2.execute()
-            except ExecuteException, e:
-                op = Operation("cstor-cli pool-remove", {"poolname": params.uuid}, with_result=True)
-                cstor = op.execute()
-                if cstor['result']['code'] != 0:
-                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
-                        cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-                op_cancel = Operation("virsh pool-undefine", {"--pool": params.uuid})
-                op_cancel.execute()
-                raise e
-
-        op3 = Operation("virsh pool-start", {"pool": params.uuid})
-        op3.execute()
+            op3 = Operation("virsh pool-start", {"pool": params.uuid})
+            op3.execute()
+        except ExecuteException, e:
+            op = Operation("cstor-cli pool-remove", {"poolname": params.uuid}, with_result=True)
+            cstor = op.execute()
+            if cstor['result']['code'] != 0:
+                raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+                    cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+            op_cancel = Operation("virsh pool-undefine", {"--pool": params.uuid})
+            op_cancel.execute()
+            raise e
 
         with open('%s/content' % POOL_PATH, 'w') as f:
             f.write(params.content)

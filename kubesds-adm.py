@@ -83,6 +83,7 @@ def check_pool(f_name, args):
             if is_cstor_pool_exist(args.uuid):
                 raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
         else:
+            check_pool_type(args)
             pool_info = get_pool_info_from_k8s(args.pool)
             pool = pool_info['poolname']
             if not is_cstor_pool_exist(pool):
@@ -206,6 +207,7 @@ def deletePoolParser(args):
 
 
 def startPoolParser(args):
+
     if args.type == "uus":
         print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
         exit(3)
