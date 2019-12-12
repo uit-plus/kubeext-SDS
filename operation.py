@@ -101,6 +101,11 @@ def createPool(params):
                 op2 = Operation("virsh pool-autostart", {"pool": params.uuid})
                 op2.execute()
             except ExecuteException, e:
+                op = Operation("cstor-cli pool-remove", {"poolname": params.uuid}, with_result=True)
+                cstor = op.execute()
+                if cstor['result']['code'] != 0:
+                    raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+                        cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
                 op_cancel = Operation("virsh pool-undefine", {"--pool": params.uuid})
                 op_cancel.execute()
                 raise e
