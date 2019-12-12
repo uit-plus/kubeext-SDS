@@ -356,7 +356,7 @@ def resizeDisk(params):
 
         disk_info = get_disk_info(config['current'])
         size = int(params.capacity) - int(disk_info['virtual_size'])
-        op = Operation("qemu-img resize %s %s" %(config['current'], str(size)), {})
+        op = Operation("qemu-img resize %s +%s" %(config['current'], str(size)), {})
         op.execute()
 
         with open('%s/config.json' % disk_dir, "w") as f:
