@@ -350,13 +350,13 @@ def resizeDisk(params):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
     if params.type != "uus":
-        disk_dir = '%s/%s' %(pool_info['path'], params.vol)
+        disk_dir = '%s/%s' % (pool_info['path'], params.vol)
         with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
 
         disk_info = get_disk_info(config['current'])
         size = int(params.capacity) - int(disk_info['virtual_size'])
-        op = Operation("qemu-img resize %s +%s" %(config['current'], str(size)), {})
+        op = Operation("qemu-img resize %s +%s" % (config['current'], str(size)), {})
         op.execute()
 
         with open('%s/config.json' % disk_dir, "w") as f:
