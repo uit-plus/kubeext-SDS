@@ -905,7 +905,7 @@ def createDiskFromImage(params):
     with open('%s/config.json' % dest_dir, "w") as f:
         dump(config, f)
     result = get_disk_info(dest)
-    result['disk'] = params.newname
+    result['disk'] = params.name
     result["pool"] = params.targetPool
     result["poolname"] = pool_info['poolname']
     result["uni"] = config['current']
