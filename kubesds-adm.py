@@ -1,4 +1,6 @@
 import argparse
+
+from k8s import K8sHelper
 from operation import *
 
 from utils import logger
@@ -41,9 +43,37 @@ def check_storage_type(args):
         print dumps({"result": {"code": 100, "msg": "unsupported value type: %s" % args.type}, "data": {}})
         exit(2)
 
-def check_pool_active(pool):
-    pool_info = get_pool_info(pool)
-    if pool_info['state'] != 'running':
+def check_pool_active(info):
+    if info['pooltype'] == 'uus':
+        cstor = get_cstor_pool_info(info['poolname'])
+        result = {
+            "pooltype": info['pooltype'],
+            "pool": info['pool'],
+            "poolname": info['poolname'],
+            "capacity": cstor["data"]["total"],
+            "autostart": "no",
+            "path": cstor["data"]["url"],
+            "state": cstor["data"]["status"],
+            "uuid": randomUUID(),
+            "content": 'vmd'
+        }
+    else:
+        result = get_pool_info(info['poolname'])
+        if is_pool_started(info['poolname']):
+            result['state'] = "active"
+        else:
+            result['state'] = "inactive"
+        result['content'] = info["content"]
+        result["pooltype"] = info["pooltype"]
+        result["pool"] = info["pool"]
+        result["poolname"] = info["poolname"]
+
+    # update pool
+    if cmp(info, result) != 0:
+        k8s = K8sHelper('VirtualMahcinePool')
+        k8s.update(info['pool'], 'pool', result)
+
+    if result['state'] != 'active':
         print dumps({"result": {"code": 221, "msg": 'pool is not active, please run "startPool" first'}, "data": {}})
         exit(3)
 
@@ -239,7 +269,7 @@ def createDiskParser(args):
         if args.format is None:
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(4)
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_exist(pool, args.vol)
 
     execute('createDisk', args)
@@ -251,7 +281,7 @@ def deleteDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(pool, args.vol)
     else:
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_not_exist(pool, args.vol)
 
     execute('deleteDisk', args)
@@ -263,7 +293,7 @@ def resizeDiskParser(args):
         # check cstor disk
         check_cstor_disk_not_exist(pool, args.vol)
     else:
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_not_exist(pool, args.vol)
         check_virsh_disk_size(pool, args.vol, args.capacity)
 
@@ -272,7 +302,6 @@ def resizeDiskParser(args):
 def cloneDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
-
     try:
         disk_info = get_vol_info_from_k8s(args.newname)
         print dumps({"result": {"code": 500, "msg": "vol %s has exist in k8s." % args.newname}, "data": {}})
@@ -283,7 +312,7 @@ def cloneDiskParser(args):
     # check cstor disk
     check_cstor_disk_not_exist(pool, args.vol)
     if args.type != "uus":
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_not_exist(pool, args.vol)
         check_virsh_disk_exist(pool, args.newname)
 
@@ -331,7 +360,7 @@ def createExternalSnapshotParser(args):
         if args.format is None:
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(3)
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_snapshot_exist(pool, args.vol, args.name)
 
         disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
@@ -357,7 +386,7 @@ def revertExternalSnapshotParser(args):
             print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
             exit(3)
 
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
         disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
@@ -383,7 +412,7 @@ def deleteExternalSnapshotParser(args):
     if args.type == "uus":
         pass
     else:
-        check_pool_active(pool)
+        check_pool_active(pool_info)
         check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
         disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
@@ -411,7 +440,7 @@ def customizeParser(args):
 def createDiskFromImageParser(args):
     pool_info = get_pool_info_from_k8s(args.targetPool)
     pool = pool_info['poolname']
-    check_pool_active(pool)
+    check_pool_active(pool_info)
 
     execute('createDiskFromImage', args)
 

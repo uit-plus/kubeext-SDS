@@ -2,6 +2,7 @@ from xml.etree.ElementTree import fromstring
 from xmljson import badgerfish as bf
 from sys import exit
 
+from k8s import K8sHelper
 from netutils import get_host_IP
 from utils.utils import *
 from utils import logger
@@ -200,7 +201,23 @@ def showPool(params):
         result["pool"] = params.pool
         result["poolname"] = pool_info["poolname"]
     else:
-        result = pool_info
+        cstor = get_cstor_pool_info(poolname)
+        result = {
+            "pooltype": params.type,
+            "pool": params.pool,
+            "poolname": poolname,
+            "capacity": cstor["data"]["total"],
+            "autostart": "no",
+            "path": cstor["data"]["url"],
+            "state": cstor["data"]["status"],
+            "uuid": randomUUID(),
+            "content": 'vmd'
+        }
+    # update pool
+    if cmp(pool_info, result) != 0:
+        k8s = K8sHelper('VirtualMahcinePool')
+        k8s.update(pool_info['pool'], 'pool', result)
+
     print dumps({"result": {"code": 0, "msg": "show pool %s successful." % poolname}, "data": result})
 
 def cstor_prepare_disk(type, pool, vol, uni):

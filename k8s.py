@@ -136,38 +136,56 @@ class K8sHelper(object):
         self.kind = kind
 
     def get(self, name):
-        jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                          version=resources[self.kind]['version'],
-                                                                          namespace='default',
-                                                                          plural=resources[self.kind]['plural'],
-                                                                          name=name)
-        return jsondict
+        try:
+            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                              version=resources[self.kind]['version'],
+                                                                              namespace='default',
+                                                                              plural=resources[self.kind]['plural'],
+                                                                              name=name)
+            return jsondict
+        except Exception:
+            print dumps(
+                {"result": {"code": 500, "msg": 'can not get %s %s on k8s.' % (self.kind, name)}, "data": {}})
+            exit(3)
 
     def create(self, name, key, data):
-        hostname = get_hostname_in_lower_case()
-        jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
-                    'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
-                    'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
+        try:
+            hostname = get_hostname_in_lower_case()
+            jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
+                        'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
+                        'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
 
-        jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
-        body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+            jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+            body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
 
-        return client.CustomObjectsApi().create_namespaced_custom_object(
-            group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-            plural=resources[self.kind]['plural'], body=body)
-
+            return client.CustomObjectsApi().create_namespaced_custom_object(
+                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                plural=resources[self.kind]['plural'], body=body)
+        except Exception:
+            print dumps(
+                {"result": {"code": 500, "msg": 'can not create %s %s on k8s.' % (self.kind, name)}, "data": {}})
+            exit(3)
     def update(self, name, key, data):
-        jsondict = self.get(name)
-        jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
-        return client.CustomObjectsApi().replace_namespaced_custom_object(
-            group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-            plural=resources[self.kind]['plural'], name=name, body=jsondict)
+        try:
+            jsondict = self.get(name)
+            jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+            return client.CustomObjectsApi().replace_namespaced_custom_object(
+                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                plural=resources[self.kind]['plural'], name=name, body=jsondict)
+        except Exception:
+            print dumps(
+                {"result": {"code": 500, "msg": 'can not modify %s %s on k8s.' % (self.kind, name)}, "data": {}})
+            exit(3)
 
     def delete(self, name):
-        return client.CustomObjectsApi().delete_namespaced_custom_object(
-            group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-            plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
-
+        try:
+            return client.CustomObjectsApi().delete_namespaced_custom_object(
+                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
+        except Exception:
+            print dumps(
+                {"result": {"code": 500, "msg": 'can not delete %s %s on k8s.' % (self.kind, name)}, "data": {}})
+            exit(3)
 
 if __name__ == '__main__':
     k8s = K8sHelper('VirtualMachineDisk')

@@ -589,6 +589,13 @@ def get_IP():
     myaddr = socket.gethostbyname(myname)
     return myaddr
 
+def get_cstor_pool_info(pool):
+    cstor = runCmdWithResult("cstor-cli pool-show --poolname %s" % pool)
+    if cstor['result']['code'] != 0:
+        print dumps({"result": {"code": 500, "msg": 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj'])}, "data": {}})
+        exit(3)
+    return cstor
 
 def get_pool_info(pool_):
     if not pool_:
