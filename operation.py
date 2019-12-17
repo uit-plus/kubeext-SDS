@@ -1050,5 +1050,8 @@ def release_disk_by_path(path):
     cstor_release_disk(pool, disk, uni)
 
 if __name__ == '__main__':
+    prepare_disk_by_path(
+        '/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
+    prepare_disk_by_metadataname('vm00aadd6coddpdssdn')
     release_disk_by_path('/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
     release_disk_by_metadataname('vm00aadd6coddpdssdn')
