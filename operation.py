@@ -497,16 +497,23 @@ def prepareDisk(params):
 
     print dumps({"result": {"code": 0, "msg": "prepare disk successful."}, "data": {}})
 
-def cstor_release_disk(params):
-    pool_info = get_pool_info_from_k8s(params.pool)
-    op = Operation('cstor-cli vdisk-release ', {'poolname': pool_info['poolname'], 'name': params.vol,
-                                                    'uni': params.uni}, with_result=True)
+def cstor_release_disk(pool, vol, uni):
+    op = Operation('cstor-cli vdisk-release ', {'poolname': pool, 'name': vol,
+                                                    'uni': uni}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 def releaseDisk(params):
-    cstor_release_disk(params)
+    if params.domain:
+        disk_paths = get_disks_spec(params.domain).keys()
+        logger.debug(disk_paths)
+        for path in disk_paths:
+            prepare_disk_by_path(path)
+    if params.vol:
+        prepare_disk_by_metadataname(params.vol)
+    if params.path:
+        prepare_disk_by_path(params.path)
     print dumps({"result": {"code": 0, "msg": "success release disk %s." % params.vol}, "data": {}})
 
 def showDisk(params):
@@ -1005,5 +1012,43 @@ def prepare_disk_by_path(path):
     cstor_disk_prepare(pool, disk, uni)
     return diskinfo
 
+def release_disk_by_metadataname(uuid):
+    output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
+    lines = output.splitlines()
+    if len(lines) != 1:
+        logger.debug(lines)
+        raise ExecuteException('', 'can not get right disk info from k8s by path.')
+    columns = lines[0].split()
+    if len(columns) != 4:
+        logger.debug(columns)
+        raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
+    pool = columns[0]
+    disk = columns[1]
+    uni = columns[2]
+
+    cstor_release_disk(pool, disk, uni)
+
+def release_disk_by_path(path):
+    output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
+    if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
+        logger.debug(output)
+    else:
+        output = runCmdAndGetOutput(
+            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
+        if output is None:
+            raise ExecuteException('', 'can not get right disk info from k8s by path.')
+    logger.debug(output)
+    lines = output.splitlines()
+    columns = lines[0].split()
+    if len(columns) != 4:
+        logger.debug(columns)
+        raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
+    pool = columns[0]
+    disk = columns[1]
+    uni = columns[2]
+
+    cstor_release_disk(pool, disk, uni)
+
 if __name__ == '__main__':
-    prepare_disk_by_path('/var/lib/libvirt/cstor/17098caccd174fccafed76b0d7fccde0/17098caccd174fccafed76b0d7fccde0/disk66666/disk66666')
+    release_disk_by_path('/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
+    release_disk_by_metadataname('vm00aadd6coddpdssdn')

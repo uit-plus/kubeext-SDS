@@ -332,13 +332,6 @@ def prepareDiskParser(args):
     execute('prepareDisk', args)
 
 def releaseDiskParser(args):
-    pool_info = get_pool_info_from_k8s(args.pool)
-    pool = pool_info['poolname']
-    # check cstor disk
-    check_cstor_disk_not_exist(pool, args.vol)
-    if args.type != "uus":
-        check_virsh_disk_not_exist(pool, args.vol)
-
     execute('releaseDisk', args)
 
 def showDiskSnapshotParser(args):
@@ -617,14 +610,12 @@ parser_prepare_disk.set_defaults(func=prepareDiskParser)
 
 # -------------------- add releaseDisk cmd ----------------------------------
 parser_release_disk = subparsers.add_parser("releaseDisk", help="releaseDisk help")
-parser_release_disk.add_argument("--type", required=True, metavar="[localfs|uus|nfs|glusterfs|vdiskfs]", type=str,
-                              help="storage pool type to use")
-parser_release_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
-                              help="storage pool to use")
-parser_release_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+parser_release_disk.add_argument("--domain", metavar="[DOMAIN]", type=str,
+                              help="domain to use")
+parser_release_disk.add_argument("--vol", metavar="[VOL]", type=str,
                               help="volume name to use")
-parser_release_disk.add_argument("--uni", required=True, metavar="[UNI]", type=str,
-                              help="volume uni to use")
+parser_release_disk.add_argument("--path", metavar="[PATH]", type=str,
+                              help="volume path to use")
 # set default func
 parser_release_disk.set_defaults(func=releaseDiskParser)
 
