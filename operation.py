@@ -509,11 +509,11 @@ def releaseDisk(params):
         disk_paths = get_disks_spec(params.domain).keys()
         logger.debug(disk_paths)
         for path in disk_paths:
-            prepare_disk_by_path(path)
+            release_disk_by_path(path)
     if params.vol:
-        prepare_disk_by_metadataname(params.vol)
+        release_disk_by_metadataname(params.vol)
     if params.path:
-        prepare_disk_by_path(params.path)
+        release_disk_by_path(params.path)
     print dumps({"result": {"code": 0, "msg": "success release disk %s." % params.vol}, "data": {}})
 
 def showDisk(params):
@@ -964,7 +964,7 @@ def get_cstor_pool_info(pool):
     return cstor['data']
 
 def prepare_disk_by_metadataname(uuid):
-    output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.pool}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
+    output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
     lines = output.splitlines()
     if len(lines) != 1:
         logger.debug(lines)
@@ -979,9 +979,9 @@ def prepare_disk_by_metadataname(uuid):
     uni = columns[2]
     nodeName = columns[3]
 
-    if is_pool_exists(pool):
-        pool_info = get_pool_info(pool)
-        pool = os.path.basename(pool_info['path'])
+    # if is_pool_exists(pool):
+    #     pool_info = get_pool_info(pool)
+    #     pool = os.path.basename(pool_info['path'])
     cstor_disk_prepare(pool, disk, uni)
     return diskinfo
 
@@ -1006,9 +1006,9 @@ def prepare_disk_by_path(path):
     uni = columns[2]
     nodeName = columns[3]
 
-    if is_pool_exists(pool):
-        pool_info = get_pool_info(pool)
-        pool = os.path.basename(pool_info['path'])
+    # if is_pool_exists(pool):
+    #     pool_info = get_pool_info(pool)
+    #     pool = os.path.basename(pool_info['path'])
     cstor_disk_prepare(pool, disk, uni)
     return diskinfo
 
