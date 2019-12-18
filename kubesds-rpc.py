@@ -75,14 +75,14 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
 
             logger.debug(request)
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 0, 'msg': 'call cmd %s successful.' % cmd}, 'data': {}}))
-        except ExecuteException:
+                json=dumps({'result': {'code': 0, 'msg': 'rpc call kubesds-adm cmd %s successful.' % cmd}, 'data': {}}))
+        except ExecuteException as e:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure. %s' % traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % e.message}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure. %s' % traceback.format_exc()}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % traceback.format_exc()}, 'data': {}}))
 
     def CallWithResult(self, request, context):
         try:
@@ -96,15 +96,15 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             if result['result']['code'] == 0:
                 return cmdcall_pb2.CallResponse(json=dumps(result))
             else:
-                result['result']['msg'] = 'call cmd failure %s' % traceback.format_exc()
+                result['result']['msg'] = 'rpc call kubesds-adm cmd failure %s' % result['result']['msg']
                 return cmdcall_pb2.CallResponse(json=dumps(result))
-        except ExecuteException:
+        except ExecuteException as e:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % e.message}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
-            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'rpc call kubesds-adm cmd failure %s' % traceback.format_exc()}, 'data': {}}))
 
     def CallAndTransferXmlToJson(self, request, context):
         try:
@@ -116,10 +116,10 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             logger.debug(result)
             return cmdcall_pb2.CallResponse(json=dumps(result))
-        except ExecuteException:
+        except ExecuteException as e:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % e.message}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
@@ -134,10 +134,10 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             logger.debug(result)
             return cmdcall_pb2.CallResponse(json=dumps(result))
-        except ExecuteException:
+        except ExecuteException as e:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
-                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % e.message}, 'data': {}}))
         except Exception:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
@@ -151,7 +151,7 @@ def run_server():
     cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
     # 监听端口
     logger.debug("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
-    server.add_insecure_port(get_docker0_IP() + ':' + DEFAULT_PORT)
+    server.add_insecure_port("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
     # 开始接收请求进行服务
     server.start()
     return server
@@ -187,7 +187,7 @@ def keep_alive():
         time.sleep(1)
 
 class ClientDaemon(CDaemon):
-    def __init__(self, name, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=022,
+    def __init__(self, name, save_path, stdin=os.devnull, stdout=os.devnull, stderr=os.devnull, home_dir='.', umask=0o22,
                  verbose=1):
         CDaemon.__init__(self, save_path, stdin, stdout, stderr, home_dir, umask, verbose)
         self.name = name
@@ -221,7 +221,7 @@ class ClientDaemon(CDaemon):
 def daemonize():
     help_msg = 'Usage: python %s <start|stop|restart|status>' % sys.argv[0]
     if len(sys.argv) != 2:
-        print help_msg
+        print(help_msg)
         sys.exit(1)
     p_name = 'kubesds-rpc'
     pid_fn = '/var/run/kubesds-rpc.pid'
@@ -238,12 +238,12 @@ def daemonize():
     elif sys.argv[1] == 'status':
         alive = cD.is_running()
         if alive:
-            print 'process [%s] is running ......' % cD.get_pid()
+            print('process [%s] is running ......' % cD.get_pid())
         else:
-            print 'daemon process [%s] stopped' % cD.name
+            print('daemon process [%s] stopped' % cD.name)
     else:
-        print 'invalid argument!'
-        print help_msg
+        print('invalid argument!')
+        print(help_msg)
 
 
 if __name__ == '__main__':

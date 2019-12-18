@@ -36,6 +36,7 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 DEFAULT_PORT = '19999'
 
+
 def runCmdWithResult(cmd):
     if not cmd:
         return
@@ -53,6 +54,17 @@ def runCmdWithResult(cmd):
             logger.debug(msg)
             try:
                 result = loads(msg)
+                if isinstance(result, dict) and 'result' in result.keys():
+                    if result['result']['code'] != 0:
+                        if std_err:
+                            error_msg = ''
+                            for index, line in enumerate(std_err):
+                                if not str.strip(line):
+                                    continue
+                                error_msg = error_msg + str.strip(line)
+                            error_msg = str.strip(error_msg).replace('"', "'")
+                            result['result']['msg'] = '%s. cstor error output: %s' % (
+                                result['result']['msg'], error_msg)
                 return result
             except Exception:
                 logger.debug(cmd)
@@ -64,16 +76,11 @@ def runCmdWithResult(cmd):
                     error_msg = error_msg + str.strip(line)
                 error_msg = str.strip(error_msg)
                 raise ExecuteException('RunCmdError',
-                                       'can not parse cstor-cli output to json----' + msg + '. ' + error_msg)
+                                       'can not parse cstor-cli output to json----%s. %s' % (msg, error_msg))
         if std_err:
             msg = ''
             for index, line in enumerate(std_err):
-                if not str.strip(line):
-                    continue
-                if index == len(std_err) - 1:
-                    msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-                else:
-                    msg = msg + str.strip(line) + ', '
+                msg = msg + line + ', '
             logger.debug(cmd)
             logger.debug(msg)
             logger.debug(traceback.format_exc())
@@ -185,18 +192,11 @@ def runCmd(cmd):
             #             logger.debug(str.strip(msg))
             logger.debug(std_out)
         if std_err:
-            #             msg = ''
-            #             for index, line in enumerate(std_err):
-            #                 if not str.strip(line):
-            #                     continue
-            #                 if index == len(std_err) - 1:
-            #                     msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
-            #                 else:
-            #                     msg = msg + str.strip(line) + ', '
-            logger.error(std_err)
-            #             raise ExecuteException('VirtctlError', str.strip(msg))
-            raise ExecuteException('VirtctlError', std_err)
-        #         return (str.strip(std_out[0]) if std_out else '', str.strip(std_err[0]) if std_err else '')
+            msg = ''
+            for index, line in enumerate(std_err):
+                msg = msg + line
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
         return
     finally:
         p.stdout.close()
@@ -224,6 +224,7 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
         p.stdout.close()
         p.stderr.close()
 
+
 def rpcCall(cmd):
     logger.debug(cmd)
     try:
@@ -236,15 +237,15 @@ def rpcCall(cmd):
     except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print(the gRPC error message)
+        # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print(`INVALID_ARGUMENT`)
+        # should print `INVALID_ARGUMENT`
         logger.debug(status_code.name)
-        # should print(`(3, 'invalid argument')`)
+        # should print `(3, 'invalid argument')`
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -273,15 +274,15 @@ def rpcCallWithResult(cmd):
     except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print(the gRPC error message)
+        # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print(`INVALID_ARGUMENT`)
+        # should print `INVALID_ARGUMENT`
         logger.debug(status_code.name)
-        # should print(`(3, 'invalid argument')`)
+        # should print `(3, 'invalid argument')`
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -306,15 +307,15 @@ def rpcCallAndTransferXmlToJson(cmd):
     except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print(the gRPC error message)
+        # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print(`INVALID_ARGUMENT`)
+        # should print `INVALID_ARGUMENT`
         logger.debug(status_code.name)
-        # should print(`(3, 'invalid argument')`)
+        # should print `(3, 'invalid argument')`
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -339,15 +340,15 @@ def rpcCallAndTransferKvToJson(cmd):
     except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print(the gRPC error message)
+        # lets print the gRPC error message
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print(`INVALID_ARGUMENT`)
+        # should print `INVALID_ARGUMENT`
         logger.debug(status_code.name)
-        # should print(`(3, 'invalid argument')`)
+        # should print `(3, 'invalid argument')`
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
@@ -373,11 +374,13 @@ def randomUUIDFromName(name):
 
     return str(uuid.uuid5(namespace, name))
 
+
 def is_pool_started(pool):
     poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
     if poolInfo['state'] == 'running':
         return True
     return False
+
 
 def is_pool_exists(pool):
     poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
@@ -385,11 +388,13 @@ def is_pool_exists(pool):
         return True
     return False
 
+
 def is_pool_defined(pool):
     poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
     if poolInfo['persistent'] == 'yes':
         return True
     return False
+
 
 def is_vm_active(domain):
     output = runCmdAndGetOutput('virsh list')
@@ -399,10 +404,12 @@ def is_vm_active(domain):
             return True
     return False
 
+
 def get_volume_size(pool, vol):
     disk_config = get_disk_config(pool, vol)
     disk_info = get_disk_info(disk_config['current'])
     return int(disk_info['virtual_size'])
+
 
 def get_disks_spec(domain):
     output = runCmdAndGetOutput('virsh domblklist %s' % domain)
@@ -410,9 +417,10 @@ def get_disks_spec(domain):
     spec = {}
     for i in range(2, len(lines)):
         kv = lines[i].split()
-        if len(kv) == 2:
+        if len(kv) == 2 and kv[0].find('hd') < 0:
             spec[kv[1]] = kv[0]
     return spec
+
 
 class CDaemon:
     '''
@@ -591,8 +599,17 @@ def get_IP():
     return myaddr
 
 
+def get_cstor_pool_info(pool):
+    cstor = runCmdWithResult("cstor-cli pool-show --poolname %s" % pool)
+    if cstor['result']['code'] != 0:
+        error_print(400, 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+    return cstor
+
+
 def get_pool_info(pool_):
-    result = runCmdAndSplitKvToJson('virsh pool-info ' + pool_)
+    if not pool_:
+        raise ExecuteException('', 'missing parameter: no pool name.')
+    result = runCmdAndSplitKvToJson('virsh pool-info %s' % pool_)
     # result['allocation'] = int(1024*1024*1024*float(result['allocation']))
     # result['available'] = int(1024 * 1024 * 1024 * float(result['available']))
     # result['code'] = 0
@@ -602,28 +619,56 @@ def get_pool_info(pool_):
     if 'available' in result.keys():
         del result['available']
 
-    xml_dict = runCmdAndTransferXmlToJson('virsh pool-dumpxml ' + pool_)
+    xml_dict = runCmdAndTransferXmlToJson('virsh pool-dumpxml %s' % pool_)
     result['capacity'] = int(xml_dict['pool']['capacity']['text'])
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
 
+def get_pool_info_from_k8s(pool):
+    if not pool:
+        raise ExecuteException('', 'missing parameter: no pool name.')
+    result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
+        return result['spec']['pool']
+    raise ExecuteException('', 'can not get pool info from k8s')
+
+
+def get_vol_info_from_k8s(vol):
+    if not vol:
+        raise ExecuteException('', 'missing parameter: no disk name.')
+    result = runCmdWithResult('kubectl get vmd -o json %s' % vol)
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get vol info from k8s')
+
+
+def get_snapshot_info_from_k8s(snapshot):
+    result = runCmdWithResult('kubectl get vmdsn -o json %s' % snapshot)
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get snapshot info from k8s')
+
+
 def get_disk_config(pool, vol):
+    if not pool or not vol:
+        raise ExecuteException('', 'missing parameter: no pool or disk name.')
     poolInfo = get_pool_info(pool)
     pool_path = poolInfo['path']
     if not os.path.isdir(pool_path):
-        raise ExecuteException('', "can not get pool " + pool + " path.")
-    config_path = pool_path + '/' + vol + '/config.json'
+        raise ExecuteException('', "can not get pool %s path." % pool)
+    config_path = '%s/%s/config.json' % (pool_path, vol)
     with open(config_path, "r") as f:
         config = load(f)
         return config
-    raise ExecuteException('', 'can not get disk config by current')
+
 
 def get_disk_config_by_path(config_path):
+    if not config_path:
+        raise ExecuteException('', 'cannot find "config.json" in disk dir.')
     with open(config_path, "r") as f:
         config = load(f)
         return config
-    raise ExecuteException('', 'can not get disk config by current')
 
 
 def get_disk_snapshots(ss_path):
@@ -637,12 +682,12 @@ def get_disk_snapshots(ss_path):
 
 def get_disk_info(ss_path):
     try:
-        result = runCmdWithResult('qemu-img info -U --output json ' + ss_path)
+        result = runCmdWithResult('qemu-img info -U --output json %s' % ss_path)
     except:
         try:
-            result = runCmdWithResult('qemu-img info --output json ' + ss_path)
+            result = runCmdWithResult('qemu-img info --output json %s' % ss_path)
         except:
-            print({"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}})
+            error_print(400, "can't get snapshot info in qemu-img.")
             exit(1)
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
@@ -650,12 +695,12 @@ def get_disk_info(ss_path):
 
 def get_sn_chain(ss_path):
     try:
-        result = runCmdWithResult('qemu-img info -U --backing-chain --output json ' + ss_path)
+        result = runCmdWithResult('qemu-img info -U --backing-chain --output json %s' % ss_path)
     except:
         try:
-            result = runCmdWithResult('qemu-img info --backing-chain --output json ' + ss_path)
+            result = runCmdWithResult('qemu-img info --backing-chain --output json %s' % ss_path)
         except:
-            print({"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}})
+            error_print(400, "can't get snapshot info in qemu-img.")
             exit(1)
     return result
 
@@ -724,6 +769,9 @@ def check_disk_in_use(disk_path):
 
 
 def change_vm_os_disk_file(vm, source, target):
+    if not vm or not source or not target:
+        raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (
+        vm, source, target))
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -743,15 +791,21 @@ def change_vm_os_disk_file(vm, source, target):
                     return True
     return False
 
-def is_shared_storage(file):
-    cmd = 'df %s | awk \'{print($1}\' | sed -n "2, 1p"' % file
+
+def is_shared_storage(path):
+    if not path:
+        raise ExecuteException('', 'missing parameter: no path.')
+    cmd = 'df %s | awk \'{print $1}\' | sed -n "2, 1p"' % path
     fs = runCmdAndGetOutput(cmd)
     fs = fs.strip()
     if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
         return True
     return False
 
+
 def is_vm_disk_not_shared_storage(vm):
+    if not vm:
+        raise ExecuteException('', 'missing parameter: no vm name.')
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -766,11 +820,14 @@ def is_vm_disk_not_shared_storage(vm):
                 source_element = disk.find("source")
                 disk_file = source_element.get("file")
                 if not is_shared_storage(disk_file):
-                  return False
+                    return False
 
     return True
 
+
 def is_vm_disk_driver_cache_none(vm):
+    if not vm:
+        raise ExecuteException('', 'missing parameter: no vm name.')
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -789,16 +846,38 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
-if __name__ == '__main__':
-    print(get_volume_size('pooluitdir', 'vm006'))
-# print(is_vm_disk_not_shared_storage('vm006'))
-# print(change_vm_os_disk_open('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1'))
-# print(get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3'))
 
-# print(os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest'))
+def success_print(msg, data):
+    print(dumps({"result": {"code": 0, "msg": msg}, "data": data}))
+    exit(0)
 
-# print(get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1'))
 
-# print(get_pool_info('test1'))
+def error_print(code, msg, data=None):
+    if data is None:
+        print(dumps({"result": {"code": code, "msg": msg}, "data": {}}))
+        exit(1)
+    else:
+        print(dumps({"result": {"code": code, "msg": msg}, "data": data}))
+        exit(1)
 
-# print(get_sn_chain_path('/var/lib/libvirt/pooltest/disktest/0e8e48d9-b6ab-4477-999d-0e57b521a51b'))
+
+# if __name__ == '__main__':
+    # try:
+    #     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
+    #     print result
+    # except ExecuteException, e:
+    #     print e.message
+    # print get_snapshot_info_from_k8s('disktestd313.2')
+    # print get_pool_info(' node22-poolnfs')
+# print is_vm_disk_not_shared_storage('vm006')
+
+# print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
+# print get_all_snapshot_to_delete('/var/lib/libvirt/pooltest/disktest/disktest', '/var/lib/libvirt/pooltest/disktest/ss3')
+
+# print os.path.basename('/var/lib/libvirt/pooltest/disktest/disktest')
+
+# print get_disk_snapshots('/var/lib/libvirt/pooltest/disktest/ss1')
+
+# print get_pool_info('test1')
+
+# print get_sn_chain_path('/var/lib/libvirt/pooltest/disktest/0e8e48d9-b6ab-4477-999d-0e57b521a51b')

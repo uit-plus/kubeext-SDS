@@ -51,5 +51,5 @@ def get_host_IP():
     return netcard_info
 
 if __name__ == '__main__':
-    print get_host_IP()
+    print(get_host_IP())
     # print(socket.gethostbyname(socket.gethostname()))
