@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<storage>
+    <operation name="createPool">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool name to create"/>
+        <arg name="url" type="str" required="True" metavar="[URL]" help="storage pool create location"/>
+        <arg name="autostart" metavar="[AUTOSTART]" type="bool" nargs="?" const="True" help="if autostart, pool will set autostart yes after create pool"/>
+        <arg name="content" type="str" metavar="[CONTENT]" help="pool content"/>
+        <arg name="opt" type="str" metavar="[OPT]" help="storage pool opt"/>
+        <arg name="uuid" type="str" required="True" metavar="[UUID]" help="poolname when use cstor-cli"/>
+    </operation>
+    <operation name="deletePool">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool name to delete"/>
+    </operation>
+    <operation name="startPool">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool name to start"/>
+    </operation>
+    <operation name="autoStartPool">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool name to autostart"/>
+        <arg name="disable" metavar="[DISABLE]" type="bool" nargs="?" const="True" help="disable autostart"/>
+    </operation>
+    <operation name="stopPool">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool name to stop"/>
+    </operation>
+    <operation name="showPool">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool name to show"/>
+    </operation>
+    <operation name="createDisk">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="capacity" type="str" required="True" metavar="[CAPACITY]" help="capacity is the size of the volume to be created, as a scaled integer (see NOTES above), defaulting to bytes"/>
+        <arg name="format" type="str" metavar="[raw|bochs|qcow|qcow2|vmdk|qed]" help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed."/>
+    </operation>
+    <operation name="deleteDisk">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+    </operation>
+    <operation name="resizeDisk">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="capacity" type="str" required="True" metavar="[CAPACITY]" help="new volume capacity to use"/>
+        <arg name="vmname" type="str" metavar="[VMNAME]" help="resize disk size while live vm in use"/>
+    </operation>
+    <operation name="cloneDisk">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="newname" type="str" required="True" metavar="[NEWNAME]" help="new volume name to use"/>
+        <arg name="format" type="str" metavar="[raw|bochs|qcow|qcow2|vmdk|qed]" help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed."/>
+    </operation>
+    <operation name="prepareDisk">
+        <arg name="domain" type="str" metavar="[DOMAIN]" help="domain to use"/>
+        <arg name="vol" type="str" metavar="[VOL]" help="volume metadataname to use"/>
+        <arg name="path" type="str" metavar="[PATH]" help="volume path to use"/>
+    </operation>
+    <operation name="releaseDisk">
+        <arg name="domain" type="str" metavar="[DOMAIN]" help="domain to use"/>
+        <arg name="vol" type="str" metavar="[VOL]" help="volume metadataname to use"/>
+        <arg name="path" type="str" metavar="[PATH]" help="volume path to use"/>
+    </operation>
+    <operation name="showDisk">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+    </operation>
+    <operation name="createExternalSnapshot">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="name" type="str" required="True" metavar="[NAME]" help="volume snapshot name to use"/>
+        <arg name="format" type="str" required="True" metavar="[raw|bochs|qcow|qcow2|vmdk|qed]" help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed."/>
+        <arg name="domain" type="str" metavar="[DOMAIN]" help="domain to use"/>
+    </operation>
+    <operation name="revertExternalSnapshot">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="name" type="str" required="True" metavar="[NAME]" help="volume snapshot name to use"/>
+        <arg name="format" type="str" required="True" metavar="[raw|bochs|qcow|qcow2|vmdk|qed]" help="format is used in file based storage pools to specify the volume file format to use; raw, bochs, qcow, qcow2, vmdk, qed."/>
+        <arg name="backing_file" type="str" required="True" metavar="[BACKING_FILE]" help="backing file from k8s"/>
+        <arg name="domain" type="str" metavar="[DOMAIN]" help="domain to use"/>
+    </operation>
+    <operation name="deleteExternalSnapshot">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="name" type="str" required="True" metavar="[NAME]" help="volume snapshot name to use"/>
+        <arg name="backing_file" type="str" required="True" metavar="[BACKING_FILE]" help="backing file from k8s"/>
+        <arg name="domain" type="str" metavar="[DOMAIN]" help="domain to use"/>
+    </operation>
+    <operation name="showDiskSnapshot">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="pool" type="str" required="True" metavar="[POOL]" help="storage pool to use"/>
+        <arg name="vol" type="str" required="True" metavar="[VOL]" help="volume name to use"/>
+        <arg name="name" type="str" required="True" metavar="[NAME]" help="volume snapshot name to use"/>
+    </operation>
+    <operation name="updateDiskCurrent">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="current" type="str" required="True" metavar="[CURRENT]" nargs="*" help="volume snapshot name to use"/>
+    </operation>
+    <operation name="customize">
+        <arg name="add" type="str" required="True" metavar="[ADD]" help="add"/>
+        <arg name="user" type="str" required="True" metavar="[USER]" help="user"/>
+        <arg name="password" type="str" required="True" metavar="[PASSWORD]" help="password"/>
+    </operation>
+    <operation name="createDiskFromImage">
+        <arg name="type" type="str" required="True" metavar="[localfs|uus|nfs|glusterfs|vdiskfs]" help="storage pool type to use"/>
+        <arg name="name" type="str" required="True" metavar="[NAME]" help="new disk name to use"/>
+        <arg name="targetPool" type="str" required="True" metavar="[TARGETPOOL]" help="storage pool to use"/>
+        <arg name="source" type="str" required="True" metavar="[SOURCE]" help="disk source to use"/>
+        <arg name="full_copy" metavar="[full_copy]" type="bool" nargs="?" const="True" help="if full_copy, new disk will be created by snapshot"/>
+    </operation>
+    <operation name="migrate">
+        <arg name="domain" type="str" required="True" metavar="[DOMAIN]" help="vm domain to migrate"/>
+        <arg name="ip" type="str" required="True" metavar="[IP]" help="storage pool type to use"/>
+        <arg name="offline" metavar="[OFFLINE]" type="bool" nargs="?" const="True" help="support migrate offline"/>
+    </operation>
+</storage>

@@ -166,15 +166,13 @@ def check_virsh_disk_not_exist(pool, diskname):
 
 def check_virsh_disk_snapshot_exist(pool, diskname, snapshot):
     pool_info = get_pool_info(pool)
-    if os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)) and \
-            not os.path.exists('%s/%s/%s' % (pool_info['path'], diskname, snapshot)):
+    if os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)):
         error_print(209, "virsh disk snapshot %s is in volume %s" % (snapshot, diskname))
 
 
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     pool_info = get_pool_info(pool)
-    if not os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)) and \
-            not os.path.exists('%s/%s/%s' % (pool_info['path'], diskname, snapshot)):
+    if not os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)):
         error_print(209, "virsh disk snapshot %s is not in volume %s" % (snapshot, diskname))
 
 
@@ -208,14 +206,6 @@ def check_cstor_snapshot_not_exist(pool, vol, snapshot):
 
 
 def createPoolParser(args):
-    if args.type == "uus" or args.type == "nfs":
-        if args.opt is None:
-            error_print(100, "less arg, opt must be set")
-
-    if args.type == "nfs" or args.type == "glusterfs":
-        if args.uuid is None:
-            error_print(100, "less arg, uuid must be set")
-
     if args.type != "uus":
         if args.content is None:
             error_print(100, "less arg, content must be set")
@@ -469,10 +459,6 @@ parser_create_pool.add_argument("--opt", metavar="[OPT]", type=str,
 # nfs and glusterfs only
 parser_create_pool.add_argument("--uuid", metavar="[UUID]", type=str,
                                 help="nfs or glusterfs poolname when use cstor-cli")
-
-# nfs and glusterfs only
-parser_create_pool.add_argument("--path", metavar="[PATH]", type=str,
-                                help="nfs or glusterfs mount path")
 
 # set default func
 parser_create_pool.set_defaults(func=createPoolParser)

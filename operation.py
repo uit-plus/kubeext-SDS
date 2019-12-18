@@ -489,7 +489,7 @@ def prepareDisk(params):
     if params.path:
         prepare_disk_by_path(params.path)
 
-    success_print("prepare disk successful.",{})
+    success_print("prepare disk successful.", {})
 
 def cstor_release_disk(pool, vol, uni):
     op = Operation('cstor-cli vdisk-release ', {'poolname': pool, 'name': vol,
