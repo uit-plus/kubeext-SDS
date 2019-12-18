@@ -1,4 +1,6 @@
 import argparse
+
+from k8s import K8sHelper
 from operation import *
 
 from utils import logger
@@ -10,6 +12,7 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 SUPPORT_STORAGE_TYPE = ["localfs", "uus", "nfs", "glusterfs", "vdiskfs"]
 
+
 def execute(f_name, params):
     moudle = __import__('operation')
     func = getattr(moudle, f_name)
@@ -20,15 +23,12 @@ def execute(f_name, params):
         logger.debug(f_name)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 400, "msg": "error occur while %s. %s" % (f_name, e.message)},
-                     "data": {}})
-        exit(1)
+        error_print(400, "error occur while %s. %s" % (f_name, e.message))
     except Exception:
         logger.debug(f_name)
         logger.debug(params)
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 300, "msg": "error occur while %s. traceback: %s" % (f_name, traceback.format_exc())}, "data": {}})
-        exit(1)
+        error_print(300, "error occur while %s. traceback: %s" % (f_name, traceback.format_exc()))
 
 
 def check(f_name, args):
@@ -38,19 +38,48 @@ def check(f_name, args):
 
 def check_storage_type(args):
     if hasattr(args, 'type') and args.type not in SUPPORT_STORAGE_TYPE:
-        print dumps({"result": {"code": 100, "msg": "not support value type " + args.type + " not support"}, "data": {}})
-        exit(2)
+        error_print(100, "unsupported value type: %s" % args.type)
 
-def check_pool_active(pool):
-    pool_info = get_pool_info(pool)
-    if pool_info['state'] != 'running':
-        print dumps({"result": {"code": 221, "msg": "pool is not active, plz startPool"}, "data": {}})
-        exit(3)
+
+def check_pool_active(info):
+    if info['pooltype'] == 'uus':
+        cstor = get_cstor_pool_info(info['poolname'])
+        result = {
+            "pooltype": info['pooltype'],
+            "pool": info['pool'],
+            "poolname": info['poolname'],
+            "capacity": cstor["data"]["total"],
+            "autostart": "no",
+            "path": cstor["data"]["url"],
+            "state": cstor["data"]["status"],
+            "uuid": randomUUID(),
+            "content": 'vmd'
+        }
+    else:
+        result = get_pool_info(info['poolname'])
+        if is_pool_started(info['poolname']):
+            result['state'] = "active"
+        else:
+            result['state'] = "inactive"
+        result['content'] = info["content"]
+        result["pooltype"] = info["pooltype"]
+        result["pool"] = info["pool"]
+        result["poolname"] = info["poolname"]
+
+    # update pool
+    if cmp(info, result) != 0:
+        k8s = K8sHelper('VirtualMahcinePool')
+        k8s.update(info['pool'], 'pool', result)
+
+    if result['state'] != 'active':
+        error_print(221, 'pool is not active, please run "startPool" first')
+
 
 def get_cstor_pool_info(pool):
     op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
     result = op.execute()
     return result
+
 
 # check pool type, if pool type not match, stop delete pool
 def check_pool_type(args):
@@ -59,32 +88,16 @@ def check_pool_type(args):
             return
         if not hasattr(args, 'pool'):
             return
-        pool_info = get_pool_info(args.pool)
-        uuid = os.path.basename(pool_info['path'])
-        poolInfo = get_cstor_pool_info(uuid)
-        if type == "localfs":
-            if poolInfo['result']['code'] == 0 and poolInfo['data']['proto'] != 'localfs':
-                print dumps({"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}})
-                exit(3)
+        pool_info = get_pool_info_from_k8s(args.pool)
+        if pool_info['pooltype'] == args.type:
+            return
         else:
-            if poolInfo['result']['code'] == 0:  # is cstor pool, and check pool type
-                # check pool type, if pool type not match, stop delete pool
-                if 'proto' not in poolInfo['data'].keys():
-                    print dumps({"result": {"code": 221, "msg": "can not get pool proto, cstor-cli cmd bug"}, "data": {}})
-                    exit(3)
-
-                if poolInfo['data']['proto'] != type:
-                    print dumps({"result": {"code": 221, "msg": "type is not match, plz check"}, "data": {}})
-                    exit(3)
-            else:  # not is cstor pool, exit
-                print dumps({"result": {"code": 221,
-                                  "msg": "can not get pool %s info, not exist the pool or type is not match" % args.pool},
-                       "data": {}})
-                exit(3)
-    except ExecuteException, e:
+            error_print(221, "check_pool_type, pool type is not match. given is %s, actual is %s" % (
+            args.type, pool_info['pooltype']))
+    except ExecuteException:
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 202, "msg": "check_pool_type, cant get pool info. %s" % e.message}, "data": {}})
-        exit(2)
+        error_print(202, "check_pool_type, cannot get pool info from k8s.")
+
 
 def check_pool(f_name, args):
     try:
@@ -94,35 +107,35 @@ def check_pool(f_name, args):
             return
         if f_name == 'createPool':
             if args.type != 'uus':
-                if is_pool_exists(args.pool):
-                    raise ConditionException(201, "virsh pool %s has exist" % args.pool)
+                if is_pool_exists(args.uuid):
+                    raise ConditionException(201, "virsh pool %s has exist" % args.uuid)
+            if is_cstor_pool_exist(args.uuid):
+                raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
         else:
-            if not is_cstor_pool_exist(args):
-                raise ConditionException(204, "cstor pool %s not exist" % args.pool)
+            check_pool_type(args)
+            pool_info = get_pool_info_from_k8s(args.pool)
+            pool = pool_info['poolname']
+            if not is_cstor_pool_exist(pool):
+                raise ConditionException(204, "cstor pool %s not exist" % pool)
             if args.type != 'uus':
-                if not is_pool_exists(args.pool):
-                    raise ConditionException(203, "virsh pool %s not exist" % args.pool)
-
+                if not is_pool_exists(pool):
+                    raise ConditionException(203, "virsh pool %s not exist" % pool)
     except ExecuteException, e1:
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": 202, "msg": "check_pool, cant get pool info. %s" % e1.message}, "data": {}})
-        exit(2)
+        error_print(202, "check_pool, cannot get pool info. %s" % e1.message)
     except ConditionException, e2:
         logger.debug(traceback.format_exc())
-        print dumps({"result": {"code": e2.code, "msg": e2.msg}, "data": {}})
-        exit(2)
+        error_print(e2.code, e2.msg)
 
-def is_cstor_pool_exist(args):
-    if args.type in ['nfs', 'glusterfs']:
-        pool = get_cstor_real_poolname(args.pool)
-    else:
-        pool = args.pool
+
+def is_cstor_pool_exist(pool):
     op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
     cstor = op.execute()
     if cstor["result"]["code"] == 0:
         return True
     else:
         return False
+
 
 def is_cstor_disk_exist(pool, diskname):
     op = Operation("cstor-cli vdisk-show", {"poolname": pool, "name": diskname}, with_result=True)
@@ -131,89 +144,83 @@ def is_cstor_disk_exist(pool, diskname):
         return True
     return False
 
+
 def is_virsh_disk_exist(pool, diskname):
     pool_info = get_pool_info(pool)
     if os.path.isdir('%s/%s' % (pool_info['path'], diskname)):
         return True
     return False
 
+
 def check_virsh_disk_exist(pool, diskname):
     pool_info = get_pool_info(pool)
     if os.path.isdir('%s/%s' % (pool_info['path'], diskname)):
-        print dumps({"result": {"code": 207, "msg": "virsh disk " + diskname + " has exist in pool " + pool}, "data": {}})
-        exit(1)
+        error_print(207, "virsh disk %s is in pool %s" % (diskname, pool))
+
+
 def check_virsh_disk_not_exist(pool, diskname):
     pool_info = get_pool_info(pool)
-    if not os.path.isdir(pool_info['path'] + '/' + diskname):
-        print dumps({"result": {"code": 209, "msg": "virsh disk " + diskname + " not exist in pool " + pool}, "data": {}})
-        exit(5)
+    if not os.path.isdir('%s/%s' % (pool_info['path'], diskname)):
+        error_print(209, "virsh disk %s is not in pool %s" % (diskname, pool))
+
 
 def check_virsh_disk_snapshot_exist(pool, diskname, snapshot):
     pool_info = get_pool_info(pool)
-    if os.path.exists(pool_info['path'] + '/' + diskname + '/snapshots/' + snapshot) and \
-            not os.path.exists(pool_info['path'] + '/' + diskname + '/' + snapshot):
-        print dumps({
-            "result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " has exist in volume " + diskname},
-            "data": {}})
-        exit(1)
+    if os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)) and \
+            not os.path.exists('%s/%s/%s' % (pool_info['path'], diskname, snapshot)):
+        error_print(209, "virsh disk snapshot %s is in volume %s" % (snapshot, diskname))
+
 
 def check_virsh_disk_snapshot_not_exist(pool, diskname, snapshot):
     pool_info = get_pool_info(pool)
     if not os.path.exists('%s/%s/snapshots/%s' % (pool_info['path'], diskname, snapshot)) and \
             not os.path.exists('%s/%s/%s' % (pool_info['path'], diskname, snapshot)):
-        print dumps({
-            "result": {"code": 209, "msg": "virsh disk snapshot " + snapshot + " not exist in volume " + diskname},
-            "data": {}})
-        exit(1)
+        error_print(209, "virsh disk snapshot %s is not in volume %s" % (snapshot, diskname))
+
 
 def check_cstor_disk_exist(pool, diskname):
     if is_cstor_disk_exist(pool, diskname):
-        print dumps(
-            {"result": {"code": 210, "msg": "cstor disk " + diskname + " has exist in pool " + pool}, "data": {}})
-        exit(15)
+        error_print(210, "cstor disk %s is in pool %s" % (diskname, pool))
+
 
 def check_cstor_disk_not_exist(pool, diskname):
     if not is_cstor_disk_exist(pool, diskname):
-        print dumps({"result": {"code": 212, "msg": "cstor disk " + pool + " not exist in pool " + pool}, "data": {}})
-        exit(15)
+        error_print(212, "cstor disk %s is not in pool %s" % (diskname, pool))
+
 
 def check_virsh_disk_size(pool, vol, size):
     if get_volume_size(pool, vol) >= int(size):
-        print dumps({"result": {"code": 213, "msg": "new disk size must larger than the old size."}, "data": {}})
-        exit(4)
+        error_print(213, "new disk size must larger than the old size.")
+
 
 def check_cstor_snapshot_exist(pool, vol, snapshot):
     op = Operation("cstor-cli vdisk-show-ss", {"poolname": pool, "name": vol, "sname": snapshot}, True)
     ssInfo = op.execute()
     if ssInfo['result']['code'] == 0:
-        print dumps({"result": {"code": 214, "msg": "snapshot " + snapshot + " has exist."}, "data": {}})
-        exit(4)
+        error_print(214, "snapshot %s exists." % snapshot)
+
 
 def check_cstor_snapshot_not_exist(pool, vol, snapshot):
     op = Operation("cstor-cli vdisk-show-ss", {"poolname": pool, "name": vol, "sname": snapshot}, True)
     ssInfo = op.execute()
     if ssInfo['result']['code'] != 0:
-        print dumps({"result": {"code": 216, "msg": "snapshot " + snapshot + " not exist."}, "data": {}})
-        exit(4)
+        error_print(216, "snapshot %s not exists." % snapshot)
+
 
 def createPoolParser(args):
     if args.type == "uus" or args.type == "nfs":
         if args.opt is None:
-            print dumps({"result": {"code": 100, "msg": "less arg, opt must be set"}, "data": {}})
-            exit(9)
+            error_print(100, "less arg, opt must be set")
 
     if args.type == "nfs" or args.type == "glusterfs":
         if args.uuid is None:
-            print dumps({"result": {"code": 100, "msg": "less arg, uuid must be set"}, "data": {}})
-            exit(9)
+            error_print(100, "less arg, uuid must be set")
 
     if args.type != "uus":
         if args.content is None:
-            print dumps({"result": {"code": 100, "msg": "less arg, content must be set"}, "data": {}})
-            exit(9)
+            error_print(100, "less arg, content must be set")
         if args.content not in ["vmd", "vmdi", "iso"]:
-            print dumps({"result": {"code": 100, "msg": "less arg, content just can be vmd, vmdi, iso"}, "data": {}})
-            exit(9)
+            error_print(100, "less arg, content just can be vmd, vmdi, iso")
 
     execute('createPool', args)
 
@@ -224,197 +231,209 @@ def deletePoolParser(args):
 
 def startPoolParser(args):
     if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-        exit(3)
+        error_print(500, "not support operation for uus or vdiskfs")
     execute('startPool', args)
 
 
 def autoStartPoolParser(args):
     if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-        exit(3)
+        error_print(500, "not support operation for uus or vdiskfs")
 
     execute('autoStartPool', args)
 
 
 def stopPoolParser(args):
     if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-        exit(3)
+        error_print(500, "not support operation for uus or vdiskfs")
 
     execute('stopPool', args)
+
 
 def showPoolParser(args):
     execute('showPool', args)
 
+
 def createDiskParser(args):
-    if args.type == "uus":
-        check_cstor_disk_exist(args.pool, args.vol)
-    else:
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
+    if args.type != "uus":
         if args.format is None:
-            print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
-            exit(4)
-        check_pool_active(args.pool)
-        check_virsh_disk_exist(args.pool, args.vol)
+            error_print(100, "less arg, format must be set")
+        check_pool_active(pool_info)
+        check_virsh_disk_exist(pool, args.vol)
 
     execute('createDisk', args)
 
+
 def deleteDiskParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
     if args.type == "uus":
         # check cstor disk
-        check_cstor_disk_not_exist(args.pool, args.vol)
+        check_cstor_disk_not_exist(pool, args.vol)
     else:
-        check_pool_active(args.pool)
-        check_virsh_disk_not_exist(args.pool, args.vol)
+        check_pool_active(pool_info)
+        check_virsh_disk_not_exist(pool, args.vol)
 
     execute('deleteDisk', args)
 
+
 def resizeDiskParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
     if args.type == "uus":
         # check cstor disk
-        check_cstor_disk_not_exist(args.pool, args.vol)
+        check_cstor_disk_not_exist(pool, args.vol)
     else:
-        check_pool_active(args.pool)
-        check_virsh_disk_not_exist(args.pool, args.vol)
-        check_virsh_disk_size(args.pool, args.vol, args.capacity)
+        check_pool_active(pool_info)
+        check_virsh_disk_not_exist(pool, args.vol)
+        check_virsh_disk_size(pool, args.vol, args.capacity)
 
     execute('resizeDisk', args)
 
+
 def cloneDiskParser(args):
-    if args.type == "uus":
-        # check cstor disk
-        check_cstor_disk_not_exist(args.pool, args.vol)
-        check_cstor_disk_exist(args.pool, args.newname)
-    else:
-        check_pool_active(args.pool)
-        check_virsh_disk_not_exist(args.pool, args.vol)
-        check_virsh_disk_exist(args.pool, args.newname)
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
+    try:
+        disk_info = get_vol_info_from_k8s(args.newname)
+        error_print(500, "vol %s has exist in k8s." % args.newname)
+    except:
+        pass
+
+    # check cstor disk
+    check_cstor_disk_not_exist(pool, args.vol)
+    if args.type != "uus":
+        check_pool_active(pool_info)
+        check_virsh_disk_not_exist(pool, args.vol)
+        check_virsh_disk_exist(pool, args.newname)
 
     execute('cloneDisk', args)
 
+
 def showDiskParser(args):
-    if args.type == "uus":
-        # check cstor disk
-        check_cstor_disk_not_exist(args.pool, args.vol)
-    else:
-        check_virsh_disk_not_exist(args.pool, args.vol)
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
+    # check cstor disk
+    check_cstor_disk_not_exist(pool, args.vol)
+    if args.type != "uus":
+        check_virsh_disk_not_exist(pool, args.vol)
 
     execute('showDisk', args)
+
 
 def prepareDiskParser(args):
     execute('prepareDisk', args)
 
-def releaseDiskParser(args):
-    if args.type == "uus":
-        # check cstor disk
-        check_cstor_disk_not_exist(args.pool, args.vol)
-    else:
-        check_pool_active(args.pool)
-        check_virsh_disk_not_exist(args.pool, args.vol)
 
+def releaseDiskParser(args):
     execute('releaseDisk', args)
 
+
 def showDiskSnapshotParser(args):
-    if args.type == "uus":
-        # check cstor disk
-        check_cstor_disk_not_exist(args.pool, args.vol)
-    else:
-        check_pool_active(args.pool)
-        check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
+    # check cstor disk
+    check_cstor_disk_not_exist(pool, args.vol)
+    if args.type != "uus":
+        check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
     execute('showDiskSnapshot', args)
 
+
 def createExternalSnapshotParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
     if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus or vdiskfs"}, "data": {}})
-        exit(1)
+        pass
     else:
         if args.format is None:
-            print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
-            exit(3)
-        check_pool_active(args.pool)
-        check_virsh_disk_snapshot_exist(args.pool, args.vol, args.name)
+            error_print(100, "less arg, format must be set")
+        check_pool_active(pool_info)
+        check_virsh_disk_snapshot_exist(pool, args.vol, args.name)
 
-        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        config_path = disk_dir + '/config.json'
+        disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
+        config_path = '%s/config.json' % disk_dir
         with open(config_path, "r") as f:
             config = load(f)
         if not os.path.isfile(config['current']):
-            print dumps({"result": {"code": 100, "msg": "can not find vol current %s." % config['current']}, "data": {}})
-            exit(3)
-        if os.path.isfile(disk_dir + '/snapshots/' + args.name):
-            print dumps({"result": {"code": 100, "msg": "snapshot file has exist"}, "data": {}})
-            exit(3)
+            error_print(100, "can not find vol current %s." % config['current'])
+        if os.path.isfile('%s/snapshots/%s' % (disk_dir, args.name)):
+            error_print(100, "snapshot file has exist")
 
     execute('createExternalSnapshot', args)
 
+
 def revertExternalSnapshotParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
     if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-        exit(1)
+        pass
     else:
         if args.format is None:
-            print dumps({"result": {"code": 100, "msg": "less arg, format must be set"}, "data": {}})
-            exit(3)
+            error_print(100, "less arg, format must be set")
 
-        check_pool_active(args.pool)
-        check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
+        check_pool_active(pool_info)
+        check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
-        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        config_path = disk_dir + '/config.json'
+        disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
+        config_path = '%s/config.json' % disk_dir
         with open(config_path, "r") as f:
             config = load(f)
 
         if args.backing_file == config['current']:
-            print dumps({"result": {"code": 100, "msg": "can not revert disk to itself"}, "data": {}})
-            exit(3)
+            error_print(100, "can not revert disk to itself")
         if not os.path.isfile(config['current']):
-            print dumps({"result": {"code": 100, "msg": "can not find current file"}, "data": {}})
-            exit(3)
+            error_print(100, "can not find current file")
         if not os.path.isfile(args.backing_file):
-            print dumps({"result": {"code": 100, "msg": "snapshot file %s not exist" % args.backing_file}, "data": {}})
-            exit(3)
+            error_print(100, "snapshot file %s not exist" % args.backing_file)
 
     execute('revertExternalSnapshot', args)
 
-def deleteExternalSnapshotParser(args):
-    if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-        exit(1)
-    else:
-        check_pool_active(args.pool)
-        check_virsh_disk_snapshot_not_exist(args.pool, args.vol, args.name)
 
-        disk_dir = get_pool_info(args.pool)['path'] + '/' + args.vol
-        ss_path = disk_dir + '/snapshots/' + args.name
+def deleteExternalSnapshotParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    pool = pool_info['poolname']
+    if args.type == "uus":
+        pass
+    else:
+        check_pool_active(pool_info)
+        check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
+
+        disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
+        ss_path = '%s/snapshots/%s' % (disk_dir, args.name)
         if not os.path.isfile(ss_path):
-            print dumps({"result": {"code": 100, "msg": "snapshot file not exist"}, "data": {}})
-            exit(3)
+            error_print(100, "snapshot file not exist")
 
     execute('deleteExternalSnapshot', args)
 
+
 def updateDiskCurrentParser(args):
     if args.type == "uus":
-        print dumps({"result": {"code": 500, "msg": "not support operation for uus"}, "data": {}})
-        exit(1)
+        pass
     else:
         for current in args.current:
             if not os.path.isfile(current):
-                print dumps({"result": {"code": 100, "msg": "current" + current + " file not exist"}, "data": {}})
-                exit(3)
+                error_print(100, "disk current path %s not exists!" % current)
 
     execute('updateDiskCurrent', args)
+
 
 def customizeParser(args):
     execute('customize', args)
 
+
 def createDiskFromImageParser(args):
+    pool_info = get_pool_info_from_k8s(args.targetPool)
+    pool = pool_info['poolname']
+    check_pool_active(pool_info)
+
     execute('createDiskFromImage', args)
+
 
 def migrateParser(args):
     if not re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}$', args.ip):
-        print dumps({"result": {"code": 100, "msg": "ip is not right"}, "data": {}})
-        exit(3)
+        error_print(100, "ip is not right")
     execute('migrate', args)
 
 
@@ -573,25 +592,23 @@ parser_clone_disk.set_defaults(func=cloneDiskParser)
 
 # -------------------- add prepareDisk cmd ----------------------------------
 parser_prepare_disk = subparsers.add_parser("prepareDisk", help="prepareDisk help")
-parser_prepare_disk.add_argument("--domain", metavar="[POOL]", type=str,
-                              help="storage pool to use")
+parser_prepare_disk.add_argument("--domain", metavar="[DOMAIN]", type=str,
+                                 help="storage pool to use")
 parser_prepare_disk.add_argument("--vol", metavar="[VOL]", type=str,
-                              help="volume name to use")
+                                 help="volume name to use")
 parser_prepare_disk.add_argument("--path", metavar="[PATH]", type=str,
-                              help="volume path to use")
+                                 help="volume uni to use")
 # set default func
 parser_prepare_disk.set_defaults(func=prepareDiskParser)
 
 # -------------------- add releaseDisk cmd ----------------------------------
 parser_release_disk = subparsers.add_parser("releaseDisk", help="releaseDisk help")
-parser_release_disk.add_argument("--type", required=True, metavar="[localfs|uus|nfs|glusterfs|vdiskfs]", type=str,
-                              help="storage pool type to use")
-parser_release_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
-                              help="storage pool to use")
-parser_release_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
-                              help="volume name to use")
-parser_release_disk.add_argument("--uni", required=True, metavar="[UNI]", type=str,
-                              help="volume uni to use")
+parser_release_disk.add_argument("--domain", metavar="[DOMAIN]", type=str,
+                                 help="domain to use")
+parser_release_disk.add_argument("--vol", metavar="[VOL]", type=str,
+                                 help="volume name to use")
+parser_release_disk.add_argument("--path", metavar="[PATH]", type=str,
+                                 help="volume path to use")
 # set default func
 parser_release_disk.set_defaults(func=releaseDiskParser)
 

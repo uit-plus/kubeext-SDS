@@ -36,6 +36,7 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 DEFAULT_PORT = '19999'
 
+
 def runCmdWithResult(cmd):
     if not cmd:
         return
@@ -63,7 +64,7 @@ def runCmdWithResult(cmd):
                                 error_msg = error_msg + str.strip(line)
                             error_msg = str.strip(error_msg).replace('"', "'")
                             result['result']['msg'] = '%s. cstor error output: %s' % (
-                            result['result']['msg'], error_msg)
+                                result['result']['msg'], error_msg)
                 return result
             except Exception:
                 logger.debug(cmd)
@@ -223,6 +224,7 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
         p.stdout.close()
         p.stderr.close()
 
+
 def rpcCall(cmd):
     logger.debug(cmd)
     try:
@@ -372,11 +374,13 @@ def randomUUIDFromName(name):
 
     return str(uuid.uuid5(namespace, name))
 
+
 def is_pool_started(pool):
     poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
     if poolInfo['state'] == 'running':
         return True
     return False
+
 
 def is_pool_exists(pool):
     poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
@@ -384,11 +388,13 @@ def is_pool_exists(pool):
         return True
     return False
 
+
 def is_pool_defined(pool):
     poolInfo = runCmdAndSplitKvToJson('virsh pool-info %s' % pool)
     if poolInfo['persistent'] == 'yes':
         return True
     return False
+
 
 def is_vm_active(domain):
     output = runCmdAndGetOutput('virsh list')
@@ -398,10 +404,12 @@ def is_vm_active(domain):
             return True
     return False
 
+
 def get_volume_size(pool, vol):
     disk_config = get_disk_config(pool, vol)
     disk_info = get_disk_info(disk_config['current'])
     return int(disk_info['virtual_size'])
+
 
 def get_disks_spec(domain):
     output = runCmdAndGetOutput('virsh domblklist %s' % domain)
@@ -412,6 +420,7 @@ def get_disks_spec(domain):
         if len(kv) == 2 and kv[0].find('hd') < 0:
             spec[kv[1]] = kv[0]
     return spec
+
 
 class CDaemon:
     '''
@@ -589,13 +598,13 @@ def get_IP():
     myaddr = socket.gethostbyname(myname)
     return myaddr
 
+
 def get_cstor_pool_info(pool):
     cstor = runCmdWithResult("cstor-cli pool-show --poolname %s" % pool)
     if cstor['result']['code'] != 0:
-        print dumps({"result": {"code": 500, "msg": 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
-            cstor['result']['code'], cstor['result']['msg'], cstor['obj'])}, "data": {}})
-        exit(3)
+        error_print(400, 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
     return cstor
+
 
 def get_pool_info(pool_):
     if not pool_:
@@ -615,27 +624,31 @@ def get_pool_info(pool_):
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
+
 def get_pool_info_from_k8s(pool):
     if not pool:
         raise ExecuteException('', 'missing parameter: no pool name.')
     result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
-    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
         return result['spec']['pool']
     raise ExecuteException('', 'can not get pool info from k8s')
+
 
 def get_vol_info_from_k8s(vol):
     if not vol:
         raise ExecuteException('', 'missing parameter: no disk name.')
     result = runCmdWithResult('kubectl get vmd -o json %s' % vol)
-    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
         return result['spec']['volume']
     raise ExecuteException('', 'can not get vol info from k8s')
 
+
 def get_snapshot_info_from_k8s(snapshot):
     result = runCmdWithResult('kubectl get vmdsn -o json %s' % snapshot)
-    if 'spec'in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
         return result['spec']['volume']
     raise ExecuteException('', 'can not get snapshot info from k8s')
+
 
 def get_disk_config(pool, vol):
     if not pool or not vol:
@@ -674,7 +687,7 @@ def get_disk_info(ss_path):
         try:
             result = runCmdWithResult('qemu-img info --output json %s' % ss_path)
         except:
-            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
+            error_print(400, "can't get snapshot info in qemu-img.")
             exit(1)
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
@@ -687,7 +700,7 @@ def get_sn_chain(ss_path):
         try:
             result = runCmdWithResult('qemu-img info --backing-chain --output json %s' % ss_path)
         except:
-            print {"result": {"code": 500, "msg": "can't get snapshot info in qemu-img."}, "data": {}}
+            error_print(400, "can't get snapshot info in qemu-img.")
             exit(1)
     return result
 
@@ -757,7 +770,8 @@ def check_disk_in_use(disk_path):
 
 def change_vm_os_disk_file(vm, source, target):
     if not vm or not source or not target:
-        raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (vm, source, target))
+        raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (
+        vm, source, target))
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -777,6 +791,7 @@ def change_vm_os_disk_file(vm, source, target):
                     return True
     return False
 
+
 def is_shared_storage(path):
     if not path:
         raise ExecuteException('', 'missing parameter: no path.')
@@ -786,6 +801,7 @@ def is_shared_storage(path):
     if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
         return True
     return False
+
 
 def is_vm_disk_not_shared_storage(vm):
     if not vm:
@@ -808,6 +824,7 @@ def is_vm_disk_not_shared_storage(vm):
 
     return True
 
+
 def is_vm_disk_driver_cache_none(vm):
     if not vm:
         raise ExecuteException('', 'missing parameter: no vm name.')
@@ -829,14 +846,29 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
-if __name__ == '__main__':
+
+def success_print(msg, data):
+    print dumps({"result": {"code": 0, "msg": msg}, "data": data})
+    exit(0)
+
+
+def error_print(code, msg, data=None):
+    if data is None:
+        print dumps({"result": {"code": code, "msg": msg}, "data": {}})
+        exit(1)
+    else:
+        print dumps({"result": {"code": code, "msg": msg}, "data": data})
+        exit(1)
+
+
+# if __name__ == '__main__':
     # try:
     #     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
     #     print result
     # except ExecuteException, e:
     #     print e.message
     # print get_snapshot_info_from_k8s('disktestd313.2')
-    print get_pool_info(' node22-poolnfs')
+    # print get_pool_info(' node22-poolnfs')
 # print is_vm_disk_not_shared_storage('vm006')
 
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')

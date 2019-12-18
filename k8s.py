@@ -8,6 +8,7 @@ import os, sys, ConfigParser
 from kubernetes.client import V1DeleteOptions
 
 from utils import logger
+from utils.utils import error_print
 
 
 class parser(ConfigParser.ConfigParser):
@@ -61,12 +62,14 @@ def create(name, data, kind):
 
 def update(name, data, kind):
     return client.CustomObjectsApi().replace_namespaced_custom_object(
-        group=resources[kind]['group'], version=resources[kind]['version'], namespace='default', plural=resources[kind]['plural'], name=name, body=data)
+        group=resources[kind]['group'], version=resources[kind]['version'], namespace='default',
+        plural=resources[kind]['plural'], name=name, body=data)
 
 
 def delete(name, data, kind):
     return client.CustomObjectsApi().delete_namespaced_custom_object(
-        group=resources[kind]['group'], version=resources[kind]['version'], namespace='default', plural=resources[kind]['plural'], name=name, body=data)
+        group=resources[kind]['group'], version=resources[kind]['version'], namespace='default',
+        plural=resources[kind]['plural'], name=name, body=data)
 
 
 def addPowerStatusMessage(jsondict, reason, message):
@@ -120,6 +123,7 @@ def get_hostname_in_lower_case():
     else:
         return socket.gethostname().lower()
 
+
 def changeNode(jsondict, newNodeName):
     if jsondict:
         jsondict['metadata']['labels']['host'] = newNodeName
@@ -144,9 +148,7 @@ class K8sHelper(object):
                                                                               name=name)
             return jsondict
         except Exception:
-            print dumps(
-                {"result": {"code": 500, "msg": 'can not get %s %s on k8s.' % (self.kind, name)}, "data": {}})
-            exit(3)
+            error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
 
     def create(self, name, key, data):
         try:
@@ -162,9 +164,8 @@ class K8sHelper(object):
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], body=body)
         except Exception:
-            print dumps(
-                {"result": {"code": 500, "msg": 'can not create %s %s on k8s.' % (self.kind, name)}, "data": {}})
-            exit(3)
+            error_print(500, 'can not create %s %s on k8s.' % (self.kind, name))
+
     def update(self, name, key, data):
         try:
             jsondict = self.get(name)
@@ -173,9 +174,7 @@ class K8sHelper(object):
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=jsondict)
         except Exception:
-            print dumps(
-                {"result": {"code": 500, "msg": 'can not modify %s %s on k8s.' % (self.kind, name)}, "data": {}})
-            exit(3)
+            error_print(500, 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def delete(self, name):
         try:
@@ -183,9 +182,8 @@ class K8sHelper(object):
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
         except Exception:
-            print dumps(
-                {"result": {"code": 500, "msg": 'can not delete %s %s on k8s.' % (self.kind, name)}, "data": {}})
-            exit(3)
+            error_print(500, 'can not delete %s %s on k8s.' % (self.kind, name))
+
 
 if __name__ == '__main__':
     k8s = K8sHelper('VirtualMachineDisk')

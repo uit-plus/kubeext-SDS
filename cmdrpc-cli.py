@@ -17,15 +17,6 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 DEFAULT_PORT = '19999'
 
-# cmd = 'virsh pool-define-as --type dir  --name pooldir2  --target /var/lib/libvirt/pooldir2'
-# with grpc.insecure_channel("{0}:{1}".format(host, port)) as channel:
-#     client = cmdcall_pb2_grpc.CmdCallStub(channel=channel)
-#     response = client.Call(cmdcall_pb2.CallRequest(cmd=cmd))
-#     logger.debug("received: " + response.json)
-#     print response.json
-
-
-
 def rpcCallWithResult(cmd):
     logger.debug(cmd)
     try:
