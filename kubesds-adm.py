@@ -1,6 +1,5 @@
 import argparse
 
-from k8s import K8sHelper
 from operation import *
 
 from utils import logger
@@ -383,17 +382,18 @@ def revertExternalSnapshotParser(args):
         with open(config_path, "r") as f:
             config = load(f)
 
-        if args.backing_file == config['current']:
-            error_print(100, "can not revert disk to itself")
         if not os.path.isfile(config['current']):
             error_print(100, "can not find current file")
-        if not os.path.isfile(args.backing_file):
-            error_print(100, "snapshot file %s not exist" % args.backing_file)
-
     execute('revertExternalSnapshot', args)
 
 
 def deleteExternalSnapshotParser(args):
+    helper = K8sHelper("VirtualMachineDiskSnapshot")
+    ss_info = helper.get_data(args.name, "volume")
+    if ss_info is None:
+        helper.delete(args.name)
+        success_print("delete snapshot %s successful." % args.name, {})
+
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
     if args.type == "uus":
@@ -661,8 +661,6 @@ parser_revert_ess.add_argument("--name", required=True, metavar="[NAME]", type=s
                                help="volume snapshot name to use")
 parser_revert_ess.add_argument("--vol", required=True, metavar="[VOL]", type=str,
                                help="disk current file to use")
-parser_revert_ess.add_argument("--backing_file", required=True, metavar="[backing_file]", type=str,
-                               help="backing_file from k8s")
 parser_revert_ess.add_argument("--format", required=True, metavar="[FORMAT]", type=str,
                                help="disk format to use")
 parser_revert_ess.add_argument("--domain", metavar="[domain]", type=str,
@@ -680,8 +678,6 @@ parser_delete_ess.add_argument("--name", required=True, metavar="[NAME]", type=s
                                help="volume snapshot name to use")
 parser_delete_ess.add_argument("--vol", required=True, metavar="[VOL]", type=str,
                                help="disk current file to use")
-parser_delete_ess.add_argument("--backing_file", required=True, metavar="[backing_file]", type=str,
-                               help="backing_file from k8s")
 parser_delete_ess.add_argument("--domain", metavar="[domain]", type=str,
                                help="domain")
 # set default func

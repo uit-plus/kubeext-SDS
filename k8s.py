@@ -4,11 +4,13 @@ from json import dumps
 from kubernetes import client, config
 
 import os, sys, ConfigParser
+from sys import exit
+
 
 from kubernetes.client import V1DeleteOptions
+from kubernetes.client.rest import ApiException
 
 from utils import logger
-from utils.utils import error_print
 
 
 class parser(ConfigParser.ConfigParser):
@@ -194,9 +196,18 @@ class K8sHelper(object):
             return client.CustomObjectsApi().delete_namespaced_custom_object(
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
-        except Exception:
-            error_print(500, 'can not delete %s %s on k8s.' % (self.kind, name))
+        except ApiException, e:
+            if e.reason == 'Not Found':
+                logger.debug('**Object %s already deleted.' % name)
+                return
 
+def error_print(code, msg, data=None):
+    if data is None:
+        print dumps({"result": {"code": code, "msg": msg}, "data": {}})
+        exit(1)
+    else:
+        print dumps({"result": {"code": code, "msg": msg}, "data": data})
+        exit(1)
 
 if __name__ == '__main__':
     k8s = K8sHelper('VirtualMachineDisk')
