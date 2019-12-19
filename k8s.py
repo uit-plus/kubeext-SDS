@@ -150,6 +150,19 @@ class K8sHelper(object):
         except Exception:
             error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
 
+    def get_data(self, name, key):
+        try:
+            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                              version=resources[self.kind]['version'],
+                                                                              namespace='default',
+                                                                              plural=resources[self.kind]['plural'],
+                                                                              name=name)
+            if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
+                return jsondict['spec'][key]
+            return None
+        except Exception:
+            error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
+
     def create(self, name, key, data):
         try:
             hostname = get_hostname_in_lower_case()

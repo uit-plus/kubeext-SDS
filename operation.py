@@ -142,6 +142,8 @@ def deletePool(params):
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
+    helper = K8sHelper("VirtualMahcinePool")
+    helper.delete(params.pool)
     success_print("delete pool %s successful." % params.pool, {})
 
 def startPool(params):
@@ -350,6 +352,8 @@ def deleteDisk(params):
         op = Operation("rm -rf %s" % disk_dir, {})
         op.execute()
 
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.delete(params.vol)
     success_print("delete volume %s success." % params.vol, {})
 
 def resizeDisk(params):
@@ -459,7 +463,7 @@ def cloneDisk(params):
     else:
         prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, cstor['data']['uni'])
         result = {
-            "disk": params.vol,
+            "disk": params.newname,
             "pool": params.pool,
             "poolname": pool_info['poolname'],
             "uni": cstor["data"]["uni"],
@@ -467,7 +471,68 @@ def cloneDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.create(params.newname, "volume", result)
     success_print("success clone disk %s." % params.vol, result)
+
+def createDiskFromImage(params):
+    pool_info = get_pool_info_from_k8s(params.targetPool)
+    dest_dir = '%s/%s' % (pool_info['path'], params.name)
+    dest = '%s/%s' % (dest_dir, params.name)
+    dest_config_file = '%s/config.json' % (dest_dir)
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir, 0711)
+    if os.path.exists(dest_config_file):
+        raise Exception('Path %s already in use, aborting copy.' % dest_dir)
+
+    if params.full_copy:
+        try:
+            op = Operation('cp -f %s %s' % (params.source, dest), {})
+            op.execute()
+        except:
+            if os.path.exists(dest_dir):
+                op = Operation('rm -rf %s' % dest_dir, {})
+                op.execute()
+            raise Exception('Copy %s to %s failed!' % (params.source, dest))
+
+        try:
+            op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
+            op.execute()
+        except:
+            if os.path.exists(dest_dir):
+                op = Operation('rm -rf %s' % dest_dir, {})
+                op.execute()
+            raise Exception('Execute "qemu-img rebase -f qcow2 %s" failed!' % (dest))
+    else:
+        if params.source.find('snapshots') >= 0:
+            source_disk_dir = os.path.dirname(os.path.dirname(params.source))
+        else:
+            source_disk_dir = os.path.dirname(params.source)
+        config = get_disk_config_by_path('%s/config.json' % source_disk_dir)
+        disk_info = get_disk_info(config['current'])
+        op = Operation(
+            'qemu-img create -f %s -b %s -F %s %s' %
+            (disk_info['format'], config['current'], disk_info['format'], dest), {})
+        op.execute()
+    config = {}
+    config['name'] = params.name
+    config['dir'] = dest_dir
+    config['current'] = dest
+    config["pool"] = params.targetPool
+    config["poolname"] = pool_info['poolname']
+
+    with open('%s/config.json' % dest_dir, "w") as f:
+        dump(config, f)
+    result = get_disk_info(dest)
+    result['disk'] = params.name
+    result["pool"] = params.targetPool
+    result["poolname"] = pool_info['poolname']
+    result["uni"] = config['current']
+    result["current"] = config['current']
+
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.update(params.name, "volume", result)
+    success_print("success createDiskFromImage %s." % params.name, result)
 
 def cstor_disk_prepare(pool, vol, uni):
     op = Operation('cstor-cli vdisk-prepare ', {'poolname': pool, 'name': vol,
@@ -848,62 +913,6 @@ def customize(params):
     op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
     op.execute()
     success_print("customize  successful.", {})
-
-def createDiskFromImage(params):
-    pool_info = get_pool_info_from_k8s(params.targetPool)
-    dest_dir = '%s/%s' % (pool_info['path'], params.name)
-    dest = '%s/%s' % (dest_dir, params.name)
-    dest_config_file = '%s/config.json' % (dest_dir)
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir, 0711)
-    if os.path.exists(dest_config_file):
-        raise Exception('Path %s already in use, aborting copy.' % dest_dir)
-
-    if params.full_copy:
-        try:
-            op = Operation('cp -f %s %s' % (params.source, dest), {})
-            op.execute()
-        except:
-            if os.path.exists(dest_dir):
-                op = Operation('rm -rf %s' % dest_dir, {})
-                op.execute()
-            raise Exception('Copy %s to %s failed!' % (params.source, dest))
-
-        try:
-            op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
-            op.execute()
-        except:
-            if os.path.exists(dest_dir):
-                op = Operation('rm -rf %s' % dest_dir, {})
-                op.execute()
-            raise Exception('Execute "qemu-img rebase -f qcow2 %s" failed!' % (dest))
-    else:
-        if params.source.find('snapshots') >= 0:
-            source_disk_dir = os.path.dirname(os.path.dirname(params.source))
-        else:
-            source_disk_dir = os.path.dirname(params.source)
-        config = get_disk_config_by_path('%s/config.json' % source_disk_dir)
-        disk_info = get_disk_info(config['current'])
-        op = Operation(
-            'qemu-img create -f %s -b %s -F %s %s' %
-            (disk_info['format'], config['current'], disk_info['format'], dest), {})
-        op.execute()
-    config = {}
-    config['name'] = params.name
-    config['dir'] = dest_dir
-    config['current'] = dest
-    config["pool"] = params.targetPool
-    config["poolname"] = pool_info['poolname']
-
-    with open('%s/config.json' % dest_dir, "w") as f:
-        dump(config, f)
-    result = get_disk_info(dest)
-    result['disk'] = params.name
-    result["pool"] = params.targetPool
-    result["poolname"] = pool_info['poolname']
-    result["uni"] = config['current']
-    result["current"] = config['current']
-    success_print("success createDiskFromImage %s." % params.name, result)
 
 def migrate(params):
     if not is_vm_disk_driver_cache_none(params.domain):

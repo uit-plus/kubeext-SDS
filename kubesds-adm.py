@@ -112,6 +112,14 @@ def check_pool(f_name, args):
             if is_cstor_pool_exist(args.uuid):
                 raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
         else:
+            if f_name == 'deletePool':
+                # if pool is not create successful, delete it from k8s.
+                helper = K8sHelper("VirtualMahcinePool")
+                pool_info = helper.get_data(args.pool, "pool")
+                if pool_info is None:
+                    helper.delete(args.pool)
+                    success_print("delete pool %s successful." % args.pool, {})
+
             check_pool_type(args)
             pool_info = get_pool_info_from_k8s(args.pool)
             pool = pool_info['poolname']
@@ -256,6 +264,11 @@ def createDiskParser(args):
 
 
 def deleteDiskParser(args):
+    helper = K8sHelper("VirtualMachineDisk")
+    disk_info = helper.get_data(args.vol, "volume")
+    if disk_info is None:
+        helper.delete(args.vol)
+        success_print("delete disk %s successful." % args.vol, {})
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
     if args.type == "uus":
@@ -264,7 +277,6 @@ def deleteDiskParser(args):
     else:
         check_pool_active(pool_info)
         check_virsh_disk_not_exist(pool, args.vol)
-
     execute('deleteDisk', args)
 
 
@@ -288,7 +300,7 @@ def cloneDiskParser(args):
     try:
         disk_info = get_vol_info_from_k8s(args.newname)
         error_print(500, "vol %s has exist in k8s." % args.newname)
-    except:
+    except ExecuteException:
         pass
 
     # check cstor disk
