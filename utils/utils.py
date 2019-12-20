@@ -605,7 +605,8 @@ def get_IP():
 def get_cstor_pool_info(pool):
     cstor = runCmdWithResult("cstor-cli pool-show --poolname %s" % pool)
     if cstor['result']['code'] != 0:
-        error_print(400, 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+        error_print(400, 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
     return cstor
 
 
@@ -627,13 +628,16 @@ def get_pool_info(pool_):
     result['path'] = xml_dict['pool']['target']['path']
     return result
 
+
 def modify_disk_info_in_k8s(poolname, vol):
     helper = K8sHelper("VirtualMachineDisk")
     helper.update(vol, "volume", get_disk_info_to_k8s(poolname, vol))
 
+
 def modify_snapshot_info_in_k8s(poolname, vol, name):
     helper = K8sHelper("VirtualMachineDiskSnapshot")
     helper.update(name, "volume", get_snapshot_info_to_k8s(poolname, vol, name))
+
 
 def get_pool_info_from_k8s(pool):
     if not pool:
@@ -643,6 +647,7 @@ def get_pool_info_from_k8s(pool):
         return result['spec']['pool']
     raise ExecuteException('', 'can not get pool info from k8s')
 
+
 def get_vol_info_from_k8s(vol):
     if not vol:
         raise ExecuteException('', 'missing parameter: no disk name.')
@@ -650,6 +655,7 @@ def get_vol_info_from_k8s(vol):
     if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
         return result['spec']['volume']
     raise ExecuteException('', 'can not get vol info from k8s')
+
 
 def get_snapshot_info_from_k8s(snapshot):
     result = runCmdWithResult('kubectl get vmdsn -o json %s' % snapshot)
@@ -700,6 +706,30 @@ def get_disk_info(ss_path):
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
+
+def get_pool_info_to_k8s(type, pool, poolname, content):
+    result = get_pool_info(poolname)
+    result['content'] = content
+    result["pooltype"] = type
+    result["pool"] = pool
+    result["poolname"] = poolname
+    if is_pool_started(poolname):
+        result["state"] = "active"
+    else:
+        result["state"] = "inactive"
+    return result
+
+def write_config(vol, dir, current, pool, poolname):
+    config = {}
+    config['name'] = vol
+    config['dir'] = dir
+    config['current'] = current
+    config['pool'] = pool
+    config['poolname'] = poolname
+
+    with open('%s/config.json' % dir, "w") as f:
+        dump(config, f)
+
 def get_disk_info_to_k8s(poolname, vol):
     config_path = '%s/%s/config.json' % (get_pool_info(poolname)['path'], vol)
     with open(config_path, "r") as f:
@@ -711,6 +741,7 @@ def get_disk_info_to_k8s(poolname, vol):
     result["uni"] = config['current']
     result["current"] = config['current']
     return result
+
 
 def get_snapshot_info_to_k8s(poolname, vol, name):
     config_path = '%s/%s/config.json' % (get_pool_info(poolname)['path'], vol)
@@ -724,6 +755,7 @@ def get_snapshot_info_to_k8s(poolname, vol, name):
     result["uni"] = config['current']
     result['snapshot'] = name
     return result
+
 
 def get_sn_chain(ss_path):
     try:
@@ -803,7 +835,7 @@ def check_disk_in_use(disk_path):
 def change_vm_os_disk_file(vm, source, target):
     if not vm or not source or not target:
         raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (
-        vm, source, target))
+            vm, source, target))
     runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
     tree = ET.parse('/tmp/%s.xml' % vm)
 
@@ -892,15 +924,14 @@ def error_print(code, msg, data=None):
         print dumps({"result": {"code": code, "msg": msg}, "data": data})
         exit(1)
 
-
 # if __name__ == '__main__':
-    # try:
-    #     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
-    #     print result
-    # except ExecuteException, e:
-    #     print e.message
-    # print get_snapshot_info_from_k8s('disktestd313.2')
-    # print get_pool_info(' node22-poolnfs')
+# try:
+#     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
+#     print result
+# except ExecuteException, e:
+#     print e.message
+# print get_snapshot_info_from_k8s('disktestd313.2')
+# print get_pool_info(' node22-poolnfs')
 # print is_vm_disk_not_shared_storage('vm006')
 
 # print change_vm_os_disk_file('vm010', '/uit/pooluittest/diskuittest/snapshots/diskuittest.2', '/uit/pooluittest/diskuittest/snapshots/diskuittest.1')
