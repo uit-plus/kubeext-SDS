@@ -1,10 +1,11 @@
 import argparse
-import operator
+from operator import eq
+
 from k8s import K8sHelper
 from operation import *
 
 from utils import logger
-from utils.exception import ConditionException
+from utils.exception import ConditionException, ExecuteException
 
 LOG = "/var/log/kubesds.log"
 
@@ -67,7 +68,7 @@ def check_pool_active(info):
         result["poolname"] = info["poolname"]
 
     # update pool
-    if operator.eq(info, result) != 0:
+    if eq(info, result) != 0:
         k8s = K8sHelper('VirtualMahcinePool')
         k8s.update(info['pool'], 'pool', result)
 
@@ -885,7 +886,7 @@ parser_migrate.set_defaults(func=migrateParser)
 #     try:
 #         args.func(args)
 #     except TypeError:
-#         print traceback.format_exc()
+#         print(traceback.format_exc())
 #         logger.debug(traceback.format_exc())
 
 
@@ -893,13 +894,13 @@ parser_migrate.set_defaults(func=migrateParser)
 #     args = parser.parse_args()
 #     args.func(args)
 # except TypeError:
-#     # print "argument number not enough"
+#     # print("argument number not enough")
 #     logger.debug(traceback.format_exc())
 
-# try:
-#     args = parser.parse_args(
-#         ["prepareDisk", "--domain", "vm003"])
-#     args.func(args)
+try:
+    args = parser.parse_args(
+        ["prepareDisk", "--domain", "vm003"])
+    args.func(args)
 #     args = parser.parse_args(
 #         ["migrate", "--domain", "vm006", "--ip", "133.133.135.22"])
 #     args.func(args)
@@ -938,6 +939,6 @@ parser_migrate.set_defaults(func=migrateParser)
     # args = parser.parse_args(
     #     ["updateDiskCurrent", "--type", "localfs", "--current", "/var/lib/libvirt/pooltest/disktest/ss2"])
     # args.func(args)
-# except TypeError:
-#     print dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}})
-#     print traceback.format_exc()
+except TypeError:
+    print(dumps({"result": {"code": 1, "msg": "script error, plz check log file."}, "data": {}}))
+    print(traceback.format_exc())

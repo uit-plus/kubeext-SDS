@@ -1,9 +1,7 @@
-import operator
+from operator import eq
 from xml.etree.ElementTree import fromstring
 from xmljson import badgerfish as bf
-from sys import exit
 
-from k8s import K8sHelper
 from netutils import get_host_IP
 from utils.exception import ExecuteException
 from utils.utils import *
@@ -118,12 +116,7 @@ def createPool(params):
         with open('%s/content' % POOL_PATH, 'w') as f:
             f.write(params.content)
 
-        result = get_pool_info(params.uuid)
-        result['content'] = params.content
-        result["pooltype"] = params.type
-        result["pool"] = params.pool
-        result["poolname"] = params.uuid
-        result["state"] = "active"
+        result = get_pool_info_to_k8s(params.type, params.pool, params.uuid, params.content)
 
     success_print("create pool %s successful." % params.pool, result)
 
@@ -144,6 +137,8 @@ def deletePool(params):
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
+    helper = K8sHelper("VirtualMahcinePool")
+    helper.delete(params.pool)
     success_print("delete pool %s successful." % params.pool, {})
 
 def startPool(params):
@@ -213,7 +208,7 @@ def showPool(params):
             "content": 'vmd'
         }
     # update pool
-    if operator.eq(pool_info, result) != 0:
+    if eq(pool_info, result) != 0:
         k8s = K8sHelper('VirtualMahcinePool')
         k8s.update(pool_info['pool'], 'pool', result)
 
@@ -273,21 +268,8 @@ def qemu_create_disk(pool, poolname, vol, format, capacity):
     op = Operation('qemu-img create -f %s %s %s' % (format, disk_path, capacity), {})
     op.execute()
 
-    config = {}
-    config['name'] = vol
-    config['dir'] = disk_dir
-    config['current'] = disk_path
-    config['pool'] = pool
-    config['poolname'] = poolname
-
-    with open('%s/config.json' % disk_dir, "w") as f:
-        dump(config, f)
-    result = get_disk_info(disk_path)
-    result['disk'] = vol
-    result["uni"] = disk_path
-    result['current'] = disk_path
-    result['pool'] = pool
-    result['poolname'] = poolname
+    write_config(vol, disk_dir, disk_path, pool, poolname)
+    result = get_disk_info_to_k8s(poolname, vol)
     return result
 
 
@@ -352,13 +334,15 @@ def deleteDisk(params):
         op = Operation("rm -rf %s" % disk_dir, {})
         op.execute()
 
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.delete(params.vol)
     success_print("delete volume %s success." % params.vol, {})
 
 def resizeDisk(params):
-    pool_info = get_pool_info_from_k8s(params.pool)
     disk_info = get_vol_info_from_k8s(params.vol)
+    poolname = disk_info['poolname']
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-    op = Operation('cstor-cli vdisk-expand ', {'poolname': disk_info['poolname'], 'name': params.vol,
+    op = Operation('cstor-cli vdisk-expand ', {'poolname': poolname, 'name': params.vol,
                                                'size': params.capacity}, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -366,7 +350,7 @@ def resizeDisk(params):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
     if params.type != "uus":
-        disk_dir = '%s/%s' % (pool_info['path'], params.vol)
+        disk_dir = '%s/%s' % (get_pool_info(poolname)['path'], params.vol)
         with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
 
@@ -375,20 +359,12 @@ def resizeDisk(params):
         op = Operation("qemu-img resize %s +%s" % (config['current'], str(size)), {})
         op.execute()
 
-        with open('%s/config.json' % disk_dir, "w") as f:
-            dump(config, f)
-        result = get_disk_info(config['current'])
-
-        result['disk'] = params.vol
-        result["pool"] = params.pool
-        result["poolname"] = pool_info['poolname']
-        result["uni"] = config['current']
-        result["current"] = config['current']
+        result = get_disk_info_to_k8s(poolname, params.vol)
     else:
         result = {
             "disk": params.vol,
             "pool": params.pool,
-            "poolname": pool_info['poolname'],
+            "poolname": poolname,
             "uni": cstor["data"]["uni"],
             "current": prepareInfo["data"]["path"],
             "virtual_size": params.capacity,
@@ -441,27 +417,14 @@ def cloneDisk(params):
             raise ExecuteException('', 'Execute "qemu-img rebase %s" failed!, aborting clone.' % clone_disk_path)
 
         prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, clone_disk_path)
-        config = {}
-        config['name'] = params.newname
-        config['dir'] = clone_disk_dir
-        config['current'] = clone_disk_path
-        config['poolname'] = poolname
-        config['pool'] = params.pool
-        with open('%s/config.json' % clone_disk_dir, "w") as f:
-            dump(config, f)
 
-        result = get_disk_info(clone_disk_path)
-        # vol_xml = get_volume_xml(params.pool, params.vol)
+        write_config(params.newname, clone_disk_dir, clone_disk_path, params.pool, poolname)
 
-        result['disk'] = params.newname
-        result["pool"] = params.pool
-        result["poolname"] = poolname
-        result["uni"] = clone_disk_path
-        result["current"] = clone_disk_path
+        result = get_disk_info_to_k8s(poolname, params.newname)
     else:
         prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, cstor['data']['uni'])
         result = {
-            "disk": params.vol,
+            "disk": params.newname,
             "pool": params.pool,
             "poolname": pool_info['poolname'],
             "uni": cstor["data"]["uni"],
@@ -469,7 +432,58 @@ def cloneDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.create(params.newname, "volume", result)
     success_print("success clone disk %s." % params.vol, result)
+
+def createDiskFromImage(params):
+    pool_info = get_pool_info_from_k8s(params.targetPool)
+    poolname = pool_info['poolname']
+    dest_dir = '%s/%s' % (pool_info['path'], params.name)
+    dest = '%s/%s' % (dest_dir, params.name)
+    dest_config_file = '%s/config.json' % (dest_dir)
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir, 0o711)
+    if os.path.exists(dest_config_file):
+        raise Exception('Path %s already in use, aborting copy.' % dest_dir)
+
+    if params.full_copy:
+        try:
+            op = Operation('cp -f %s %s' % (params.source, dest), {})
+            op.execute()
+        except:
+            if os.path.exists(dest_dir):
+                op = Operation('rm -rf %s' % dest_dir, {})
+                op.execute()
+            raise Exception('Copy %s to %s failed!' % (params.source, dest))
+
+        try:
+            op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
+            op.execute()
+        except:
+            if os.path.exists(dest_dir):
+                op = Operation('rm -rf %s' % dest_dir, {})
+                op.execute()
+            raise Exception('Execute "qemu-img rebase -f qcow2 %s" failed!' % (dest))
+    else:
+        if params.source.find('snapshots') >= 0:
+            source_disk_dir = os.path.dirname(os.path.dirname(params.source))
+        else:
+            source_disk_dir = os.path.dirname(params.source)
+        config = get_disk_config_by_path('%s/config.json' % source_disk_dir)
+        disk_info = get_disk_info(config['current'])
+        op = Operation(
+            'qemu-img create -f %s -b %s -F %s %s' %
+            (disk_info['format'], config['current'], disk_info['format'], dest), {})
+        op.execute()
+
+    write_config(params.name, dest_dir, dest, params.targetPool, poolname)
+
+    result = get_disk_info_to_k8s(poolname, params.name)
+
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.update(params.name, "volume", result)
+    success_print("success createDiskFromImage %s." % params.name, result)
 
 def cstor_disk_prepare(pool, vol, uni):
     op = Operation('cstor-cli vdisk-prepare ', {'poolname': pool, 'name': vol,
@@ -521,17 +535,8 @@ def showDisk(params):
         if cstor['result']['code'] != 0:
             raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-        pool_info = get_pool_info(poolname)
-        disk_dir = '%s/%s' %(pool_info['path'], params.vol)
-        with open('%s/config.json' % disk_dir, "r") as f:
-            config = load(f)
 
-        result = get_disk_info(config['current'])
-        result['disk'] = params.vol
-        result["pool"] = params.pool
-        result["poolname"] = poolname
-        result["uni"] = config['current']
-        result["current"] = config['current']
+        result = get_disk_info_to_k8s(poolname, params.vol)
     else:
         kv = {"poolname": poolname, "name": params.vol}
         op = Operation("cstor-cli vdisk-show", kv, True)
@@ -558,13 +563,8 @@ def showDiskSnapshot(params):
         disk_config = get_disk_config(poolname, params.vol)
         ss_path = '%s/snapshots/%s' % (disk_config['dir'], params.name)
 
-        result = get_disk_info(ss_path)
-        result['disk'] = params.vol
-        result["pool"] = params.pool
-        result["poolname"] = poolname
-        result['snapshot'] = ss_info['snapshot']
-        result["uni"] = ss_path
-        success_print("success show disk snapshot %s." % params.name, ss_info)
+        result = get_snapshot_info_to_k8s(poolname, params.vol, params.name)
+        success_print("success show disk snapshot %s." % params.name, result)
     elif params.type == "uus":
         raise ExecuteException("", "not support operation for uus.")
 
@@ -609,15 +609,6 @@ def createExternalSnapshot(params):
                 config['current'] = ss_path
             with open('%s/config.json' % disk_config['dir'], "w") as f:
                 dump(config, f)
-
-            result = get_disk_info(ss_path)
-            result['disk'] = params.vol
-            result["pool"] = params.pool
-            result["poolname"] = disk_info['poolname']
-            result['snapshot'] = params.name
-            result["uni"] = ss_path
-
-            success_print("success create disk external snapshot %s." % params.name, result)
         else:
             specs = get_disks_spec(params.domain)
             if disk_config['current'] not in specs.keys():
@@ -652,13 +643,12 @@ def createExternalSnapshot(params):
                 config['current'] = ss_path
             with open(config_path, "w") as f:
                 dump(config, f)
-            result = get_disk_info(ss_path)
-            result['disk'] = params.vol
-            result["pool"] = params.pool
-            result["poolname"] = disk_info['poolname']
-            result['snapshot'] = params.name
-            result["uni"] = ss_path
-            success_print("success create disk external snapshot %s" % params.name, result)
+
+        result = get_snapshot_info_to_k8s(poolname, params.vol, params.name)
+        # modify disk in k8s
+        modify_disk_info_in_k8s(poolname, params.vol)
+
+        success_print("success create disk external snapshot %s" % params.name, result)
     else:
         # prepare snapshot
         cstor_disk_prepare(poolname, params.name, cstor['data']['uni'])
@@ -669,10 +659,13 @@ def revertExternalSnapshot(params):
     disk_info = get_pool_info_from_k8s(params.pool)
     poolname = disk_info['poolname']
 
+    helper = K8sHelper("VirtualMachineDiskSnapshot")
+    k8s_ss_info = helper.get_data(params.name, "volume")
+    backing_file = k8s_ss_info['full_backing_filename']
     if params.type != 'uus':
         # prepare base
         disk_config = get_disk_config(poolname, params.vol)
-        cstor_disk_prepare(poolname, os.path.basename(params.backing_file), params.backing_file)
+        cstor_disk_prepare(poolname, os.path.basename(backing_file), backing_file)
     else:
         # prepare base
         cstor_disk_prepare(poolname, params.vol, disk_info['uni'])
@@ -696,9 +689,9 @@ def revertExternalSnapshot(params):
         raise ExecuteException('', 'error: can not get snapshot backing file.')
 
     uuid = randomUUID().replace('-', '')
-    new_file_path = '%s/%s' %(os.path.dirname(params.backing_file), uuid)
+    new_file_path = '%s/%s' %(os.path.dirname(backing_file), uuid)
     op1 = Operation('qemu-img create -f %s -b %s -F %s %s' %
-                    (params.format, params.backing_file, params.format, new_file_path), {})
+                    (params.format, backing_file, params.format, new_file_path), {})
     op1.execute()
     # change vm disk
     if params.domain and not change_vm_os_disk_file(params.domain, disk_config['current'], new_file_path):
@@ -713,29 +706,29 @@ def revertExternalSnapshot(params):
     with open('%s/config.json' % disk_config['dir'], "w") as f:
         dump(config, f)
 
-    result = get_disk_info(config['current'])
-    result['disk'] = params.vol
-    result["pool"] = params.pool
-    result["poolname"] = poolname
-    result['snapshot'] = params.name
-    result["uni"] = ss_path
-
     # prepare snapshot
     if params.type != 'uus':
         cstor_disk_prepare(poolname, os.path.basename(ss_path), ss_path)
     else:
         cstor_disk_prepare(poolname, os.path.basename(ss_path), cstor['data']['uni'])
 
-    success_print("success revert disk external snapshot %s." % params.name, result)
+    # modify disk in k8s
+    modify_disk_info_in_k8s(poolname, params.vol)
+
+    success_print("success revert disk external snapshot %s." % params.name, {})
 
 def deleteExternalSnapshot(params):
     disk_info = get_pool_info_from_k8s(params.pool)
     poolname = disk_info['poolname']
 
+    helper = K8sHelper("VirtualMachineDiskSnapshot")
+    k8s_ss_info = helper.get_data(params.name, "volume")
+    backing_file = k8s_ss_info['full_backing_filename']
+
     if params.type != 'uus':
         # prepare base
         disk_config = get_disk_config(poolname, params.vol)
-        cstor_disk_prepare(poolname, os.path.basename(params.backing_file), params.backing_file)
+        cstor_disk_prepare(poolname, os.path.basename(backing_file), backing_file)
         cstor_disk_prepare(poolname, os.path.basename(disk_config['current']), disk_config['current'])
     else:
         # prepare base
@@ -757,13 +750,13 @@ def deleteExternalSnapshot(params):
 
         disk_config = get_disk_config(poolname, params.vol)
 
-        # get all snapshot to delete(if the snapshot backing file chain contains params.backing_file), except current.
+        # get all snapshot to delete(if the snapshot backing file chain contains backing_file), except current.
         snapshots_to_delete = []
         files = os.listdir('%s/snapshots' % disk_config['dir'])
         for df in files:
             try:
                 bf_paths = get_sn_chain_path('%s/snapshots/%s' %(disk_config['dir'], df))
-                if params.backing_file in bf_paths:
+                if backing_file in bf_paths:
                     snapshots_to_delete.append(df)
             except:
                 continue
@@ -775,29 +768,29 @@ def deleteExternalSnapshot(params):
         if params.domain:
             current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
             # reconnect the snapshot chain
-            bf_bf_path = DiskImageHelper.get_backing_file(params.backing_file)
+            bf_bf_path = DiskImageHelper.get_backing_file(backing_file)
             if bf_bf_path:
                 op = Operation('virsh blockpull --domain %s --path %s --base %s --wait' %
-                               (params.domain, disk_config['current'], params.backing_file), {})
+                               (params.domain, disk_config['current'], backing_file), {})
                 op.execute()
             else:
                 op = Operation('virsh blockpull --domain %s --path %s --wait' %
                                (params.domain, disk_config['current']), {})
                 op.execute()
-                op = Operation('rm -f %s' % params.backing_file, {})
+                op = Operation('rm -f %s' % backing_file, {})
                 op.execute()
 
             # # if the snapshot to delete is not current, delete snapshot's backing file
-            # if current_backing_file != params.backing_file:
-            #     op = Operation('rm -f %s' % params.backing_file, {})
+            # if current_backing_file != backing_file:
+            #     op = Operation('rm -f %s' % backing_file, {})
             #     op.execute()
 
         else:
             current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
             # reconnect the snapshot chain
             paths = get_sn_chain_path(disk_config['current'])
-            if params.backing_file in paths:
-                bf_bf_path = DiskImageHelper.get_backing_file(params.backing_file)
+            if backing_file in paths:
+                bf_bf_path = DiskImageHelper.get_backing_file(backing_file)
                 if bf_bf_path:
                     # effect current and backing file is not head, rabse current to reconnect
                     op = Operation('qemu-img rebase -b %s %s' % (bf_bf_path, disk_config['current']), {})
@@ -806,11 +799,11 @@ def deleteExternalSnapshot(params):
                     # effect current and backing file is head, rabse current to itself
                     op = Operation('qemu-img rebase -b "" %s' % disk_config['current'], {})
                     op.execute()
-                    op = Operation('rm -f %s' % params.backing_file, {})
+                    op = Operation('rm -f %s' % backing_file, {})
                     op.execute()
             # # if the snapshot to delete is not current, delete snapshot's backing file
-            # if current_backing_file != params.backing_file:
-            #     op = Operation('rm -f %s' % params.backing_file, {})
+            # if current_backing_file != backing_file:
+            #     op = Operation('rm -f %s' % backing_file, {})
             #     op.execute()
 
         for df in snapshots_to_delete:
@@ -824,9 +817,16 @@ def deleteExternalSnapshot(params):
         with open('%s/config.json' % disk_config['dir'], "w") as f:
             dump(config, f)
 
-        result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
-                  'need_to_modify': config['current'], "pool": params.pool, "poolname": poolname}
-        success_print("success delete disk external snapshot %s." % params.name, result)
+        # delete snapshot in k8s
+        for ss in snapshots_to_delete:
+            helper.delete(ss)
+
+        # modify disk current info in k8s
+        modify_disk_info_in_k8s(poolname, params.vol)
+
+        # result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
+        #           'need_to_modify': config['current'], "pool": params.pool, "poolname": poolname}
+        success_print("success delete disk external snapshot %s." % params.name, {})
     else:
         print(dumps(cstor))
 
@@ -850,62 +850,6 @@ def customize(params):
     op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
     op.execute()
     success_print("customize  successful.", {})
-
-def createDiskFromImage(params):
-    pool_info = get_pool_info_from_k8s(params.targetPool)
-    dest_dir = '%s/%s' % (pool_info['path'], params.name)
-    dest = '%s/%s' % (dest_dir, params.name)
-    dest_config_file = '%s/config.json' % (dest_dir)
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir, 0o711)
-    if os.path.exists(dest_config_file):
-        raise Exception('Path %s already in use, aborting copy.' % dest_dir)
-
-    if params.full_copy:
-        try:
-            op = Operation('cp -f %s %s' % (params.source, dest), {})
-            op.execute()
-        except:
-            if os.path.exists(dest_dir):
-                op = Operation('rm -rf %s' % dest_dir, {})
-                op.execute()
-            raise Exception('Copy %s to %s failed!' % (params.source, dest))
-
-        try:
-            op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
-            op.execute()
-        except:
-            if os.path.exists(dest_dir):
-                op = Operation('rm -rf %s' % dest_dir, {})
-                op.execute()
-            raise Exception('Execute "qemu-img rebase -f qcow2 %s" failed!' % (dest))
-    else:
-        if params.source.find('snapshots') >= 0:
-            source_disk_dir = os.path.dirname(os.path.dirname(params.source))
-        else:
-            source_disk_dir = os.path.dirname(params.source)
-        config = get_disk_config_by_path('%s/config.json' % source_disk_dir)
-        disk_info = get_disk_info(config['current'])
-        op = Operation(
-            'qemu-img create -f %s -b %s -F %s %s' %
-            (disk_info['format'], config['current'], disk_info['format'], dest), {})
-        op.execute()
-    config = {}
-    config['name'] = params.name
-    config['dir'] = dest_dir
-    config['current'] = dest
-    config["pool"] = params.targetPool
-    config["poolname"] = pool_info['poolname']
-
-    with open('%s/config.json' % dest_dir, "w") as f:
-        dump(config, f)
-    result = get_disk_info(dest)
-    result['disk'] = params.name
-    result["pool"] = params.targetPool
-    result["poolname"] = pool_info['poolname']
-    result["uni"] = config['current']
-    result["current"] = config['current']
-    success_print("success createDiskFromImage %s." % params.name, result)
 
 def migrate(params):
     if not is_vm_disk_driver_cache_none(params.domain):

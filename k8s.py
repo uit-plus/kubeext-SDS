@@ -4,16 +4,18 @@ from json import dumps
 from kubernetes import client, config
 
 import os, sys, configparser
+from sys import exit
+
 
 from kubernetes.client import V1DeleteOptions
+from kubernetes.client.rest import ApiException
 
 from utils import logger
-from utils.utils import error_print
 
 
 class parser(configparser):
     def __init__(self, defaults=None):
-        configparser.__init__(self, defaults=None)
+        configparser.ConfigParser.__init__(self, defaults=None)
 
     def optionxform(self, optionstr):
         return optionstr
@@ -150,6 +152,19 @@ class K8sHelper(object):
         except Exception:
             error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
 
+    def get_data(self, name, key):
+        try:
+            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                              version=resources[self.kind]['version'],
+                                                                              namespace='default',
+                                                                              plural=resources[self.kind]['plural'],
+                                                                              name=name)
+            if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
+                return jsondict['spec'][key]
+            return None
+        except Exception:
+            error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
+
     def create(self, name, key, data):
         try:
             hostname = get_hostname_in_lower_case()
@@ -181,9 +196,18 @@ class K8sHelper(object):
             return client.CustomObjectsApi().delete_namespaced_custom_object(
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
-        except Exception:
-            error_print(500, 'can not delete %s %s on k8s.' % (self.kind, name))
+        except ApiException as e:
+            if e.reason == 'Not Found':
+                logger.debug('**Object %s already deleted.' % name)
+                return
 
+def error_print(code, msg, data=None):
+    if data is None:
+        print(dumps({"result": {"code": code, "msg": msg}, "data": {}}))
+        exit(1)
+    else:
+        print(dumps({"result": {"code": code, "msg": msg}, "data": data}))
+        exit(1)
 
 if __name__ == '__main__':
     k8s = K8sHelper('VirtualMachineDisk')

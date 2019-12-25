@@ -31,15 +31,15 @@ def rpcCallWithResult(cmd):
     except grpc.RpcError as e:
         logger.debug(traceback.format_exc())
         # ouch!
-        # lets print the gRPC error message
+        # lets print(the gRPC error message)
         # which is "Length of `Name` cannot be more than 10 characters"
         logger.debug(e.details())
         # lets access the error code, which is `INVALID_ARGUMENT`
         # `type` of `status_code` is `grpc.StatusCode`
         status_code = e.code()
-        # should print `INVALID_ARGUMENT`
+        # should print(`INVALID_ARGUMENT`)
         logger.debug(status_code.name)
-        # should print `(3, 'invalid argument')`
+        # should print(`(3, 'invalid argument')`)
         logger.debug(status_code.value)
         # want to do some specific action based on the error?
         if grpc.StatusCode.INVALID_ARGUMENT == status_code:
