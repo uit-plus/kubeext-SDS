@@ -29,8 +29,8 @@ except:
 
 import cmdcall_pb2
 import cmdcall_pb2_grpc
-import logger
-from exception import ExecuteException
+from utils import logger
+from utils.exception import ExecuteException
 from netutils import get_docker0_IP
 
 LOG = '/var/log/kubesds.log'
@@ -45,8 +45,8 @@ def runCmdWithResult(cmd):
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        std_out = p.stdout.readlines()
-        std_err = p.stderr.readlines()
+        std_out = p.stdout.read().decode('utf-8').splitlines()
+        std_err = p.stderr.read().decode('utf-8').splitlines()
         if std_out:
             msg = ''
             for index, line in enumerate(std_out):
@@ -108,8 +108,8 @@ def runCmdAndSplitKvToJson(cmd):
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        std_out = p.stdout.readlines()
-        std_err = p.stderr.readlines()
+        std_out = p.stdout.read().decode('utf-8').splitlines()
+        std_err = p.stderr.read().decode('utf-8').splitlines()
         if std_out:
             result = {}
             for index, line in enumerate(std_out):
@@ -141,8 +141,8 @@ def runCmdAndGetOutput(cmd):
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        std_out = p.stdout.readlines()
-        std_err = p.stderr.readlines()
+        std_out = p.stdout.read().decode('utf-8').splitlines()
+        std_err = p.stderr.read().decode('utf-8').splitlines()
         if std_out:
             msg = ''
             for line in std_out:
@@ -181,8 +181,8 @@ def runCmd(cmd):
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        std_out = p.stdout.readlines()
-        std_err = p.stderr.readlines()
+        std_out = p.stdout.read().decode('utf-8').splitlines()
+        std_err = p.stderr.read().decode('utf-8').splitlines()
         if std_out:
             #             msg = ''
             #             for index,line in enumerate(std_out):
@@ -214,8 +214,8 @@ def runCmdRaiseException(cmd, head='VirtctlError', use_read=False):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         if use_read:
-            std_out = p.stdout.read()
-            std_err = p.stderr.read()
+            std_out = p.stdout.read().decode('utf-8').splitlines()
+            std_err = p.stderr.read().decode('utf-8').splitlines()
         else:
             std_out = p.stdout.readlines()
             std_err = p.stderr.readlines()
@@ -911,17 +911,14 @@ def is_vm_disk_driver_cache_none(vm):
     return True
 
 
-def success_print(msg, data):
-    print(dumps({"result": {"code": 0, "msg": msg}, "data": data}))
+def success_print(key, data):
+    print(dumps({'spec': {key: data}}))
     exit(0)
 
 
-def error_print(code, msg, data=None):
+def error_print(key, data=None):
     if data is None:
-        print(dumps({"result": {"code": code, "msg": msg}, "data": {}}))
-        exit(1)
-    else:
-        print(dumps({"result": {"code": code, "msg": msg}, "data": data}))
+        print(dumps({'spec': {}}))
         exit(1)
 
 # if __name__ == '__main__':

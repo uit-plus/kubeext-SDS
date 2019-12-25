@@ -1,7 +1,7 @@
 import logging
 import logging.handlers
 
-def set_logger(header,fn):
+def set_logger(header, fn):
     logger = logging.getLogger(header)
     
     handler1 = logging.StreamHandler()

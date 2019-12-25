@@ -12,29 +12,14 @@ from kubernetes.client.rest import ApiException
 
 from utils import logger
 
+config.load_kube_config(config_file="/root/.kube/config")
 
-class parser(configparser):
-    def __init__(self, defaults=None):
-        configparser.ConfigParser.__init__(self, defaults=None)
-
-    def optionxform(self, optionstr):
-        return optionstr
-
-
-cfg = "/etc/kubevmm/config"
-if not os.path.exists(cfg):
-    cfg = "/home/kubevmm/bin/config"
-config_raw = parser()
-config_raw.read(cfg)
-
-config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
-
-resources = {}
-for kind in ['VirtualMahcinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
-    resource = {}
-    for key in ['version', 'group', 'plural']:
-        resource[key] = config_raw.get(kind, key)
-    resources[kind] = resource
+resources = {
+    'VirtualMahcinePool': {'version': 'v1alpha3', 'group': 'cloudplus.io', 'plural': 'virtualmachinepools'},
+    'VirtualMachineDisk': {'version': 'v1alpha3', 'group': 'cloudplus.io', 'plural': 'virtualmachinedisks'},
+    'VirtualMachineDiskImage': {'version': 'v1alpha3', 'group': 'cloudplus.io', 'plural': 'virtualmachinediskimages'},
+    'VirtualMachineDiskSnapshot': {'version': 'v1alpha3', 'group': 'cloudplus.io', 'plural': 'virtualmachinedisksnapshots'},
+}
 
 logger = logger.set_logger(os.path.basename(__file__), '/var/log/kubesds.log')
 
@@ -114,16 +99,7 @@ def updateJsonRemoveLifecycle(jsondict, body):
 
 
 def get_hostname_in_lower_case():
-    cfg = "/etc/kubevmm/config"
-    if not os.path.exists(cfg):
-        cfg = "/home/kubevmm/bin/config"
-    config_raw = parser()
-    config_raw.read(cfg)
-    prefix = config_raw.get('Kubernetes', 'hostname_prefix')
-    if prefix == 'vm':
-        return 'vm.%s' % socket.gethostname().lower()
-    else:
-        return socket.gethostname().lower()
+    return 'vm.%s' % socket.gethostname().lower()
 
 
 def changeNode(jsondict, newNodeName):
@@ -212,7 +188,7 @@ def error_print(code, msg, data=None):
 if __name__ == '__main__':
     k8s = K8sHelper('VirtualMachineDisk')
     disk1 = k8s.get('disk33333clone')
-    print(dumps(disk1))
+    print(disk1)
     k8s.delete('disk33333clone1')
     k8s.create('disk33333clone1', 'volume', disk1['spec']['volume'])
     disk1['spec']['volume']['filename'] = 'lalalalalalala'
