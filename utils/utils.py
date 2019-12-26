@@ -911,14 +911,20 @@ def is_vm_disk_driver_cache_none(vm):
     return True
 
 
-def success_print(key, data):
-    print(dumps({'spec': {key: data}}))
+def success_print(msg, key=None, data=None):
+    if key:
+        print(dumps({"result": {"code": 0, "msg": msg}, "data": {'spec': {key: data}}}))
+    else:
+        print(dumps({"result": {"code": 0, "msg": msg}, "data": {}}))
     exit(0)
 
 
-def error_print(key, data=None):
+def error_print(code, msg, data=None):
     if data is None:
-        print(dumps({'spec': {}}))
+        print(dumps({"result": {"code": code, "msg": msg}, "data": {}}))
+        exit(1)
+    else:
+        print(dumps({"result": {"code": code, "msg": msg}, "data": {}}))
         exit(1)
 
 # if __name__ == '__main__':

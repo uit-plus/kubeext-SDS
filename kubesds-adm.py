@@ -113,7 +113,7 @@ def check_pool(f_name, args):
                 pool_info = helper.get_data(args.pool, "pool")
                 if pool_info is None:
                     helper.delete(args.pool)
-                    success_print("pool", {})
+                    success_print("delete pool %s successful." % args.pool)
 
             check_pool_type(args)
             pool_info = get_pool_info_from_k8s(args.pool)
@@ -263,7 +263,7 @@ def deleteDiskParser(args):
     disk_info = helper.get_data(args.vol, "volume")
     if disk_info is None:
         helper.delete(args.vol)
-        success_print("volume", {})
+        success_print("delete disk %s successful." % args.vol)
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
     if args.type == "uus":
@@ -388,7 +388,7 @@ def deleteExternalSnapshotParser(args):
     ss_info = helper.get_data(args.name, "volume")
     if ss_info is None:
         helper.delete(args.name)
-        success_print("volume", {})
+        success_print("delete snapshot %s successful." % args.name)
 
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']

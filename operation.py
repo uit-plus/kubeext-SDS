@@ -115,8 +115,7 @@ def createPool(params):
 
         result = get_pool_info_to_k8s(params.type, params.pool, params.uuid, params.content)
 
-    success_print("pool", result)
-
+    success_print("create pool %s successful." % params.pool, 'pool', result)
 
 def deletePool(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -137,8 +136,7 @@ def deletePool(params):
 
     helper = K8sHelper("VirtualMahcinePool")
     helper.delete(params.pool)
-    success_print("pool", {})
-
+    success_print("delete pool %s successful." % params.pool)
 
 def startPool(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -147,7 +145,7 @@ def startPool(params):
         op1 = Operation("virsh pool-start", {"pool": poolname})
         op1.execute()
         pool_info["state"] = "active"
-        success_print("pool", pool_info)
+        success_print("start pool %s successful." % params.pool, 'pool', pool_info)
     else:
         error_print(500, "not support operation for uus")
 
@@ -164,7 +162,7 @@ def autoStartPool(params):
             op = Operation("virsh pool-autostart", {"pool": poolname})
             op.execute()
             pool_info["autostart"] = 'yes'
-        success_print("pool", pool_info)
+        success_print("autoStart pool %s successful." % params.pool, 'pool', pool_info)
     else:
         error_print(500, "not support operation for uus")
 
@@ -177,7 +175,7 @@ def stopPool(params):
         op1.execute()
 
         pool_info["state"] = "inactive"
-        success_print("pool", pool_info)
+        success_print("stop pool %s successful." % poolname, 'pool', pool_info)
     elif params.type == "uus":
         error_print(500, "not support operation for uus")
 
@@ -213,8 +211,7 @@ def showPool(params):
         k8s = K8sHelper('VirtualMahcinePool')
         k8s.update(pool_info['pool'], 'pool', result)
 
-    success_print("pool", result)
-
+    success_print("show pool %s successful." % poolname, 'pool', result)
 
 def cstor_prepare_disk(type, pool, vol, uni):
     kv = {"poolname": pool, "name": vol, "uni": uni}
@@ -300,8 +297,7 @@ def createDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
-    success_print("volume", result)
-
+    success_print("create disk %s successful." % params.vol, 'volume', result)
 
 def deleteDisk(params):
     disk_info = get_vol_info_from_k8s(params.vol)
@@ -343,8 +339,7 @@ def deleteDisk(params):
 
     helper = K8sHelper("VirtualMachineDisk")
     helper.delete(params.vol)
-    success_print("volume", {})
-
+    success_print("delete volume %s success." % params.vol)
 
 def resizeDisk(params):
     disk_info = get_vol_info_from_k8s(params.vol)
@@ -378,8 +373,7 @@ def resizeDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
-    success_print("volume", result)
-
+    success_print("success resize disk %s." % params.vol, 'volume', result)
 
 def cloneDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -443,8 +437,7 @@ def cloneDisk(params):
         }
     helper = K8sHelper("VirtualMachineDisk")
     helper.create(params.newname, "volume", result)
-    success_print("volume", result)
-
+    success_print("success clone disk %s." % params.vol, 'volume', result)
 
 def createDiskFromImage(params):
     pool_info = get_pool_info_from_k8s(params.targetPool)
@@ -493,8 +486,7 @@ def createDiskFromImage(params):
 
     helper = K8sHelper("VirtualMachineDisk")
     helper.update(params.name, "volume", result)
-    success_print("volume", result)
-
+    success_print("success createDiskFromImage %s." % params.name, 'volume', result)
 
 def cstor_disk_prepare(pool, vol, uni):
     op = Operation('cstor-cli vdisk-prepare ', {'poolname': pool, 'name': vol,
@@ -517,8 +509,7 @@ def prepareDisk(params):
     if params.path:
         prepare_disk_by_path(params.path)
 
-    success_print("volume", {})
-
+    success_print("prepare disk successful.")
 
 def cstor_release_disk(pool, vol, uni):
     op = Operation('cstor-cli vdisk-release ', {'poolname': pool, 'name': vol,
@@ -539,8 +530,7 @@ def releaseDisk(params):
         release_disk_by_metadataname(params.vol)
     if params.path:
         release_disk_by_path(params.path)
-    success_print("volume", {})
-
+    success_print("success release disk %s." % params.vol)
 
 def showDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -570,8 +560,7 @@ def showDisk(params):
             "uni": diskinfo["data"]["uni"]
         }
 
-    success_print("volume", result)
-
+    success_print("show disk %s success." % params.vol, "volume", result)
 
 def showDiskSnapshot(params):
     if params.type == "localfs" or params.type == "nfs" or params.type == "glusterfs" or params.type == "vdiskfs":
@@ -581,7 +570,7 @@ def showDiskSnapshot(params):
         ss_path = '%s/snapshots/%s' % (disk_config['dir'], params.name)
 
         result = get_snapshot_info_to_k8s(poolname, params.vol, params.name)
-        success_print("volume", result)
+        success_print("success show disk snapshot %s." % params.name, "volume", result)
     elif params.type == "uus":
         raise ExecuteException("", "not support operation for uus.")
 
@@ -666,7 +655,7 @@ def createExternalSnapshot(params):
         # modify disk in k8s
         modify_disk_info_in_k8s(poolname, params.vol)
 
-        success_print("volume", result)
+        success_print("success create disk external snapshot %s" % params.name, "volume", result)
     else:
         # prepare snapshot
         cstor_disk_prepare(poolname, params.name, cstor['data']['uni'])
@@ -734,8 +723,7 @@ def revertExternalSnapshot(params):
     # modify disk in k8s
     modify_disk_info_in_k8s(poolname, params.vol)
 
-    success_print("volume", {})
-
+    success_print("success revert disk external snapshot %s." % params.name)
 
 def deleteExternalSnapshot(params):
     disk_info = get_pool_info_from_k8s(params.pool)
@@ -846,7 +834,7 @@ def deleteExternalSnapshot(params):
 
         # result = {'delete_ss': snapshots_to_delete, 'disk': disk_config['name'],
         #           'need_to_modify': config['current'], "pool": params.pool, "poolname": poolname}
-        success_print("volume", {})
+        success_print("success delete disk external snapshot %s." % params.name)
     else:
         print(dumps(cstor))
 
@@ -863,7 +851,7 @@ def updateDiskCurrent(params):
                 config['current'] = current
             with open(config_path, "w") as f:
                 dump(config, f)
-            success_print("updateDiskCurrent successful.", {})
+            success_print("updateDiskCurrent successful.")
     else:
         error_print(400, "not support operation for uus")
 
@@ -871,7 +859,7 @@ def updateDiskCurrent(params):
 def customize(params):
     op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
     op.execute()
-    success_print("customize  successful.", {})
+    success_print("customize  successful.")
 
 
 def migrate(params):
@@ -892,7 +880,7 @@ def migrate(params):
             params.domain, params.ip, params.ip), {})
         op.execute()
 
-    success_print("migrate vm %s successful." % params.domain, {})
+    success_print("migrate vm %s successful." % params.domain)
 
 
 def xmlToJson(xmlStr):
