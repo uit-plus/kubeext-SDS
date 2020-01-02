@@ -1,6 +1,5 @@
 import argparse
 
-from k8s import K8sHelper
 from operation import *
 
 from utils import logger

@@ -10,13 +10,12 @@ from sys import exit
 from kubernetes.client import V1DeleteOptions
 from kubernetes.client.rest import ApiException
 
-from utils import logger
+from exception import ExecuteException
 
 
 class parser(ConfigParser.ConfigParser):
-    def __init__(self, defaults=None):
-        ConfigParser.ConfigParser.__init__(self, defaults=None)
-
+    def __init__(self,defaults=None):
+        ConfigParser.ConfigParser.__init__(self,defaults=None)
     def optionxform(self, optionstr):
         return optionstr
 
@@ -35,8 +34,6 @@ for kind in ['VirtualMahcinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImag
     for key in ['version', 'group', 'plural']:
         resource[key] = config_raw.get(kind, key)
     resources[kind] = resource
-
-logger = logger.set_logger(os.path.basename(__file__), '/var/log/kubesds.log')
 
 
 def get(name, kind):
@@ -112,6 +109,15 @@ def updateJsonRemoveLifecycle(jsondict, body):
             spec.update(body)
     return jsondict
 
+def removeLifecycle(jsondict):
+    if jsondict:
+        spec = get_spec(jsondict)
+        if spec:
+            lifecycle = spec.get('lifecycle')
+            if lifecycle:
+                del spec['lifecycle']
+    return jsondict
+
 
 def get_hostname_in_lower_case():
     cfg = "/etc/kubevmm/config"
@@ -136,10 +142,26 @@ def changeNode(jsondict, newNodeName):
                 spec['nodeName'] = newNodeName
     return jsondict
 
+def get_node_name(jsondict):
+    if jsondict:
+        return jsondict['metadata']['labels']['host']
+    return None
+
 
 class K8sHelper(object):
     def __init__(self, kind):
         self.kind = kind
+
+    def exist(self, name):
+        try:
+            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                              version=resources[self.kind]['version'],
+                                                                              namespace='default',
+                                                                              plural=resources[self.kind]['plural'],
+                                                                              name=name)
+            return True
+        except Exception:
+            return False
 
     def get(self, name):
         try:
@@ -150,7 +172,7 @@ class K8sHelper(object):
                                                                               name=name)
             return jsondict
         except Exception:
-            error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
+            raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_data(self, name, key):
         try:
@@ -163,7 +185,17 @@ class K8sHelper(object):
                 return jsondict['spec'][key]
             return None
         except Exception:
-            error_print(500, 'can not get %s %s on k8s.' % (self.kind, name))
+            raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
+
+    def get_create_jsondict(self, name, key, data):
+        hostname = get_hostname_in_lower_case()
+        jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
+                    'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
+                    'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
+
+        jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+        body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+        return body
 
     def create(self, name, key, data):
         try:
@@ -189,7 +221,7 @@ class K8sHelper(object):
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=jsondict)
         except Exception:
-            error_print(500, 'can not modify %s %s on k8s.' % (self.kind, name))
+            raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def delete(self, name):
         try:
@@ -198,8 +230,17 @@ class K8sHelper(object):
                 plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
         except ApiException, e:
             if e.reason == 'Not Found':
-                logger.debug('**Object %s already deleted.' % name)
                 return
+
+    def delete_lifecycle(self, name):
+        try:
+            jsondict = self.get(name)
+            jsondict = removeLifecycle(jsondict)
+            return client.CustomObjectsApi().replace_namespaced_custom_object(
+                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                plural=resources[self.kind]['plural'], name=name, body=jsondict)
+        except Exception:
+            raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 
 def error_print(code, msg, data=None):
     if data is None:
@@ -209,11 +250,13 @@ def error_print(code, msg, data=None):
         print dumps({"result": {"code": code, "msg": msg}, "data": data})
         exit(1)
 
-if __name__ == '__main__':
-    k8s = K8sHelper('VirtualMachineDisk')
-    disk1 = k8s.get('disk33333clone')
-    print dumps(disk1)
-    k8s.delete('disk33333clone1')
-    k8s.create('disk33333clone1', 'volume', disk1['spec']['volume'])
-    disk1['spec']['volume']['filename'] = 'lalalalalalala'
-    k8s.update('disk33333clone1', 'volume', disk1['spec']['volume'])
+# if __name__ == '__main__':
+#     print get_all_node_ip()
+#     get_pools_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev')
+    # k8s = K8sHelper('VirtualMachineDisk')
+    # disk1 = k8s.get('disk33333clone')
+    # print dumps(disk1)
+    # k8s.delete('disk33333clone1')
+    # k8s.create('disk33333clone1', 'volume', disk1['spec']['volume'])
+    # disk1['spec']['volume']['filename'] = 'lalalalalalala'
+    # k8s.update('disk33333clone1', 'volume', disk1['spec']['volume'])

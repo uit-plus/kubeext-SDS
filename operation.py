@@ -2,6 +2,7 @@ from xml.etree.ElementTree import fromstring
 from xmljson import badgerfish as bf
 
 from netutils import get_host_IP
+from utils.k8s import get_node_name, get_hostname_in_lower_case
 from utils.utils import *
 from utils import logger
 
@@ -11,7 +12,7 @@ LOG = "/var/log/kubesds.log"
 logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 class Operation(object):
-    def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False):
+    def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False, remote=False, ip=None):
         if cmd is None or cmd == "":
             raise Exception("plz give me right cmd.")
         if not isinstance(params, dict):
@@ -23,6 +24,8 @@ class Operation(object):
         self.with_result = with_result
         self.xml_to_json = xml_to_json
         self.kv_to_json = kv_to_json
+        self.remote = remote
+        self.ip = ip
 
     def get_cmd(self):
         cmd = self.cmd
@@ -33,15 +36,20 @@ class Operation(object):
     def execute(self):
         cmd = self.get_cmd()
         logger.debug(cmd)
-
-        if self.with_result:
-            return runCmdWithResult(cmd)
-        elif self.xml_to_json:
-            return runCmdAndTransferXmlToJson(cmd)
-        elif self.kv_to_json:
-            return runCmdAndSplitKvToJson(cmd)
+        if self.remote:
+            if self.with_result:
+                logger.debug(self.remote)
+                logger.debug(self.ip)
+                return remoteRunCmdWithResult(self.ip, cmd)
         else:
-            return runCmd(cmd)
+            if self.with_result:
+                return runCmdWithResult(cmd)
+            elif self.xml_to_json:
+                return runCmdAndTransferXmlToJson(cmd)
+            elif self.kv_to_json:
+                return runCmdAndSplitKvToJson(cmd)
+            else:
+                return runCmd(cmd)
 
 # class Executor(object):
 #     def __init__(self, ops):
@@ -371,55 +379,92 @@ def resizeDisk(params):
     success_print("success resize disk %s." % params.vol, result)
 
 def cloneDisk(params):
+    result = None
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    pool_helper = K8sHelper('VirtualMahcinePool')
+    disk_node_name = get_node_name(disk_heler.get(params.vol))
+    pool_node_name = get_node_name(pool_helper.get(params.pool))
+
     pool_info = get_pool_info_from_k8s(params.pool)
     poolname = pool_info['poolname']
     disk_info = get_vol_info_from_k8s(params.vol)
+    old_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-    op = Operation('cstor-cli vdisk-clone ', {'poolname': poolname, 'name': params.vol,
-                                              'clonename': params.newname}, with_result=True)
-    cstor = op.execute()
-    if cstor['result']['code'] != 0:
-        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
-            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
     if params.type != "uus":
         # create disk dir and create disk in dir.
-        disk_dir = '%s/%s' % (pool_info['path'], params.vol)
-        clone_disk_dir = '%s/%s' %(pool_info['path'], params.newname)
+        disk_dir = '%s/%s' % (old_pool_info['path'], params.vol)
+        middle_disk_dir = '%s/%s' % (old_pool_info['path'], params.newname)
+        middle_disk_path = '%s/%s' % (middle_disk_dir, params.newname)
+        clone_disk_dir = '%s/%s' % (pool_info['path'], params.newname)
         clone_disk_path = '%s/%s' % (clone_disk_dir, params.newname)
-        if not os.path.exists(clone_disk_dir):
-            os.makedirs(clone_disk_dir)
-        if os.path.exists(clone_disk_path):
-            raise ExecuteException('', 'disk already exists, aborting clone.')
+
+        if not os.path.exists(middle_disk_dir):
+            os.makedirs(middle_disk_dir)
 
         with open('%s/config.json' % disk_dir, "r") as f:
             config = load(f)
 
         try:
-            op1 = Operation('cp -f %s %s' % (config['current'], clone_disk_path), {})
+            op1 = Operation('cp -f %s %s' % (config['current'], middle_disk_path), {})
             op1.execute()
         except:
-            if os.path.exists(clone_disk_dir):
-                op3 = Operation('rm -rf %s' % clone_disk_dir, {})
+            if os.path.exists(middle_disk_dir):
+                op3 = Operation('rm -rf %s' % middle_disk_dir, {})
                 op3.execute()
-            raise ExecuteException('', 'Copy %s to %s failed!, aborting clone.' % (config['current'], clone_disk_path))
+            raise ExecuteException('', 'Copy %s to middle_disk_path %s failed!, aborting clone.' % (config['current'], middle_disk_path))
         try:
-            backing_file = DiskImageHelper.get_backing_file(clone_disk_path)
+            backing_file = DiskImageHelper.get_backing_file(middle_disk_path)
             if backing_file:
-                op2 = Operation('qemu-img rebase -f %s -b "" %s' % (params.format, clone_disk_path), {})
+                op2 = Operation('qemu-img rebase -f %s -b "" %s' % (params.format, middle_disk_path), {})
                 op2.execute()
         except:
-            if os.path.exists(clone_disk_dir):
-                op3 = Operation('rm -rf %s' % clone_disk_dir, {})
+            if os.path.exists(middle_disk_dir):
+                op3 = Operation('rm -rf %s' % middle_disk_dir, {})
                 op3.execute()
-            raise ExecuteException('', 'Execute "qemu-img rebase %s" failed!, aborting clone.' % clone_disk_path)
+            raise ExecuteException('', 'Execute "qemu-img rebase %s" failed!, aborting clone.' % middle_disk_path)
 
-        prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, clone_disk_path)
+        # write config
+        config = {}
+        config['name'] = params.newname
+        config['dir'] = clone_disk_dir
+        config['current'] = clone_disk_path
+        config['pool'] = params.pool
+        config['poolname'] = pool_info['poolname']
 
-        write_config(params.newname, clone_disk_dir, clone_disk_path, params.pool, poolname)
+        with open('%s/config.json' % middle_disk_dir, "w") as f:
+            dump(config, f)
 
-        result = get_disk_info_to_k8s(poolname, params.newname)
+        if disk_node_name == pool_node_name:
+            op = Operation('mv %s %s' % (middle_disk_dir, pool_info['path']), {})
+            op.execute()
+            prepareInfo = cstor_disk_prepare(pool_info['poolname'], params.newname, clone_disk_path)
+
+            jsondicts = get_disk_jsondict(params.pool, params.newname)
+            create_all_jsondict(jsondicts)
+            result = get_disk_info_to_k8s(params.pool, params.newname)
+        else:
+            ip = get_node_ip_by_node_name(pool_node_name)
+            op = Operation('scp -r %s root@%s:%s' % (middle_disk_dir, ip, pool_info['path']), {})
+            op.execute()
+            prepareInfo = remote_cstor_disk_prepare(ip, pool_info['poolname'], params.newname, clone_disk_path)
+
+            op = Operation('rm -rf %s' % middle_disk_dir, {})
+            op.execute()
+
+            op = Operation('kubesds-adm registerDiskToK8s --pool %s --vol %s' % (params.pool, params.newname), {}, ip=ip, remote=True, with_result=True)
+            remote_result = op.execute()
+            if remote_result['result']['code'] != 0:
+                raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
+
     else:
+        op = Operation('cstor-cli vdisk-clone ', {'poolname': poolname, 'name': params.vol,
+                                                  'clonename': params.newname}, with_result=True)
+        cstor = op.execute()
+        if cstor['result']['code'] != 0:
+            raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+                cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
         prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.newname, cstor['data']['uni'])
         result = {
             "disk": params.newname,
@@ -430,9 +475,26 @@ def cloneDisk(params):
             "virtual_size": params.capacity,
             "filename": prepareInfo["data"]["path"]
         }
-    helper = K8sHelper("VirtualMachineDisk")
-    helper.create(params.newname, "volume", result)
-    success_print("success clone disk %s." % params.vol, result)
+    if result:
+        helper = K8sHelper("VirtualMachineDisk")
+        helper.create(params.newname, "volume", result)
+        success_print("success clone disk %s." % params.vol, result)
+    else:
+        success_print("success clone disk %s." % params.vol, {})
+
+def registerDiskToK8s(params):
+    jsondicts = get_disk_jsondict(params.pool, params.vol)
+
+    create_all_jsondict(jsondicts)
+
+    success_print("success register disk %s to k8s." % params.vol, {})
+
+# only use when migrate disk to another node
+def rebaseDiskSnapshot(params):
+    rebase_snapshot_with_config(params.pool, params.vol)
+
+    success_print("success rebase disk.", {})
+
 
 def createDiskFromImage(params):
     pool_info = get_pool_info_from_k8s(params.targetPool)
@@ -491,6 +553,16 @@ def cstor_disk_prepare(pool, vol, uni):
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
     return cstor
+
+def remote_cstor_disk_prepare(ip, pool, vol, uni):
+    op = Operation('cstor-cli vdisk-prepare ', {'poolname': pool, 'name': vol,
+                                                'uni': uni}, remote=True, ip=ip, with_result=True)
+    cstor = op.execute()
+    if cstor['result']['code'] != 0:
+        raise ExecuteException('', 'remote prepare disk fail. cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+    return cstor
+
 
 def prepareDisk(params):
     if params.domain:
@@ -713,6 +785,9 @@ def revertExternalSnapshot(params):
     # modify disk in k8s
     modify_disk_info_in_k8s(poolname, params.vol)
 
+    # delete lifecycle
+    helper.delete_lifecycle(params.name)
+
     success_print("success revert disk external snapshot %s." % params.name, {})
 
 def deleteExternalSnapshot(params):
@@ -858,6 +933,11 @@ def migrate(params):
     if params.ip in get_host_IP():
         raise ExecuteException('', 'error: not valid ip address.')
 
+    # prepare all disk
+    specs = get_disks_spec(params.domain)
+    for disk_path in specs.keys():
+        remote_prepare_disk_by_path(params.ip, disk_path)
+
     if params.offline:
         op = Operation('virsh migrate --offline --undefinesource --persistent %s qemu+ssh://%s/system tcp://%s' % (
             params.domain, params.ip, params.ip), {})
@@ -867,7 +947,73 @@ def migrate(params):
             params.domain, params.ip, params.ip), {})
         op.execute()
 
+    # get disk node label in ip
+    node_name = get_node_name_by_node_ip(params.ip)
+
+    if node_name:
+        all_jsondicts = []
+        specs = get_disks_spec(params.domain)
+        for disk_path in specs.keys():
+            prepare_info = get_disk_prepare_info_by_path(disk_path)
+            pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+            pools = get_pools_by_path(pool_info['path'])
+
+            # change disk node label in k8s.
+            targetPool = None
+            for pool in pools:
+                if pool['host'] == node_name:
+                    targetPool = pool['pool']
+            if targetPool:
+                jsondicts = get_disk_jsondict(prepare_info['disk'], targetPool)
+                all_jsondicts.extend(jsondicts)
+        apply_all_jsondict(all_jsondicts)
+
     success_print("migrate vm %s successful." % params.domain, {})
+
+def migrateDisk(params):
+    disk_info = get_vol_info_from_k8s(params.vol)
+    pool_info = get_pool_info_from_k8s(params.pool)
+    if disk_info['pool'] == pool_info['pool']:
+        raise ExecuteException('RunCmdError', 'can not migrate disk to its pool.')
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    pool_helper = K8sHelper('VirtualMahcinePool')
+    pool_node_name = get_node_name(pool_helper.get(params.pool))
+    disk_node_name = get_node_name(disk_heler.get(params.vol))
+    if disk_node_name != get_hostname_in_lower_case():
+        raise ExecuteException('RunCmdError', 'disk is not in this node.')
+    logger.debug(pool_info['pooltype'])
+    if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+        source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], params.vol)
+        if pool_node_name == disk_node_name:
+            if disk_info['poolname'] != pool_info['poolname']:
+                # cp and rebase backing file and config, then update k8s
+                op = Operation('cp -r %s %s' % (source_dir, pool_info['path']), {})
+                op.execute()
+                rebase_snapshot_with_config(params.pool, params.vol)
+                op = Operation('rm -rf %s' % source_dir, {})
+                op.execute()
+        else:
+            if pool_info['pooltype'] in ['nfs', 'glusterfs'] and disk_info['poolname'] == pool_info['poolname']:
+                # just change pool, label and nodename
+                jsondicts = get_disk_jsondict(params.pool, params.vol)
+
+                apply_all_jsondict(jsondicts)
+            else:
+                # scp
+                ip = get_node_ip_by_node_name(pool_node_name)
+                op = Operation('scp -r %s root@%s:%s' % (source_dir, ip, pool_info['path']), {})
+                op.execute()
+                op = Operation('kubesds-adm rebaseDiskSnapshot --pool %s --vol %s' % (params.pool, params.vol), {}, ip=ip, remote=True, with_result=True)
+                remote_result = op.execute()
+                if remote_result['result']['code'] != 0:
+                    raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
+                op = Operation('rm -rf %s' % source_dir, {})
+                op.execute()
+    else:
+        raise ExecuteException('RunCmdError', 'not support pool type.')
+
+    success_print("success register disk to k8s.", {})
+
 
 def xmlToJson(xmlStr):
     json = dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
@@ -919,10 +1065,11 @@ def prepare_disk_by_metadataname(uuid):
     cstor_disk_prepare(pool, disk, uni)
     return diskinfo
 
-def prepare_disk_by_path(path):
+def get_disk_prepare_info_by_path(path):
     success = False
     if not success:
-        output = runCmdAndGetOutput('kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
+        output = runCmdAndGetOutput(
+            'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
         if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
             success = True
     if not success:
@@ -943,15 +1090,28 @@ def prepare_disk_by_path(path):
         logger.debug(columns)
         raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
     diskinfo = {}
-    pool = columns[0]
-    disk = columns[1]
-    uni = columns[2]
-    nodeName = columns[3]
+    diskinfo['pool'] = columns[0]
+    diskinfo['disk'] = columns[1]
+    diskinfo['uni'] = columns[2]
+    diskinfo['nodeName'] = columns[3]
+    return diskinfo
 
-    # if is_pool_exists(pool):
-    #     pool_info = get_pool_info(pool)
-    #     pool = os.path.basename(pool_info['path'])
+def prepare_disk_by_path(path):
+    diskinfo = get_disk_prepare_info_by_path(path)
+    pool = diskinfo['pool']
+    disk = diskinfo['disk']
+    uni = diskinfo['uni']
+    nodeName = diskinfo['nodeName']
+
     cstor_disk_prepare(pool, disk, uni)
+    return diskinfo
+
+def remote_prepare_disk_by_path(ip, path):
+    diskinfo = get_disk_prepare_info_by_path(path)
+    pool = diskinfo['pool']
+    disk = diskinfo['disk']
+    uni = diskinfo['uni']
+    remote_cstor_disk_prepare(ip, pool, disk, uni)
     return diskinfo
 
 def release_disk_by_metadataname(uuid):
@@ -976,38 +1136,17 @@ def release_disk_by_metadataname(uuid):
     cstor_release_disk(pool, disk, uni)
 
 def release_disk_by_path(path):
-    success = False
-    if not success:
-        output = runCmdAndGetOutput(
-            'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
-            success = True
-    if not success:
-        output = runCmdAndGetOutput(
-            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
-            success = True
-    if not success:
-        output = runCmdAndGetOutput(
-            'kubectl get vmdi -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
-            success = True
-    if not success:
-        raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
-    lines = output.splitlines()
-    columns = lines[0].split()
-    if len(columns) != 4:
-        logger.debug(columns)
-        raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
-    pool = columns[0]
-    disk = columns[1]
-    uni = columns[2]
+    diskinfo = get_disk_prepare_info_by_path(path)
+    pool = diskinfo['pool']
+    disk = diskinfo['disk']
+    uni = diskinfo['uni']
 
     cstor_release_disk(pool, disk, uni)
 
 if __name__ == '__main__':
-    prepare_disk_by_path(
-        '/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
-    prepare_disk_by_metadataname('vm00aadd6coddpdssdn')
-    release_disk_by_path('/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
-    release_disk_by_metadataname('vm00aadd6coddpdssdn')
+    print get_disks_spec('vm006').keys()
+    # prepare_disk_by_path(
+    #     '/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
+    # prepare_disk_by_metadataname('vm00aadd6coddpdssdn')
+    # release_disk_by_path('/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
+    # release_disk_by_metadataname('vm00aadd6coddpdssdn')

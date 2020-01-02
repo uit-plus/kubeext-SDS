@@ -19,6 +19,9 @@ from sys import exit
 
 import grpc
 import xmltodict
+import yaml
+from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from k8s import K8sHelper
 
@@ -93,6 +96,59 @@ def runCmdWithResult(cmd):
         p.stdout.close()
         p.stderr.close()
 
+def remoteRunCmdWithResult(ip, cmd):
+    if not cmd:
+        return
+    cmd = 'ssh root@%s "%s"' % (ip, cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        std_out = p.stdout.readlines()
+        std_err = p.stderr.readlines()
+        if std_out:
+            msg = ''
+            for index, line in enumerate(std_out):
+                if not str.strip(line):
+                    continue
+                msg = msg + str.strip(line)
+            msg = str.strip(msg)
+            logger.debug(msg)
+            try:
+                result = loads(msg)
+                if isinstance(result, dict) and 'result' in result.keys():
+                    if result['result']['code'] != 0:
+                        if std_err:
+                            error_msg = ''
+                            for index, line in enumerate(std_err):
+                                if not str.strip(line):
+                                    continue
+                                error_msg = error_msg + str.strip(line)
+                            error_msg = str.strip(error_msg).replace('"', "'")
+                            result['result']['msg'] = '%s. cstor error output: %s' % (
+                                result['result']['msg'], error_msg)
+                return result
+            except Exception:
+                logger.debug(cmd)
+                logger.debug(traceback.format_exc())
+                error_msg = ''
+                for index, line in enumerate(std_err):
+                    if not str.strip(line):
+                        continue
+                    error_msg = error_msg + str.strip(line)
+                error_msg = str.strip(error_msg)
+                raise ExecuteException('RunCmdError',
+                                       'can not parse cstor-cli output to json----%s. %s' % (msg, error_msg))
+        if std_err:
+            msg = ''
+            for index, line in enumerate(std_err):
+                msg = msg + line + ', '
+            logger.debug(cmd)
+            logger.debug(msg)
+            logger.debug(traceback.format_exc())
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
+    finally:
+        p.stdout.close()
+        p.stderr.close()
 
 def runCmdAndTransferXmlToJson(cmd):
     xml_str = runCmdAndGetOutput(cmd)
@@ -139,6 +195,7 @@ def runCmdAndSplitKvToJson(cmd):
 def runCmdAndGetOutput(cmd):
     if not cmd:
         return
+    logger.debug(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         std_out = p.stdout.readlines()
@@ -728,6 +785,7 @@ def write_config(vol, dir, current, pool, poolname):
     config['poolname'] = poolname
 
     with open('%s/config.json' % dir, "w") as f:
+        logger.debug(config)
         dump(config, f)
 
 def get_disk_info_to_k8s(poolname, vol):
@@ -910,6 +968,234 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
+def get_pools_by_path(path):
+    output = runCmdAndGetOutput(
+        'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.path==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % path)
+    pools = []
+    for line in output.splitlines():
+        pool = {}
+        if len(line.split()) < 3:
+            continue
+        pool['pool'] = line.split()[0]
+        pool['host'] = line.split()[1]
+        pools.append(pool)
+    return pools
+
+def get_all_node_ip():
+    all_node_ip = []
+    try:
+        jsondict = client.CoreV1Api().list_node().to_dict()
+        nodes = jsondict['items']
+        for node in nodes:
+            node_ip = {}
+            for address in node['status']['addresses']:
+                if address['type'] == 'InternalIP':
+                    node_ip['ip'] = address['address']
+                    break
+            node_ip['nodeName'] = node['metadata']['name']
+            all_node_ip.append(node_ip)
+
+    except ApiException as e:
+        print("Exception when calling CoreV1Api->list_node: %s\n" % e)
+    except Exception as e:
+        print("Exception when calling get_all_node_ip: %s\n" % e)
+
+    return all_node_ip
+
+def get_spec(jsondict):
+    spec = jsondict.get('spec')
+    if not spec:
+        raw_object = jsondict.get('raw_object')
+        if raw_object:
+            spec = raw_object.get('spec')
+    return spec
+
+# get disk and snapshot jsondict and change to targetPool
+# def get_migrate_disk_jsondict(disk, targetPool):
+#     jsondicts = []
+#     # two case: 1. pool has same path 2. pool has different path
+#     pool_helper = K8sHelper('VirtualMahcinePool')
+#     pool_metadata = pool_helper.get(targetPool)['metadata']
+#     pool_info = pool_helper.get_data(targetPool, 'pool')
+#
+#     # get disk jsondict
+#     disk_helper = K8sHelper('VirtualMachineDisk')
+#     disk_info = disk_helper.get_data(disk, 'volume')
+#     disk_jsondict = disk_helper.get(disk)
+#     if disk_info['poolname'] == pool_info['poolname']:  # same poolname
+#         if disk_jsondict:
+#             disk_jsondict['metadata']['labels']['host'] = pool_metadata['labels']['host']
+#             spec = get_spec(disk_jsondict)
+#             if spec:
+#                 nodeName = spec.get('nodeName')
+#                 if nodeName:
+#                     spec['nodeName'] = pool_metadata['labels']['host']
+#                 disk_info['pool'] = targetPool
+#                 disk_info["poolname"] = pool_info['poolname']
+#                 spec['volume'] = disk_info
+#                 jsondicts.append(disk_jsondict)
+#         ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
+#         ss_dir = '%s/%s/snapshots' % (pool_info['path'], disk)
+#         for ss in os.listdir(ss_dir):
+#             try:
+#                 ss_jsondict = ss_helper.get(ss)
+#                 if ss_jsondict:
+#                     ss_jsondict['metadata']['labels']['host'] = pool_metadata['labels']['host']
+#                     spec = get_spec(ss_jsondict)
+#                     if spec:
+#                         nodeName = spec.get('nodeName')
+#                         if nodeName:
+#                             spec['nodeName'] = pool_metadata['labels']['host']
+#                         disk_info['pool'] = targetPool
+#                         disk_info["poolname"] = pool_info['poolname']
+#                         spec['volume'] = disk_info
+#                         jsondicts.append(ss_jsondict)
+#             except ExecuteException:
+#                 pass
+#
+#     else:  #different poolname
+#         pass
+#
+#
+#     return jsondicts
+
+def get_disk_jsondict(pool, disk):
+    jsondicts = []
+    pool_helper = K8sHelper('VirtualMahcinePool')
+    pool_metadata = pool_helper.get(pool)['metadata']
+    pool_info = pool_helper.get_data(pool, 'pool')
+
+    # get disk jsondict
+    disk_helper = K8sHelper('VirtualMachineDisk')
+    if pool_info['pooltype'] not in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+        raise ExecuteException("RunCmdError", "not support pool type %s" % pool_info['pooltype'])
+
+    if disk_helper.exist(disk):  # migrate disk or migrate vm
+        disk_jsondict = disk_helper.get(disk)
+        # update disk jsondict
+        disk_jsondict['metadata']['labels']['host'] = pool_metadata['labels']['host']
+        spec = get_spec(disk_jsondict)
+        if spec:
+            nodeName = spec.get('nodeName')
+            if nodeName:
+                spec['nodeName'] = pool_metadata['labels']['host']
+            disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
+            spec['volume'] = disk_info
+            jsondicts.append(disk_jsondict)
+        # update snapshot jsondict
+        ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
+        ss_dir = '%s/%s/snapshots' % (pool_info['path'], disk)
+        if os.path.exists(ss_dir):
+            for ss in os.listdir(ss_dir):
+                try:
+                    ss_jsondict = ss_helper.get(ss)
+
+                    if ss_jsondict and ss_helper.get_data(ss, 'volume')['disk'] == disk:
+                        ss_jsondict['metadata']['labels']['host'] = pool_metadata['labels']['host']
+                        spec = get_spec(ss_jsondict)
+                        if spec:
+                            nodeName = spec.get('nodeName')
+                            if nodeName:
+                                spec['nodeName'] = pool_metadata['labels']['host']
+                            ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
+                            spec['volume'] = ss_info
+                            jsondicts.append(ss_jsondict)
+                except ExecuteException:
+                    pass
+
+    else:  # clone disk
+        disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
+        disk_jsondict = disk_helper.get_create_jsondict(disk, 'volume', disk_info)
+        jsondicts.append(disk_jsondict)
+
+        # ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
+        # ss_dir = '%s/%s/snapshots' % (pool_info['path'], disk)
+        # for ss in os.listdir(ss_dir):
+        #     try:
+        #         ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
+        #         ss_jsondict = ss_helper.get_create_jsondict(ss)
+        #
+        #         jsondicts.append(ss_jsondict)
+        #     except ExecuteException:
+        #         pass
+
+    return jsondicts
+
+def rebase_snapshot_with_config(pool, vol):
+    pool_info = get_pool_info_from_k8s(pool)
+    old_disk_info = get_vol_info_from_k8s(vol)
+    old_pool_info = get_pool_info_from_k8s(old_disk_info['pool'])
+    old_disk_dir = '%s/%s' % (old_pool_info['path'], vol)
+    disk_dir = '%s/%s' % (pool_info['path'], vol)
+
+    # change config
+    old_config = get_disk_config(pool_info['poolname'], vol)
+    current = old_config['current'].replace(old_pool_info['path'], pool_info['path'])
+    write_config(vol, disk_dir, current, pool, pool_info['poolname'])
+
+    # change backing file
+    logger.debug('disk_dir: %s' % disk_dir)
+    for ss in os.listdir(disk_dir):
+        if ss == 'snapshots' or ss == 'config.json':
+            continue
+        ss_full_path = '%s/%s' % (disk_dir, ss)
+        ss_info = get_disk_info(ss_full_path)
+        if 'backing_filename' in ss_info.keys():
+            old_backing_file = ss_info['backing_filename']
+            new_backing_file = old_backing_file.replace(old_disk_dir, disk_dir)
+            logger.debug('old backing file %s, new backing file %s' % (old_backing_file, new_backing_file))
+            if os.path.exists(new_backing_file):
+                runCmd('qemu-img rebase -b %s %s' % (new_backing_file, ss_full_path))
+    ss_dir = '%s/snapshots' % disk_dir
+    logger.debug('ss_dir: %s' % ss_dir)
+    if os.path.exists(ss_dir):
+        for ss in os.listdir(ss_dir):
+            ss_full_path = '%s/%s' % (ss_dir, ss)
+            ss_info = get_disk_info(ss_full_path)
+            if 'backing_filename' in ss_info.keys():
+                old_backing_file = ss_info['backing_filename']
+                new_backing_file = old_backing_file.replace(old_disk_dir, disk_dir)
+                logger.debug('old backing file %s, new backing file %s' % (old_backing_file, new_backing_file))
+                if os.path.exists(new_backing_file):
+                    runCmd('qemu-img rebase -u -b %s %s' % (new_backing_file, ss_full_path))
+
+    jsondicts = get_disk_jsondict(pool, vol)
+
+    apply_all_jsondict(jsondicts)
+
+def apply_all_jsondict(jsondicts):
+    filename = randomUUID()
+    with open('/tmp/%s.yaml' % filename, 'w') as f:
+        for jsondict in jsondicts:
+            result = yaml.safe_dump(jsondict)
+            f.write(result)
+            f.write('---\n')
+    runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
+    runCmd('rm -f /tmp/%s.yaml' % filename)
+
+def create_all_jsondict(jsondicts):
+    filename = randomUUID()
+    with open('/tmp/%s.yaml' % filename, 'w') as f:
+        for jsondict in jsondicts:
+            result = yaml.safe_dump(jsondict)
+            f.write(result)
+            f.write('---\n')
+    runCmd('kubectl create -f /tmp/%s.yaml' % filename)
+    runCmd('rm -f /tmp/%s.yaml' % filename)
+
+def get_node_ip_by_node_name(nodeName):
+    all_node_ip = get_all_node_ip()
+    for ip in all_node_ip:
+        if ip['nodeName'] == nodeName:
+            return ip['ip']
+    return None
+
+def get_node_name_by_node_ip(ip):
+    all_node_ip = get_all_node_ip()
+    for ip in all_node_ip:
+        if ip['ip'] == ip and ip['nodeName'].find("vmd.") > 0:
+            return ip['nodeName']
+    return None
 
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
@@ -925,6 +1211,9 @@ def error_print(code, msg, data=None):
         exit(1)
 
 # if __name__ == '__main__':
+    # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
+    # apply_all_jsondict(jsondicts)
+    # print remoteRunCmdWithResult('133.133.135.35', 'cstor-cli pool-show --poolname pooldir')
 # try:
 #     result = runCmdWithResult('cstor-cli pooladd-nfs --poolname abc --url /mnt/localfs/pooldir11')
 #     print result

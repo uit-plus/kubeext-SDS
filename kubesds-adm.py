@@ -68,7 +68,10 @@ def check_pool_active(info):
     # update pool
     if cmp(info, result) != 0:
         k8s = K8sHelper('VirtualMahcinePool')
-        k8s.update(info['pool'], 'pool', result)
+        try:
+            k8s.update(info['pool'], 'pool', result)
+        except:
+            pass
 
     if result['state'] != 'active':
         error_print(221, 'pool is not active, please run "startPool" first')
@@ -100,6 +103,8 @@ def check_pool_type(args):
 
 def check_pool(f_name, args):
     try:
+        if f_name == 'cloneDisk':
+            return
         if not hasattr(args, 'type'):
             return
         if not hasattr(args, 'pool'):
@@ -263,11 +268,14 @@ def createDiskParser(args):
 
 
 def deleteDiskParser(args):
-    helper = K8sHelper("VirtualMachineDisk")
-    disk_info = helper.get_data(args.vol, "volume")
-    if disk_info is None:
-        helper.delete(args.vol)
-        success_print("delete disk %s successful." % args.vol, {})
+    try:
+        helper = K8sHelper("VirtualMachineDisk")
+        disk_info = helper.get_data(args.vol, "volume")
+        if disk_info is None:
+            helper.delete(args.vol)
+            success_print("delete disk %s successful." % args.vol, {})
+    except ExecuteException, e:
+        error_print(400, e.message)
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
     if args.type == "uus":
@@ -295,7 +303,7 @@ def resizeDiskParser(args):
 
 def cloneDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
-    pool = pool_info['poolname']
+    # pool = pool_info['poolname']
     try:
         disk_info = get_vol_info_from_k8s(args.newname)
         error_print(500, "vol %s has exist in k8s." % args.newname)
@@ -303,14 +311,19 @@ def cloneDiskParser(args):
         pass
 
     # check cstor disk
-    check_cstor_disk_not_exist(pool, args.vol)
-    if args.type != "uus":
-        check_pool_active(pool_info)
-        check_virsh_disk_not_exist(pool, args.vol)
-        check_virsh_disk_exist(pool, args.newname)
+    # check_cstor_disk_not_exist(pool, args.vol)
+    # if args.type != "uus":
+    #     check_pool_active(pool_info)
+        # check_virsh_disk_not_exist(pool, args.vol)
+        # check_virsh_disk_exist(pool, args.newname)
 
     execute('cloneDisk', args)
 
+def registerDiskToK8sParser(args):
+    execute('registerDiskToK8s', args)
+
+def rebaseDiskSnapshotParser(args):
+    execute('rebaseDiskSnapshot', args)
 
 def showDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
@@ -388,12 +401,14 @@ def revertExternalSnapshotParser(args):
 
 
 def deleteExternalSnapshotParser(args):
-    helper = K8sHelper("VirtualMachineDiskSnapshot")
-    ss_info = helper.get_data(args.name, "volume")
-    if ss_info is None:
-        helper.delete(args.name)
-        success_print("delete snapshot %s successful." % args.name, {})
-
+    try:
+        helper = K8sHelper("VirtualMachineDiskSnapshot")
+        ss_info = helper.get_data(args.name, "volume")
+        if ss_info is None:
+            helper.delete(args.name)
+            success_print("delete snapshot %s successful." % args.name, {})
+    except ExecuteException, e:
+        error_print(400, e.message)
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
     if args.type == "uus":
@@ -438,6 +453,8 @@ def migrateParser(args):
         error_print(100, "ip is not right")
     execute('migrate', args)
 
+def migrateDiskParser(args):
+    execute('migrateDisk', args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
@@ -588,6 +605,24 @@ parser_clone_disk.add_argument("--format", required=True, metavar="[FORMAT]", ty
 # set default func
 parser_clone_disk.set_defaults(func=cloneDiskParser)
 
+# -------------------- add registerDiskToK8s cmd ----------------------------------
+parser_register_disk = subparsers.add_parser("registerDiskToK8s", help="register disk to k8s help")
+parser_register_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                               help="storage pool to use")
+parser_register_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                               help="volume name to use")
+# set default func
+parser_register_disk.set_defaults(func=registerDiskToK8sParser)
+
+# -------------------- add rebaseDiskSnapshot cmd ----------------------------------
+parser_rebase_snapshot = subparsers.add_parser("rebaseDiskSnapshot", help="rebase disk snapshot help")
+parser_rebase_snapshot.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                               help="storage pool to use")
+parser_rebase_snapshot.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                               help="volume name to use")
+# set default func
+parser_rebase_snapshot.set_defaults(func=rebaseDiskSnapshotParser)
+
 # -------------------- add prepareDisk cmd ----------------------------------
 parser_prepare_disk = subparsers.add_parser("prepareDisk", help="prepareDisk help")
 parser_prepare_disk.add_argument("--domain", metavar="[DOMAIN]", type=str,
@@ -728,6 +763,15 @@ parser_migrate.add_argument("--offline", metavar="[OFFLINE]", type=bool, nargs='
                             help="support migrate offline")
 # set default func
 parser_migrate.set_defaults(func=migrateParser)
+
+# -------------------- add migrateDisk cmd ----------------------------------
+parser_migrate_disk = subparsers.add_parser("migrateDisk", help="migrate disk help")
+parser_migrate_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                            help="vol to migrate")
+parser_migrate_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="target storage pool to use")
+# set default func
+parser_migrate_disk.set_defaults(func=migrateDiskParser)
 
 try:
     args = parser.parse_args()
