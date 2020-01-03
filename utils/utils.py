@@ -1137,27 +1137,32 @@ def rebase_snapshot_with_config(pool, vol):
     for ss in os.listdir(disk_dir):
         if ss == 'snapshots' or ss == 'config.json':
             continue
-        ss_full_path = '%s/%s' % (disk_dir, ss)
-        ss_info = get_disk_info(ss_full_path)
-        if 'backing_filename' in ss_info.keys():
-            old_backing_file = ss_info['backing_filename']
-            new_backing_file = old_backing_file.replace(old_disk_dir, disk_dir)
-            logger.debug('old backing file %s, new backing file %s' % (old_backing_file, new_backing_file))
-            if os.path.exists(new_backing_file):
-                runCmd('qemu-img rebase -b %s %s' % (new_backing_file, ss_full_path))
-    ss_dir = '%s/snapshots' % disk_dir
-    logger.debug('ss_dir: %s' % ss_dir)
-    if os.path.exists(ss_dir):
-        for ss in os.listdir(ss_dir):
-            ss_full_path = '%s/%s' % (ss_dir, ss)
+        try:
+            ss_full_path = '%s/%s' % (disk_dir, ss)
             ss_info = get_disk_info(ss_full_path)
             if 'backing_filename' in ss_info.keys():
                 old_backing_file = ss_info['backing_filename']
                 new_backing_file = old_backing_file.replace(old_disk_dir, disk_dir)
                 logger.debug('old backing file %s, new backing file %s' % (old_backing_file, new_backing_file))
                 if os.path.exists(new_backing_file):
-                    runCmd('qemu-img rebase -u -b %s %s' % (new_backing_file, ss_full_path))
-
+                    runCmd('qemu-img rebase -b %s %s' % (new_backing_file, ss_full_path))
+        except ExecuteException:
+            pass
+    ss_dir = '%s/snapshots' % disk_dir
+    logger.debug('ss_dir: %s' % ss_dir)
+    if os.path.exists(ss_dir):
+        for ss in os.listdir(ss_dir):
+            try:
+                ss_full_path = '%s/%s' % (ss_dir, ss)
+                ss_info = get_disk_info(ss_full_path)
+                if 'backing_filename' in ss_info.keys():
+                    old_backing_file = ss_info['backing_filename']
+                    new_backing_file = old_backing_file.replace(old_disk_dir, disk_dir)
+                    logger.debug('old backing file %s, new backing file %s' % (old_backing_file, new_backing_file))
+                    if os.path.exists(new_backing_file):
+                        runCmd('qemu-img rebase -u -b %s %s' % (new_backing_file, ss_full_path))
+            except ExecuteException:
+                pass
     jsondicts = get_disk_jsondict(pool, vol)
 
     apply_all_jsondict(jsondicts)
