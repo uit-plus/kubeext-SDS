@@ -949,10 +949,10 @@ def migrate(params):
 
     # get disk node label in ip
     node_name = get_node_name_by_node_ip(params.ip)
-
+    logger.debug("node_name: %s" % node_name)
     if node_name:
         all_jsondicts = []
-        specs = get_disks_spec(params.domain)
+        logger.debug(specs)
         for disk_path in specs.keys():
             prepare_info = get_disk_prepare_info_by_path(disk_path)
             pool_info = get_pool_info_from_k8s(prepare_info['pool'])
@@ -964,7 +964,8 @@ def migrate(params):
                 if pool['host'] == node_name:
                     targetPool = pool['pool']
             if targetPool:
-                jsondicts = get_disk_jsondict(prepare_info['disk'], targetPool)
+                logger.debug("targetPool is %s." % targetPool)
+                jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
                 all_jsondicts.extend(jsondicts)
         apply_all_jsondict(all_jsondicts)
 
@@ -1069,36 +1070,37 @@ def get_disk_prepare_info_by_path(path):
     success = False
     if not success:
         output = runCmdAndGetOutput(
-            'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
+            'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
+        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
             success = True
     if not success:
         output = runCmdAndGetOutput(
-            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
+            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
+        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
             success = True
     if not success:
         output = runCmdAndGetOutput(
-            'kubectl get vmdi -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
+            'kubectl get vmdi -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
+        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
             success = True
     if not success:
         raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
     lines = output.splitlines()
     columns = lines[0].split()
-    if len(columns) != 4:
+    if len(columns) != 5:
         logger.debug(columns)
         raise ExecuteException('', 'can not get right disk info from k8s by path. less info')
     diskinfo = {}
-    diskinfo['pool'] = columns[0]
+    diskinfo['poolname'] = columns[0]
     diskinfo['disk'] = columns[1]
     diskinfo['uni'] = columns[2]
     diskinfo['nodeName'] = columns[3]
+    diskinfo['pool'] = columns[4]
     return diskinfo
 
 def prepare_disk_by_path(path):
     diskinfo = get_disk_prepare_info_by_path(path)
-    pool = diskinfo['pool']
+    pool = diskinfo['poolname']
     disk = diskinfo['disk']
     uni = diskinfo['uni']
     nodeName = diskinfo['nodeName']
@@ -1108,7 +1110,7 @@ def prepare_disk_by_path(path):
 
 def remote_prepare_disk_by_path(ip, path):
     diskinfo = get_disk_prepare_info_by_path(path)
-    pool = diskinfo['pool']
+    pool = diskinfo['poolname']
     disk = diskinfo['disk']
     uni = diskinfo['uni']
     remote_cstor_disk_prepare(ip, pool, disk, uni)
@@ -1137,14 +1139,15 @@ def release_disk_by_metadataname(uuid):
 
 def release_disk_by_path(path):
     diskinfo = get_disk_prepare_info_by_path(path)
-    pool = diskinfo['pool']
+    pool = diskinfo['poolname']
     disk = diskinfo['disk']
     uni = diskinfo['uni']
 
     cstor_release_disk(pool, disk, uni)
 
 if __name__ == '__main__':
-    print get_disks_spec('vm006').keys()
+    # print get_disks_spec('vm006')
+    print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accdd174caced76b0db2235/1709accdd174caced76b0db2235/vm006migratedisk2/snapshots/vm006migratedisk2.1')
     # prepare_disk_by_path(
     #     '/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
     # prepare_disk_by_metadataname('vm00aadd6coddpdssdn')

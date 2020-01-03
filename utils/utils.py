@@ -195,7 +195,6 @@ def runCmdAndSplitKvToJson(cmd):
 def runCmdAndGetOutput(cmd):
     if not cmd:
         return
-    logger.debug(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         std_out = p.stdout.readlines()
@@ -1164,6 +1163,8 @@ def rebase_snapshot_with_config(pool, vol):
     apply_all_jsondict(jsondicts)
 
 def apply_all_jsondict(jsondicts):
+    if len(jsondicts) == 0:
+        return
     filename = randomUUID()
     with open('/tmp/%s.yaml' % filename, 'w') as f:
         for jsondict in jsondicts:
@@ -1174,6 +1175,8 @@ def apply_all_jsondict(jsondicts):
     runCmd('rm -f /tmp/%s.yaml' % filename)
 
 def create_all_jsondict(jsondicts):
+    if len(jsondicts) == 0:
+        return
     filename = randomUUID()
     with open('/tmp/%s.yaml' % filename, 'w') as f:
         for jsondict in jsondicts:
@@ -1192,9 +1195,9 @@ def get_node_ip_by_node_name(nodeName):
 
 def get_node_name_by_node_ip(ip):
     all_node_ip = get_all_node_ip()
-    for ip in all_node_ip:
-        if ip['ip'] == ip and ip['nodeName'].find("vmd.") > 0:
-            return ip['nodeName']
+    for node in all_node_ip:
+        if node['ip'] == ip and node['nodeName'].find("vm.") >= 0:
+            return node['nodeName']
     return None
 
 def success_print(msg, data):
@@ -1210,7 +1213,8 @@ def error_print(code, msg, data=None):
         print dumps({"result": {"code": code, "msg": msg}, "data": data})
         exit(1)
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
+    print get_disks_spec('vm006')
     # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
     # apply_all_jsondict(jsondicts)
     # print remoteRunCmdWithResult('133.133.135.35', 'cstor-cli pool-show --poolname pooldir')
