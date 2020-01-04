@@ -446,7 +446,7 @@ def cloneDisk(params):
             result = get_disk_info_to_k8s(params.pool, params.newname)
         else:
             ip = get_node_ip_by_node_name(pool_node_name)
-            op = Operation('scp -r %s root@%s:%s' % (middle_disk_dir, ip, pool_info['path']), {})
+            op = Operation('scp -r %s root@%s:%s' % (middle_disk_dir, ip, clone_disk_dir), {})
             op.execute()
             prepareInfo = remote_cstor_disk_prepare(ip, pool_info['poolname'], params.newname, clone_disk_path)
 
@@ -988,7 +988,7 @@ def migrateDisk(params):
         if pool_node_name == disk_node_name:
             if disk_info['poolname'] != pool_info['poolname']:
                 # cp and rebase backing file and config, then update k8s
-                op = Operation('cp -r %s %s' % (source_dir, pool_info['path']), {})
+                op = Operation('cp -r %s %s/' % (source_dir, pool_info['path']), {})
                 op.execute()
                 rebase_snapshot_with_config(params.pool, params.vol)
                 op = Operation('rm -rf %s' % source_dir, {})
@@ -996,13 +996,14 @@ def migrateDisk(params):
         else:
             if pool_info['pooltype'] in ['nfs', 'glusterfs'] and disk_info['poolname'] == pool_info['poolname']:
                 # just change pool, label and nodename
+                config = get_disk_config(pool_info['poolname'], params.vol)
+                write_config(params.vol, config['dir'], config['current'], params.pool, pool_info['poolname'])
                 jsondicts = get_disk_jsondict(params.pool, params.vol)
-
                 apply_all_jsondict(jsondicts)
             else:
                 # scp
                 ip = get_node_ip_by_node_name(pool_node_name)
-                op = Operation('scp -r %s root@%s:%s' % (source_dir, ip, pool_info['path']), {})
+                op = Operation('scp -r %s root@%s:%s/' % (source_dir, ip, pool_info['path']), {})
                 op.execute()
                 op = Operation('kubesds-adm rebaseDiskSnapshot --pool %s --vol %s' % (params.pool, params.vol), {}, ip=ip, remote=True, with_result=True)
                 remote_result = op.execute()

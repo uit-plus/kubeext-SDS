@@ -1061,7 +1061,8 @@ def get_spec(jsondict):
 def get_disk_jsondict(pool, disk):
     jsondicts = []
     pool_helper = K8sHelper('VirtualMahcinePool')
-    pool_metadata = pool_helper.get(pool)['metadata']
+    pool_jsondict = pool_helper.get(pool)
+    pool_node_name = pool_jsondict['metadata']['labels']['host']
     pool_info = pool_helper.get_data(pool, 'pool')
 
     # get disk jsondict
@@ -1072,14 +1073,18 @@ def get_disk_jsondict(pool, disk):
     if disk_helper.exist(disk):  # migrate disk or migrate vm
         disk_jsondict = disk_helper.get(disk)
         # update disk jsondict
-        disk_jsondict['metadata']['labels']['host'] = pool_metadata['labels']['host']
+        logger.debug(disk_jsondict)
+        disk_jsondict['metadata']['labels']['host'] = pool_node_name
+
         spec = get_spec(disk_jsondict)
+        logger.debug(disk_jsondict)
         if spec:
             nodeName = spec.get('nodeName')
             if nodeName:
-                spec['nodeName'] = pool_metadata['labels']['host']
+                spec['nodeName'] = pool_node_name
             disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
             spec['volume'] = disk_info
+            logger.debug(disk_jsondict)
             jsondicts.append(disk_jsondict)
         # update snapshot jsondict
         ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
@@ -1090,12 +1095,12 @@ def get_disk_jsondict(pool, disk):
                     ss_jsondict = ss_helper.get(ss)
 
                     if ss_jsondict and ss_helper.get_data(ss, 'volume')['disk'] == disk:
-                        ss_jsondict['metadata']['labels']['host'] = pool_metadata['labels']['host']
+                        ss_jsondict['metadata']['labels']['host'] = pool_node_name
                         spec = get_spec(ss_jsondict)
                         if spec:
                             nodeName = spec.get('nodeName')
                             if nodeName:
-                                spec['nodeName'] = pool_metadata['labels']['host']
+                                spec['nodeName'] = pool_node_name
                             ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
                             spec['volume'] = ss_info
                             jsondicts.append(ss_jsondict)
@@ -1171,25 +1176,29 @@ def apply_all_jsondict(jsondicts):
     if len(jsondicts) == 0:
         return
     filename = randomUUID()
+    logger.debug(filename)
     with open('/tmp/%s.yaml' % filename, 'w') as f:
-        for jsondict in jsondicts:
-            result = yaml.safe_dump(jsondict)
+        for i in range(len(jsondicts)):
+            result = yaml.safe_dump(jsondicts[i])
             f.write(result)
-            f.write('---\n')
+            if i != len(jsondicts) - 1:
+                f.write('---\n')
     runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
-    runCmd('rm -f /tmp/%s.yaml' % filename)
+    # runCmd('rm -f /tmp/%s.yaml' % filename)
 
 def create_all_jsondict(jsondicts):
     if len(jsondicts) == 0:
         return
     filename = randomUUID()
+    logger.debug(filename)
     with open('/tmp/%s.yaml' % filename, 'w') as f:
-        for jsondict in jsondicts:
-            result = yaml.safe_dump(jsondict)
+        for i in range(len(jsondicts)):
+            result = yaml.safe_dump(jsondicts[i])
             f.write(result)
-            f.write('---\n')
+            if i != len(jsondicts) - 1:
+                f.write('---\n')
     runCmd('kubectl create -f /tmp/%s.yaml' % filename)
-    runCmd('rm -f /tmp/%s.yaml' % filename)
+    # runCmd('rm -f /tmp/%s.yaml' % filename)
 
 def get_node_ip_by_node_name(nodeName):
     all_node_ip = get_all_node_ip()
