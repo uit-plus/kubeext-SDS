@@ -109,6 +109,15 @@ def updateJsonRemoveLifecycle(jsondict, body):
             spec.update(body)
     return jsondict
 
+def hasLifeCycle(jsondict):
+    if jsondict:
+        spec = get_spec(jsondict)
+        if spec:
+            lifecycle = spec.get('lifecycle')
+            if lifecycle:
+                True
+    return False
+
 def removeLifecycle(jsondict):
     if jsondict:
         spec = get_spec(jsondict)
@@ -235,10 +244,11 @@ class K8sHelper(object):
     def delete_lifecycle(self, name):
         try:
             jsondict = self.get(name)
-            jsondict = removeLifecycle(jsondict)
-            return client.CustomObjectsApi().replace_namespaced_custom_object(
-                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-                plural=resources[self.kind]['plural'], name=name, body=jsondict)
+            if hasLifeCycle(jsondict):
+                jsondict = removeLifecycle(jsondict)
+                return client.CustomObjectsApi().replace_namespaced_custom_object(
+                    group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                    plural=resources[self.kind]['plural'], name=name, body=jsondict)
         except Exception:
             raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 

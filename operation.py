@@ -1011,9 +1011,9 @@ def migrateDisk(params):
                     raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
                 op = Operation('rm -rf %s' % source_dir, {})
                 op.execute()
-        disk_heler.delete_lifecycle(params.name)
+        disk_heler.delete_lifecycle(params.vol)
     else:
-        disk_heler.delete_lifecycle(params.name)
+        disk_heler.delete_lifecycle(params.vol)
         raise ExecuteException('RunCmdError', 'not support pool type.')
 
     success_print("success register disk to k8s.", {})
