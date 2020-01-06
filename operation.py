@@ -381,6 +381,7 @@ def resizeDisk(params):
 def cloneDisk(params):
     result = None
     disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
     pool_helper = K8sHelper('VirtualMahcinePool')
     disk_node_name = get_node_name(disk_heler.get(params.vol))
     pool_node_name = get_node_name(pool_helper.get(params.pool))
