@@ -445,7 +445,7 @@ def cloneDisk(params):
 
             jsondicts = get_disk_jsondict(params.pool, params.newname)
             create_all_jsondict(jsondicts)
-            result = get_disk_info_to_k8s(params.pool, params.newname)
+            result = get_disk_info_to_k8s(pool_info['poolname'], params.newname)
         else:
             ip = get_node_ip_by_node_name(pool_node_name)
             op = Operation('scp -r %s root@%s:%s' % (middle_disk_dir, ip, clone_disk_dir), {})
