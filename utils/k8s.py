@@ -115,7 +115,7 @@ def hasLifeCycle(jsondict):
         if spec:
             lifecycle = spec.get('lifecycle')
             if lifecycle:
-                True
+                return True
     return False
 
 def removeLifecycle(jsondict):
