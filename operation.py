@@ -395,7 +395,8 @@ def cloneDisk(params):
     if params.type != "uus":
         # create disk dir and create disk in dir.
         disk_dir = '%s/%s' % (old_pool_info['path'], params.vol)
-        middle_disk_dir = '%s/%s' % (old_pool_info['path'], params.newname)
+        uuid = randomUUID().replace('-', '')
+        middle_disk_dir = '%s/%s' % (old_pool_info['path'], uuid)
         middle_disk_path = '%s/%s' % (middle_disk_dir, params.newname)
         clone_disk_dir = '%s/%s' % (pool_info['path'], params.newname)
         clone_disk_path = '%s/%s' % (clone_disk_dir, params.newname)
@@ -437,7 +438,7 @@ def cloneDisk(params):
             dump(config, f)
 
         if disk_node_name == pool_node_name:
-            op = Operation('mv %s %s' % (middle_disk_dir, pool_info['path']), {})
+            op = Operation('mv %s %s/%s' % (middle_disk_dir, pool_info['path'], params.newname), {})
             op.execute()
             prepareInfo = cstor_disk_prepare(pool_info['poolname'], params.newname, clone_disk_path)
 
