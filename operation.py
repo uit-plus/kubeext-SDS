@@ -976,9 +976,12 @@ def migrate(params):
 def migrateDisk(params):
     disk_info = get_vol_info_from_k8s(params.vol)
     pool_info = get_pool_info_from_k8s(params.pool)
+    logger.debug(disk_info)
+    logger.debug(pool_info)
     if disk_info['pool'] == pool_info['pool']:
         raise ExecuteException('RunCmdError', 'can not migrate disk to its pool.')
     disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
     pool_helper = K8sHelper('VirtualMahcinePool')
     pool_node_name = get_node_name(pool_helper.get(params.pool))
     disk_node_name = get_node_name(disk_heler.get(params.vol))
@@ -1013,9 +1016,7 @@ def migrateDisk(params):
                     raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
                 op = Operation('rm -rf %s' % source_dir, {})
                 op.execute()
-        disk_heler.delete_lifecycle(params.vol)
     else:
-        disk_heler.delete_lifecycle(params.vol)
         raise ExecuteException('RunCmdError', 'not support pool type.')
 
     success_print("success register disk to k8s.", {})
