@@ -965,6 +965,8 @@ def migrate(params):
                     targetPool = pool['pool']
             if targetPool:
                 logger.debug("targetPool is %s." % targetPool)
+                config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
+                write_config(config['name'], config['dir'], config['current'], targetPool, config['poolname'])
                 jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
                 all_jsondicts.extend(jsondicts)
         apply_all_jsondict(all_jsondicts)
