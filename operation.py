@@ -543,7 +543,7 @@ def createDiskFromImage(params):
     result = get_disk_info_to_k8s(poolname, params.name)
 
     helper = K8sHelper("VirtualMachineDisk")
-    helper.create(params.name, "volume", result)
+    helper.update(params.name, "volume", result)
     success_print("success createDiskFromImage %s." % params.name, result)
 
 def cstor_disk_prepare(pool, vol, uni):
