@@ -457,7 +457,7 @@ def cloneDisk(params):
             op = Operation('kubesds-adm registerDiskToK8s --pool %s --vol %s' % (params.pool, params.newname), {}, ip=ip, remote=True, with_result=True)
             remote_result = op.execute()
             if remote_result['result']['code'] != 0:
-                raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
+                raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm registerDiskToK8s error.')
 
     else:
         op = Operation('cstor-cli vdisk-clone ', {'poolname': poolname, 'name': params.vol,

@@ -1187,8 +1187,17 @@ def apply_all_jsondict(jsondicts):
             f.write(result)
             if i != len(jsondicts) - 1:
                 f.write('---\n')
-    runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
-    # runCmd('rm -f /tmp/%s.yaml' % filename)
+    try:
+        runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
+    except ExecuteException, e:
+        if (e.message == 'Warning: kubectl apply should be used on resource created by either kubectl create --save-config or kubectl apply\n'):
+            pass
+        else:
+            raise e
+    try:
+        runCmd('rm -f /tmp/%s.yaml' % filename)
+    except ExecuteException:
+        pass
 
 def create_all_jsondict(jsondicts):
     if len(jsondicts) == 0:
@@ -1202,7 +1211,10 @@ def create_all_jsondict(jsondicts):
             if i != len(jsondicts) - 1:
                 f.write('---\n')
     runCmd('kubectl create -f /tmp/%s.yaml' % filename)
-    # runCmd('rm -f /tmp/%s.yaml' % filename)
+    try:
+        runCmd('rm -f /tmp/%s.yaml' % filename)
+    except ExecuteException:
+        pass
 
 def get_node_ip_by_node_name(nodeName):
     all_node_ip = get_all_node_ip()
