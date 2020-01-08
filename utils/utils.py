@@ -799,6 +799,22 @@ def get_disk_info_to_k8s(poolname, vol):
     result["current"] = config['current']
     return result
 
+def get_cstor_disk_info_to_k8s(pool, poolname, vol):
+    diskinfo = runCmdWithResult("cstor-cli vdisk-show --poolname %s --name %s" % (poolname, vol))
+    if diskinfo['result']['code'] != 0:
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            diskinfo['result']['code'], diskinfo['result']['msg'], diskinfo['obj']))
+
+    result = {
+        "disk": vol,
+        "pool": pool,
+        "poolname": poolname,
+        "virtual_size": diskinfo["data"]["size"],
+        "filename": diskinfo["data"]["path"],
+        "uni": diskinfo["data"]["uni"]
+    }
+    return result
+
 
 def get_snapshot_info_to_k8s(poolname, vol, name):
     config_path = '%s/%s/config.json' % (get_pool_info(poolname)['path'], vol)
@@ -1067,45 +1083,62 @@ def get_disk_jsondict(pool, disk):
 
     # get disk jsondict
     disk_helper = K8sHelper('VirtualMachineDisk')
-    if pool_info['pooltype'] not in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
-        raise ExecuteException("RunCmdError", "not support pool type %s" % pool_info['pooltype'])
+    # if pool_info['pooltype'] not in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+    #     raise ExecuteException("RunCmdError", "not support pool type %s" % pool_info['pooltype'])
 
     if disk_helper.exist(disk):  # migrate disk or migrate vm
-        disk_jsondict = disk_helper.get(disk)
-        # update disk jsondict
-        logger.debug(disk_jsondict)
-        disk_jsondict['metadata']['labels']['host'] = pool_node_name
-
-        spec = get_spec(disk_jsondict)
-        logger.debug(disk_jsondict)
-        if spec:
-            nodeName = spec.get('nodeName')
-            if nodeName:
-                spec['nodeName'] = pool_node_name
-            disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
-            spec['volume'] = disk_info
+        if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+            disk_jsondict = disk_helper.get(disk)
+            # update disk jsondict
             logger.debug(disk_jsondict)
-            jsondicts.append(disk_jsondict)
-        # update snapshot jsondict
-        ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
-        ss_dir = '%s/%s/snapshots' % (pool_info['path'], disk)
-        if os.path.exists(ss_dir):
-            for ss in os.listdir(ss_dir):
-                try:
-                    ss_jsondict = ss_helper.get(ss)
+            disk_jsondict['metadata']['labels']['host'] = pool_node_name
 
-                    if ss_jsondict and ss_helper.get_data(ss, 'volume')['disk'] == disk:
-                        ss_jsondict['metadata']['labels']['host'] = pool_node_name
-                        spec = get_spec(ss_jsondict)
-                        if spec:
-                            nodeName = spec.get('nodeName')
-                            if nodeName:
-                                spec['nodeName'] = pool_node_name
-                            ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
-                            spec['volume'] = ss_info
-                            jsondicts.append(ss_jsondict)
-                except ExecuteException:
-                    pass
+            spec = get_spec(disk_jsondict)
+            logger.debug(disk_jsondict)
+            if spec:
+                nodeName = spec.get('nodeName')
+                if nodeName:
+                    spec['nodeName'] = pool_node_name
+                disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
+                spec['volume'] = disk_info
+                logger.debug(disk_jsondict)
+                jsondicts.append(disk_jsondict)
+            # update snapshot jsondict
+            ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
+            ss_dir = '%s/%s/snapshots' % (pool_info['path'], disk)
+            if os.path.exists(ss_dir):
+                for ss in os.listdir(ss_dir):
+                    try:
+                        ss_jsondict = ss_helper.get(ss)
+
+                        if ss_jsondict and ss_helper.get_data(ss, 'volume')['disk'] == disk:
+                            ss_jsondict['metadata']['labels']['host'] = pool_node_name
+                            spec = get_spec(ss_jsondict)
+                            if spec:
+                                nodeName = spec.get('nodeName')
+                                if nodeName:
+                                    spec['nodeName'] = pool_node_name
+                                ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
+                                spec['volume'] = ss_info
+                                jsondicts.append(ss_jsondict)
+                    except ExecuteException:
+                        pass
+        else:
+            disk_jsondict = disk_helper.get(disk)
+            # update disk jsondict
+            logger.debug(disk_jsondict)
+            disk_jsondict['metadata']['labels']['host'] = pool_node_name
+
+            spec = get_spec(disk_jsondict)
+            logger.debug(disk_jsondict)
+            if spec:
+                nodeName = spec.get('nodeName')
+                if nodeName:
+                    spec['nodeName'] = pool_node_name
+                disk_info = get_cstor_disk_info_to_k8s(pool, pool_info['poolname'], disk)
+                spec['volume'] = disk_info
+                logger.debug(disk_jsondict)
+                jsondicts.append(disk_jsondict)
 
     else:  # clone disk
         disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
