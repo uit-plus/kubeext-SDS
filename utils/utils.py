@@ -800,6 +800,7 @@ def get_disk_info_to_k8s(poolname, vol):
     return result
 
 def get_cstor_disk_info_to_k8s(pool, poolname, vol):
+    disk_info_k8s = get_vol_info_from_k8s(vol)
     diskinfo = runCmdWithResult("cstor-cli vdisk-show --poolname %s --name %s" % (poolname, vol))
     if diskinfo['result']['code'] != 0:
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
@@ -809,9 +810,10 @@ def get_cstor_disk_info_to_k8s(pool, poolname, vol):
         "disk": vol,
         "pool": pool,
         "poolname": poolname,
+        "uni": diskinfo["data"]["uni"],
+        "current": disk_info_k8s["current"],
         "virtual_size": diskinfo["data"]["size"],
-        "filename": diskinfo["data"]["path"],
-        "uni": diskinfo["data"]["uni"]
+        "filename": disk_info_k8s["filename"]
     }
     return result
 
