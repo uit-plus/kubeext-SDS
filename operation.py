@@ -1054,7 +1054,7 @@ def migrateDisk(params):
                 disk_heler.change_node(params.vol, pool_node_name)
         else:
             # prepare disk
-            prepareInfo = prepare_disk_by_metadataname(params.vol)
+            prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
             ifFile = prepareInfo["data"]["path"]
             # create same disk in target pool
             newCreateInfo = cstor_create_disk(pool_info['poolname'], params.vol, disk_info['virtual_size'])
