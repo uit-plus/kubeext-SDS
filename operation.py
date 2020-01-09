@@ -1041,9 +1041,7 @@ def migrateDisk(params):
                 if not os.path.exists(target_disk_dir):
                     os.makedirs(target_disk_dir)
                 target_disk_file = '%s/%s' % (target_disk_dir, params.vol)
-                op = Operation('qemu-img create -f qcow2 %s %s' % (target_disk_file, disk_info['virtual_size']), {})
-                op.execute()
-                op = Operation('dd if=%s of=%s' % (prepareInfo['data']['path'], target_disk_file), {})
+                op = Operation('qemu-img convert -f raw %s -O qcow2 %s' % (prepareInfo['data']['path'], target_disk_file), {})
                 op.execute()
                 write_config(params.vol, target_disk_dir, target_disk_file, params.pool, pool_info['poolname'])
                 result = get_disk_info_to_k8s(pool_info['poolname'], params.vol)
