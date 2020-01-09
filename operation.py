@@ -1004,8 +1004,8 @@ def migrateDisk(params):
         raise ExecuteException('RunCmdError', 'disk is not in this node.')
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
-        source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], params.vol)
         if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+            source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], params.vol)
             if pool_node_name == disk_node_name:
                 if disk_info['poolname'] != pool_info['poolname']:
                     # cp and rebase backing file and config, then update k8s
