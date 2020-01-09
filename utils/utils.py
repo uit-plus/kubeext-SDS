@@ -998,6 +998,19 @@ def get_pools_by_path(path):
         pools.append(pool)
     return pools
 
+def get_pools_by_poolname(poolname):
+    output = runCmdAndGetOutput(
+        'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % poolname)
+    pools = []
+    for line in output.splitlines():
+        pool = {}
+        if len(line.split()) < 3:
+            continue
+        pool['pool'] = line.split()[0]
+        pool['host'] = line.split()[1]
+        pools.append(pool)
+    return pools
+
 def get_all_node_ip():
     all_node_ip = []
     try:

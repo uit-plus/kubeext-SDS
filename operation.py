@@ -989,6 +989,7 @@ def migrate(params):
 
 def migrateDisk(params):
     disk_info = get_vol_info_from_k8s(params.vol)
+    source_pool_info = get_pool_info_from_k8s(disk_info['pool'])
     pool_info = get_pool_info_from_k8s(params.pool)
     logger.debug(disk_info)
     logger.debug(pool_info)
@@ -1004,32 +1005,70 @@ def migrateDisk(params):
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
         source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], params.vol)
-        if pool_node_name == disk_node_name:
-            if disk_info['poolname'] != pool_info['poolname']:
-                # cp and rebase backing file and config, then update k8s
-                op = Operation('cp -r %s %s/' % (source_dir, pool_info['path']), {})
-                op.execute()
-                rebase_snapshot_with_config(params.pool, params.vol)
-                op = Operation('rm -rf %s' % source_dir, {})
-                op.execute()
-        else:
-            if pool_info['pooltype'] in ['nfs', 'glusterfs'] and disk_info['poolname'] == pool_info['poolname']:
-                # just change pool, label and nodename
-                config = get_disk_config(pool_info['poolname'], params.vol)
-                write_config(params.vol, config['dir'], config['current'], params.pool, pool_info['poolname'])
-                jsondicts = get_disk_jsondict(params.pool, params.vol)
-                apply_all_jsondict(jsondicts)
+        if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+            if pool_node_name == disk_node_name:
+                if disk_info['poolname'] != pool_info['poolname']:
+                    # cp and rebase backing file and config, then update k8s
+                    op = Operation('cp -r %s %s/' % (source_dir, pool_info['path']), {})
+                    op.execute()
+                    rebase_snapshot_with_config(params.pool, params.vol)
+                    op = Operation('rm -rf %s' % source_dir, {})
+                    op.execute()
             else:
-                # scp
-                ip = get_node_ip_by_node_name(pool_node_name)
-                op = Operation('scp -r %s root@%s:%s/' % (source_dir, ip, pool_info['path']), {})
+                if pool_info['pooltype'] in ['nfs', 'glusterfs'] and disk_info['poolname'] == pool_info['poolname']:
+                    # just change pool, label and nodename
+                    config = get_disk_config(pool_info['poolname'], params.vol)
+                    write_config(params.vol, config['dir'], config['current'], params.pool, pool_info['poolname'])
+                    jsondicts = get_disk_jsondict(params.pool, params.vol)
+                    apply_all_jsondict(jsondicts)
+                else:
+                    # scp
+                    ip = get_node_ip_by_node_name(pool_node_name)
+                    op = Operation('scp -r %s root@%s:%s/' % (source_dir, ip, pool_info['path']), {})
+                    op.execute()
+                    op = Operation('kubesds-adm rebaseDiskSnapshot --pool %s --vol %s' % (params.pool, params.vol), {}, ip=ip, remote=True, with_result=True)
+                    remote_result = op.execute()
+                    if remote_result['result']['code'] != 0:
+                        raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
+                    op = Operation('rm -rf %s' % source_dir, {})
+                    op.execute()
+        else:
+            if pool_node_name == disk_node_name:
+                # prepare disk
+                prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
+                cstor_create_disk(pool_info['poolname'], params.vol, prepareInfo['data']['capacity'])
+                target_disk_dir = '%s/%s' % (pool_info['path'], params.vol)
+                if not os.path.exists(target_disk_dir):
+                    os.makedirs(target_disk_dir)
+                target_disk_file = '%s/%s' % (target_disk_dir, params.vol)
+                op = Operation('qemu-img create -f qcow2 %s %s' % (target_disk_file, disk_info['virtual_size']), {})
                 op.execute()
-                op = Operation('kubesds-adm rebaseDiskSnapshot --pool %s --vol %s' % (params.pool, params.vol), {}, ip=ip, remote=True, with_result=True)
-                remote_result = op.execute()
-                if remote_result['result']['code'] != 0:
-                    raise ExecuteException('RunCmdError', 'remote run cmd kubesds-adm rebaseDiskSnapshot error.')
-                op = Operation('rm -rf %s' % source_dir, {})
+                op = Operation('dd if=%s of=%s' % (prepareInfo['data']['path'], target_disk_file), {})
                 op.execute()
+                write_config(params.vol, target_disk_dir, target_disk_file, params.pool, pool_info['poolname'])
+                result = get_disk_info_to_k8s(pool_info['poolname'], params.vol)
+                disk_heler.update(params.vol, 'volume', result)
+                cstor_release_disk(disk_info['poolname'], params.vol, disk_info['uni'])
+                cstro_delete_disk(disk_info['poolname'], params.vol)
+            else:
+                # remote prepare disk, then migrate disk in remote node
+                pools = get_pools_by_poolname(pool_info['poolname'])
+
+                # change disk node label in k8s.
+                remote_dev_pool = None
+                for pool in pools:
+                    if pool['host'] == pool_node_name:
+                        remote_dev_pool = pool['pool']
+                if remote_dev_pool:
+                    ip = get_node_ip_by_node_name(pool_node_name)
+                    remote_cstor_disk_prepare(ip, disk_info['poolname'], params.vol, disk_info['uni'])
+                    op = Operation('kubesds-adm migrateDisk --pool %s --vol %s' % (remote_dev_pool, params.vol), {}, ip=ip, remote=True, with_result=True)
+                    result = op.execute()
+                    if result['result']['code'] != 0:
+                        raise ExecuteException('RunCmdError', 'can not migrate disk on remote node.')
+                    cstor_release_disk(disk_info['poolname'], params.vol, disk_info['uni'])
+                    cstro_delete_disk(disk_info['poolname'], params.vol)
+
     else:
         # same poolname, just prepare and release
         if disk_info['poolname'] == pool_info['poolname']:
@@ -1053,52 +1092,54 @@ def migrateDisk(params):
                 disk_heler.update(params.vol, 'volume', result)
                 disk_heler.change_node(params.vol, pool_node_name)
         else:
-            source_pool_info = get_pool_info_from_k8s(disk_info['pool'])
-            if pool_info['path'] == source_pool_info['path']:
-                raise ExecuteException('RunCmdError',
-                                       'can not migrate disk to this pool. Because their uni is equal.')
-            # raise ExecuteException('RunCmdError', 'can not migrate disk to this pool. Because their poolname is not equal.')
-            # prepare disk
-            prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-            ifFile = prepareInfo["data"]["path"]
-            # create same disk in target pool
-            newCreateInfo = cstor_create_disk(pool_info['poolname'], params.vol, disk_info['virtual_size'])
-            uni = newCreateInfo["data"]["uni"]
-            newPrepareInfo = cstor_prepare_disk("uus", pool_info['poolname'], params.vol, uni)
-            ofFile = newPrepareInfo["data"]["path"]
-            # dd
-            op = Operation('dd if=%s of=%s' % (ifFile, ofFile), {})
-            op.execute()
-            if pool_node_name != disk_node_name:
-                cstor_release_disk(pool_info['poolname'], params.vol, uni)
-                ip = get_node_ip_by_node_name(pool_node_name)
-                remotePrepareInfo = remote_cstor_disk_prepare(ip, pool_info['poolname'], params.vol, uni)
-                # register to k8s
-                result = {
-                    "disk": params.vol,
-                    "pool": params.pool,
-                    "poolname": pool_info['poolname'],
-                    "uni": newCreateInfo["data"]["uni"],
-                    "current": remotePrepareInfo["data"]["path"],
-                    "virtual_size": remotePrepareInfo["data"]["size"],
-                    "filename": remotePrepareInfo["data"]["path"]
-                }
-                disk_heler.change_node(params.vol, pool_node_name)
-            else:
-                # register to k8s
-                result = {
-                    "disk": params.vol,
-                    "pool": params.pool,
-                    "poolname": pool_info['poolname'],
-                    "uni": newCreateInfo["data"]["uni"],
-                    "current": newPrepareInfo["data"]["path"],
-                    "virtual_size": newPrepareInfo["data"]["size"],
-                    "filename": newPrepareInfo["data"]["path"]
-                }
-            disk_heler.update(params.vol, 'volume', result)
-            # release old disk
-            cstor_release_disk(disk_info['poolname'], params.vol, disk_info['uni'])
-            cstro_delete_disk(disk_info['poolname'], params.vol)
+            raise ExecuteException('RunCmdError',
+                                   'can not migrate disk to this pool. Not support operation.')
+            # source_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+            # if pool_info['path'] == source_pool_info['path']:
+            #     raise ExecuteException('RunCmdError',
+            #                            'can not migrate disk to this pool. Because their uni is equal.')
+            # # raise ExecuteException('RunCmdError', 'can not migrate disk to this pool. Because their poolname is not equal.')
+            # # prepare disk
+            # prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
+            # ifFile = prepareInfo["data"]["path"]
+            # # create same disk in target pool
+            # newCreateInfo = cstor_create_disk(pool_info['poolname'], params.vol, disk_info['virtual_size'])
+            # uni = newCreateInfo["data"]["uni"]
+            # newPrepareInfo = cstor_prepare_disk("uus", pool_info['poolname'], params.vol, uni)
+            # ofFile = newPrepareInfo["data"]["path"]
+            # # dd
+            # op = Operation('dd if=%s of=%s' % (ifFile, ofFile), {})
+            # op.execute()
+            # if pool_node_name != disk_node_name:
+            #     cstor_release_disk(pool_info['poolname'], params.vol, uni)
+            #     ip = get_node_ip_by_node_name(pool_node_name)
+            #     remotePrepareInfo = remote_cstor_disk_prepare(ip, pool_info['poolname'], params.vol, uni)
+            #     # register to k8s
+            #     result = {
+            #         "disk": params.vol,
+            #         "pool": params.pool,
+            #         "poolname": pool_info['poolname'],
+            #         "uni": newCreateInfo["data"]["uni"],
+            #         "current": remotePrepareInfo["data"]["path"],
+            #         "virtual_size": remotePrepareInfo["data"]["size"],
+            #         "filename": remotePrepareInfo["data"]["path"]
+            #     }
+            #     disk_heler.change_node(params.vol, pool_node_name)
+            # else:
+            #     # register to k8s
+            #     result = {
+            #         "disk": params.vol,
+            #         "pool": params.pool,
+            #         "poolname": pool_info['poolname'],
+            #         "uni": newCreateInfo["data"]["uni"],
+            #         "current": newPrepareInfo["data"]["path"],
+            #         "virtual_size": newPrepareInfo["data"]["size"],
+            #         "filename": newPrepareInfo["data"]["path"]
+            #     }
+            # disk_heler.update(params.vol, 'volume', result)
+            # # release old disk
+            # cstor_release_disk(disk_info['poolname'], params.vol, disk_info['uni'])
+            # cstro_delete_disk(disk_info['poolname'], params.vol)
 
     success_print("success register disk to k8s.", {})
 
