@@ -1036,7 +1036,7 @@ def migrateDisk(params):
             if pool_node_name == disk_node_name:
                 # prepare disk
                 prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-                cstor_create_disk(pool_info['poolname'], params.vol, prepareInfo['data']['capacity'])
+                cstor_create_disk(pool_info['poolname'], params.vol, prepareInfo['data']['size'])
                 target_disk_dir = '%s/%s' % (pool_info['path'], params.vol)
                 if not os.path.exists(target_disk_dir):
                     os.makedirs(target_disk_dir)
