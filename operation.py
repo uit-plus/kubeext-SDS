@@ -1053,47 +1053,48 @@ def migrateDisk(params):
                 disk_heler.update(params.vol, 'volume', result)
                 disk_heler.change_node(params.vol, pool_node_name)
         else:
-            # prepare disk
-            prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
-            ifFile = prepareInfo["data"]["path"]
-            # create same disk in target pool
-            newCreateInfo = cstor_create_disk(pool_info['poolname'], params.vol, disk_info['virtual_size'])
-            uni = newCreateInfo["data"]["uni"]
-            newPrepareInfo = cstor_prepare_disk("uus", pool_info['poolname'], params.vol, uni)
-            ofFile = newPrepareInfo["data"]["path"]
-            # dd
-            op = Operation('dd if=%s of=%s' % (ifFile, ofFile), {})
-            op.execute()
-            if pool_node_name != disk_node_name:
-                cstor_release_disk(pool_info['poolname'], params.vol, uni)
-                ip = get_node_ip_by_node_name(pool_node_name)
-                remotePrepareInfo = remote_cstor_disk_prepare(ip, pool_info['poolname'], params.vol, uni)
-                # register to k8s
-                result = {
-                    "disk": params.vol,
-                    "pool": params.pool,
-                    "poolname": pool_info['poolname'],
-                    "uni": newCreateInfo["data"]["uni"],
-                    "current": remotePrepareInfo["data"]["path"],
-                    "virtual_size": remotePrepareInfo["data"]["size"],
-                    "filename": remotePrepareInfo["data"]["path"]
-                }
-                disk_heler.change_node(params.vol, pool_node_name)
-            else:
-                # register to k8s
-                result = {
-                    "disk": params.vol,
-                    "pool": params.pool,
-                    "poolname": pool_info['poolname'],
-                    "uni": newCreateInfo["data"]["uni"],
-                    "current": newPrepareInfo["data"]["path"],
-                    "virtual_size": newPrepareInfo["data"]["size"],
-                    "filename": newPrepareInfo["data"]["path"]
-                }
-            disk_heler.update(params.vol, 'volume', result)
-            # release old disk
-            cstor_release_disk(disk_info['poolname'], params.vol, disk_info['uni'])
-            cstro_delete_disk(disk_info['poolname'], params.vol)
+            raise ExecuteException('RunCmdError', 'can not migrate disk to this pool. Because their poolname is not equal.')
+            # # prepare disk
+            # prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
+            # ifFile = prepareInfo["data"]["path"]
+            # # create same disk in target pool
+            # newCreateInfo = cstor_create_disk(pool_info['poolname'], params.vol, disk_info['virtual_size'])
+            # uni = newCreateInfo["data"]["uni"]
+            # newPrepareInfo = cstor_prepare_disk("uus", pool_info['poolname'], params.vol, uni)
+            # ofFile = newPrepareInfo["data"]["path"]
+            # # dd
+            # op = Operation('dd if=%s of=%s' % (ifFile, ofFile), {})
+            # op.execute()
+            # if pool_node_name != disk_node_name:
+            #     cstor_release_disk(pool_info['poolname'], params.vol, uni)
+            #     ip = get_node_ip_by_node_name(pool_node_name)
+            #     remotePrepareInfo = remote_cstor_disk_prepare(ip, pool_info['poolname'], params.vol, uni)
+            #     # register to k8s
+            #     result = {
+            #         "disk": params.vol,
+            #         "pool": params.pool,
+            #         "poolname": pool_info['poolname'],
+            #         "uni": newCreateInfo["data"]["uni"],
+            #         "current": remotePrepareInfo["data"]["path"],
+            #         "virtual_size": remotePrepareInfo["data"]["size"],
+            #         "filename": remotePrepareInfo["data"]["path"]
+            #     }
+            #     disk_heler.change_node(params.vol, pool_node_name)
+            # else:
+            #     # register to k8s
+            #     result = {
+            #         "disk": params.vol,
+            #         "pool": params.pool,
+            #         "poolname": pool_info['poolname'],
+            #         "uni": newCreateInfo["data"]["uni"],
+            #         "current": newPrepareInfo["data"]["path"],
+            #         "virtual_size": newPrepareInfo["data"]["size"],
+            #         "filename": newPrepareInfo["data"]["path"]
+            #     }
+            # disk_heler.update(params.vol, 'volume', result)
+            # # release old disk
+            # cstor_release_disk(disk_info['poolname'], params.vol, disk_info['uni'])
+            # cstro_delete_disk(disk_info['poolname'], params.vol)
 
     success_print("success register disk to k8s.", {})
 
