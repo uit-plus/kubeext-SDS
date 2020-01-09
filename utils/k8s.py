@@ -252,6 +252,18 @@ class K8sHelper(object):
         except Exception:
             raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 
+    def change_node(self, name, newNodeName):
+        jsondict = self.get(name)
+        if jsondict:
+            jsondict['metadata']['labels']['host'] = newNodeName
+            spec = get_spec(jsondict)
+            if spec:
+                nodeName = spec.get('nodeName')
+                if nodeName:
+                    spec['nodeName'] = newNodeName
+        return jsondict
+
+
 def error_print(code, msg, data=None):
     if data is None:
         print dumps({"result": {"code": code, "msg": msg}, "data": {}})
