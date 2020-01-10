@@ -11,6 +11,7 @@ logger = logger.set_logger(os.path.basename(__file__), LOG)
 
 SUPPORT_STORAGE_TYPE = ["localfs", "uus", "nfs", "glusterfs", "vdiskfs"]
 
+# os.putenv('LANG', 'en_US.UTF-8')
 
 def execute(f_name, params):
     moudle = __import__('operation')
