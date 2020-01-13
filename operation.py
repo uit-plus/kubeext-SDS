@@ -994,7 +994,7 @@ def migrate(params):
 
     success_print("migrate vm %s successful." % params.domain, {})
 
-def migrateDisk(sourceVol, targetPool):
+def migrateDiskFunc(sourceVol, targetPool):
     disk_info = get_vol_info_from_k8s(sourceVol)
     # prepare disk
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], sourceVol, disk_info['uni'])
@@ -1198,7 +1198,7 @@ def migrateDisk(sourceVol, targetPool):
 
 
 def migrateDisk(params):
-    migrateDisk(params.vol, params.pool)
+    migrateDiskFunc(params.vol, params.pool)
     success_print("success register disk to k8s.", {})
 
 # cold migrate
@@ -1224,7 +1224,7 @@ def migrateVMDisk(params):
         vol = None
         pool = None
         for arg in line.split(','):
-            if arg.split('=')[0] == 'disk':
+            if arg.split('=')[0] == 'vol':
                 vol = arg.split('=')[1]
             if arg.split('=')[0] == 'pool':
                 pool = arg.split('=')[1]
@@ -1285,7 +1285,7 @@ def migrateVMDisk(params):
                 else:
                     for vp in vps:
                         vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                        migrateDisk(vol, vp['pool'])
+                        migrateDiskFunc(vol, vp['pool'])
                         disk_info = get_vol_info_from_k8s(vol)
                         if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
                             raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
@@ -1293,7 +1293,7 @@ def migrateVMDisk(params):
             for vp in vps:
                 try:
                     vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                    migrateDisk(vol, oldPools[vol])
+                    migrateDiskFunc(vol, oldPools[vol])
                 except:
                     pass
             raise e
@@ -1302,11 +1302,17 @@ def migrateVMDisk(params):
         op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
         op.execute()
         try:
-            op = Operation('virsh start %s' % xmlfile, {}, ip=params.ip, remote=True)
+            op = Operation('virsh start %s' % params.domain, {}, ip=params.ip, remote=True)
             op.execute()
         except ExecuteException, e:
             op = Operation('virsh undefine %s' % params.domain, {}, ip=params.ip, remote=True)
             op.execute()
+            for vp in vps:
+                try:
+                    vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
+                    migrateDiskFunc(vol, oldPools[vol])
+                except:
+                    pass
             raise e
         apply_all_jsondict(all_jsondicts)
 
