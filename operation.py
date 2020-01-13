@@ -1009,7 +1009,7 @@ def migrateDiskFunc(sourceVol, targetPool):
     pool_helper = K8sHelper('VirtualMahcinePool')
     pool_node_name = get_node_name(pool_helper.get(targetPool))
     disk_node_name = get_node_name(disk_heler.get(sourceVol))
-    if disk_node_name != get_hostname_in_lower_case():
+    if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
         raise ExecuteException('RunCmdError', 'disk is not in this node.')
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
@@ -1048,7 +1048,10 @@ def migrateDiskFunc(sourceVol, targetPool):
                     op = Operation('rm -rf %s' % source_dir, {})
                     op.execute()
         else:  # dev to file
-            if pool_node_name == disk_node_name:
+            cstor_disk_prepare(disk_info['poolname'], sourceVol, disk_info['uni'])
+            this_node_name = get_hostname_in_lower_case()
+            logger.debug('this_node_name: %s' % this_node_name)
+            if pool_node_name == this_node_name:  # in same node, create file then convert.
                 cstor_create_disk(pool_info['poolname'], sourceVol, prepareInfo['data']['size'])
                 target_disk_dir = '%s/%s' % (pool_info['path'], sourceVol)
                 if not os.path.exists(target_disk_dir):
