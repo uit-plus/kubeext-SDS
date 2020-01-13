@@ -779,9 +779,9 @@ parser_migrate_disk.set_defaults(func=migrateDiskParser)
 
 # -------------------- add migrateVMDisk cmd ----------------------------------
 parser_migrate_vm_disk = subparsers.add_parser("migrateVMDisk", help="migrateVMDisk help")
-parser_migrate.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+parser_migrate_vm_disk.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                             help="vm domain to migrate")
-parser_migrate.add_argument("--ip", required=True, metavar="[IP]", type=str,
+parser_migrate_vm_disk.add_argument("--ip", required=True, metavar="[IP]", type=str,
                             help="storage pool type to use")
 parser_migrate_vm_disk.add_argument("--migratedisks", required=True, metavar="[MIGRATEDISKS]", type=str,
                             help="vol opt to migrate")
