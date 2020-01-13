@@ -1192,7 +1192,6 @@ def get_disk_jsondict(pool, disk):
                 spec['volume'] = disk_info
                 logger.debug(disk_jsondict)
                 jsondicts.append(disk_jsondict)
-
     else:  # clone disk
         disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
         disk_jsondict = disk_helper.get_create_jsondict(disk, 'volume', disk_info)

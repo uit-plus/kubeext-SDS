@@ -225,6 +225,7 @@ class K8sHelper(object):
     def update(self, name, key, data):
         try:
             jsondict = self.get(name)
+            jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
             jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
             return client.CustomObjectsApi().replace_namespaced_custom_object(
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
@@ -245,6 +246,7 @@ class K8sHelper(object):
         try:
             jsondict = self.get(name)
             if hasLifeCycle(jsondict):
+                jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
                 jsondict = removeLifecycle(jsondict)
                 return client.CustomObjectsApi().replace_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
@@ -255,6 +257,7 @@ class K8sHelper(object):
     def change_node(self, name, newNodeName):
         jsondict = self.get(name)
         if jsondict:
+            jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
             jsondict['metadata']['labels']['host'] = newNodeName
             spec = get_spec(jsondict)
             if spec:
