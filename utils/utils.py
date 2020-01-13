@@ -96,6 +96,7 @@ def runCmdWithResult(cmd):
         p.stdout.close()
         p.stderr.close()
 
+
 def remoteRunCmdWithResult(ip, cmd):
     if not cmd:
         return
@@ -224,14 +225,32 @@ def runCmdAndGetOutput(cmd):
         p.stdout.close()
         p.stderr.close()
 
+def remoteRunCmd(ip, cmd):
+    if not cmd:
+        logger.debug('No CMD to execute.')
+        return
+    cmd = 'ssh root@%s "%s"' % (ip, cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        std_out = p.stdout.readlines()
+        std_err = p.stderr.readlines()
+        if std_out:
+            logger.debug(std_out)
+        if std_err:
+            msg = ''
+            for index, line in enumerate(std_err):
+                msg = msg + line
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
+        return
+    finally:
+        p.stdout.close()
+        p.stderr.close()
 
 '''
 Run back-end command in subprocess.
 '''
-
-
 def runCmd(cmd):
-    std_err = None
     if not cmd:
         #         logger.debug('No CMD to execute.')
         return
@@ -471,6 +490,8 @@ def get_volume_size(pool, vol):
 
 
 def get_disks_spec(domain):
+    if domain is None:
+        raise ExecuteException('RunCmdError', 'domin is None. Can not get domain disk spec.')
     output = runCmdAndGetOutput('virsh domblklist %s' % domain)
     lines = output.splitlines()
     spec = {}
@@ -906,6 +927,23 @@ def check_disk_in_use(disk_path):
         return True
     return False
 
+def modofy_vm_disk_file(xmlfile, source, target):
+    tree = ET.parse(xmlfile)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element.get("file") == source:
+                    source_element.set("file", target)
+                    tree.write(xmlfile)
+                    return True
+    return False
 
 def change_vm_os_disk_file(vm, source, target):
     if not vm or not source or not target:
