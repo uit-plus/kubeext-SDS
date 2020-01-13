@@ -1319,6 +1319,8 @@ def migrateVMDisk(params):
     for disk_path in specs.keys():
         # release
         release_disk_by_path(disk_path)
+    op = Operation('virsh undefine %s' % params.domain, {})
+    op.execute()
     success_print("migrate vm %s successful." % params.domain, {})
 
 def xmlToJson(xmlStr):
