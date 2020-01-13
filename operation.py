@@ -1229,6 +1229,13 @@ def migrateVMDisk(params):
             if arg.split('=')[0] == 'pool':
                 vol = arg.split('=')[1]
         if vol and pool:
+            prepare_info = get_disk_prepare_info_by_path(vol)
+            source_pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+            target_pool_info = get_pool_info_from_k8s(pool)
+            if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs'] and target_pool_info['pooltype'] == 'uus':
+                raise ExecuteException('RunCmdError', 'not support migrate disk file to dev.')
+            if source_pool_info['pooltype'] == 'uus' and target_pool_info['pooltype'] == 'uus' and source_pool_info['poolname'] != target_pool_info['poolname']:
+                raise ExecuteException('RunCmdError', 'not support migrate disk dev to dev with different poolname.')
             migrateVols.append(vol)
             vp['vol'] = vol
             vp['pool'] = pool
@@ -1242,6 +1249,7 @@ def migrateVMDisk(params):
             remote_prepare_disk_by_path(params.ip, disk_path)
     uuid = randomUUID().replace('-', '')
     xmlfile = '/tmp/%s.xml' % uuid
+    logger.debug("xmlfile: %s" % xmlfile)
     op = Operation('virsh dumpxml %s > %s' % (params.domain, xmlfile), {})
     op.execute()
 
