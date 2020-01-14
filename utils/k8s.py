@@ -233,6 +233,16 @@ class K8sHelper(object):
         except Exception:
             raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
+    def updateAll(self, name, jsondict):
+        try:
+            jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+            jsondict = deleteLifecycleInJson(jsondict)
+            return client.CustomObjectsApi().replace_namespaced_custom_object(
+                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                plural=resources[self.kind]['plural'], name=name, body=jsondict)
+        except Exception:
+            raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
+
     def delete(self, name):
         try:
             return client.CustomObjectsApi().delete_namespaced_custom_object(
@@ -264,7 +274,7 @@ class K8sHelper(object):
                 nodeName = spec.get('nodeName')
                 if nodeName:
                     spec['nodeName'] = newNodeName
-        return jsondict
+            self.updateAll(name, jsondict)
 
 
 def error_print(code, msg, data=None):

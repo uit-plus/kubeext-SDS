@@ -1202,7 +1202,7 @@ def migrateDiskFunc(sourceVol, targetPool):
 
 def migrateDisk(params):
     migrateDiskFunc(params.vol, params.pool)
-    success_print("success register disk to k8s.", {})
+    success_print("success migrate disk.", {})
 
 # cold migrate
 def migrateVMDisk(params):
