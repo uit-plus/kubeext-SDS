@@ -630,14 +630,15 @@ def showDisk(params):
         if diskinfo['result']['code'] != 0:
             raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
                 diskinfo['result']['code'], diskinfo['result']['msg'], diskinfo['obj']))
-
+        prepareInfo = cstor_disk_prepare(poolname, params.vol, diskinfo['data']['uni'])
         result = {
             "disk": params.vol,
             "pool": params.pool,
-            "poolname": poolname,
-            "virtual_size": diskinfo["data"]["size"],
-            "filename": diskinfo["data"]["path"],
-            "uni": diskinfo["data"]["uni"]
+            "poolname": pool_info['poolname'],
+            "uni": diskinfo["data"]["uni"],
+            "current": prepareInfo["data"]["path"],
+            "virtual_size": params.capacity,
+            "filename": prepareInfo["data"]["path"]
         }
 
     success_print("show disk %s success." % params.pool, result)
