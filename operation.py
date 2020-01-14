@@ -1207,6 +1207,8 @@ def migrateDisk(params):
 
 # cold migrate
 def migrateVMDisk(params):
+    if is_vm_active(params.domain):
+        raise ExecuteException('', 'error: vm is still running, plz stop it firstly.')
     if not is_vm_disk_driver_cache_none(params.domain):
         raise ExecuteException('', 'error: disk driver cache is not none')
     # if not is_vm_disk_not_shared_storage(params.domain):
