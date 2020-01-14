@@ -1243,6 +1243,7 @@ def migrateVMDisk(params):
             migrateVols.append(vol)
             vp['vol'] = vol
             vp['pool'] = pool
+            vps.append(vp)
         else:
             raise ExecuteException('RunCmdError', 'migratedisks param is illegal.')
     for disk_path in specs.keys():
@@ -1287,8 +1288,11 @@ def migrateVMDisk(params):
                             jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
                             all_jsondicts.extend(jsondicts)
                 else:
+                    logger.debug(vps)
+                    logger.debug('migrate disks')
                     for vp in vps:
                         vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
+                        logger.debug('migrate disk %s to %s.' % (vol, vp['pool']))
                         migrateDiskFunc(vol, vp['pool'])
                         disk_info = get_vol_info_from_k8s(vol)
                         if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
