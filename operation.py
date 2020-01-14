@@ -637,7 +637,7 @@ def showDisk(params):
             "poolname": pool_info['poolname'],
             "uni": diskinfo["data"]["uni"],
             "current": prepareInfo["data"]["path"],
-            "virtual_size": params.capacity,
+            "virtual_size": prepareInfo["data"]["size"],
             "filename": prepareInfo["data"]["path"]
         }
 
