@@ -1220,8 +1220,10 @@ def migrateVMDisk(params):
     # prepare all disk
     specs = get_disks_spec(params.domain)
     oldPools = {}
+    vmVols = []
     for disk_path in specs.keys():
         prepare_info = get_disk_prepare_info_by_path(disk_path)
+        vmVols.append(prepare_info['disk'])
         oldPools[prepare_info['disk']] = prepare_info['pool']
     vps = []
     migrateVols = []
@@ -1326,12 +1328,12 @@ def migrateVMDisk(params):
             raise e
         apply_all_jsondict(all_jsondicts)
 
-    for disk_path in specs.keys():
+    for vol in vmVols:
         # release
-        release_disk_by_path(disk_path)
+        release_disk_by_metadataname(vol)
     op = Operation('virsh undefine %s' % params.domain, {})
     op.execute()
-    success_print("migrate vm %s successful." % params.domain, {})
+    success_print("migrate vm disk %s successful." % params.domain, {})
 
 def xmlToJson(xmlStr):
     json = dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
