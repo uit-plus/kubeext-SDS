@@ -1,6 +1,3 @@
-from xml.etree.ElementTree import fromstring
-from xmljson import badgerfish as bf
-
 from netutils import get_host_IP
 from utils.k8s import get_node_name, get_hostname_in_lower_case
 from utils.utils import *
@@ -1205,6 +1202,10 @@ def migrateDisk(params):
     migrateDiskFunc(params.vol, params.pool)
     success_print("success migrate disk.", {})
 
+def modifyVM(params):
+    modifyVMOnNode(params.domain)
+    success_print("success modifyVM.", {})
+
 # cold migrate
 def migrateVMDisk(params):
     if is_vm_active(params.domain):
@@ -1311,6 +1312,8 @@ def migrateVMDisk(params):
             raise e
         op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
         op.execute()
+        op = Operation('virsh undefine %s' % params.domain, {})
+        op.execute()
         op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
         op.execute()
         try:
@@ -1326,21 +1329,19 @@ def migrateVMDisk(params):
                 except:
                     pass
             raise e
+        for vol in vmVols:
+            # release
+            release_disk_by_metadataname(vol)
         apply_all_jsondict(all_jsondicts)
-
-    for vol in vmVols:
-        # release
-        release_disk_by_metadataname(vol)
-    op = Operation('virsh undefine %s' % params.domain, {})
-    op.execute()
-    success_print("migrate vm disk %s successful." % params.domain, {})
-
-def xmlToJson(xmlStr):
-    json = dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
-    return json.replace("@", "_").replace("$", "text").replace(
-        "interface", "_interface").replace("transient", "_transient").replace(
-        "nested-hv", "nested_hv").replace("suspend-to-mem", "suspend_to_mem").replace("suspend-to-disk",
-                                                                                      "suspend_to_disk")
+        op = Operation('kubesds-adm modifyVM --domain %s' % params.domain, {}, ip=params.ip, remote=True, with_result=True)
+        result = op.execute()
+        if result['result']['code'] != 0:
+            raise ExecuteException('RunCmdError', 'can not modify vm on k8s.')
+        vmHelper = K8sHelper('VirtualMachine')
+        vmHelper.change_node(params.domain, node_name)
+        success_print("migrate vm disk %s successful." % params.domain, {})
+    else:
+        error_print(1, 'can not migrate vm disk, can not find target node.')
 
 def is_cstor_pool_exist(pool):
     op = Operation('cstor-cli pool-show ', {'poolname': pool}, with_result=True)
@@ -1466,7 +1467,7 @@ def release_disk_by_path(path):
 
 if __name__ == '__main__':
     # print get_disks_spec('vm006')
-    print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accdd174caced76b0db2235/1709accdd174caced76b0db2235/vm006migratedisk2/snapshots/vm006migratedisk2.1')
+    print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev/vm003migratevmdisk2/snapshots/vm003migratevmdisk2.1')
     # prepare_disk_by_path(
     #     '/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
     # prepare_disk_by_metadataname('vm00aadd6coddpdssdn')

@@ -460,6 +460,9 @@ def migrateDiskParser(args):
 def migrateVMDiskParser(args):
     execute('migrateVMDisk', args)
 
+def modifyVMParser(args):
+    execute('modifyVM', args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -790,7 +793,14 @@ parser_migrate_vm_disk.add_argument("--migratedisks", required=True, metavar="[M
 # set default func
 parser_migrate_vm_disk.set_defaults(func=migrateVMDiskParser)
 
-
+# -------------------- add migrateVMDisk cmd ----------------------------------
+parser_modify_vm = subparsers.add_parser("modifyVM", help="modifyVM help")
+parser_modify_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to migrate")
+# parser_migrate_vm_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+#                             help="target storage pool to use")
+# set default func
+parser_modify_vm.set_defaults(func=modifyVMParser)
 
 try:
     args = parser.parse_args()

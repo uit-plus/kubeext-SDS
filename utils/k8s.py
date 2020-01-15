@@ -29,7 +29,7 @@ config_raw.read(cfg)
 config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
 
 resources = {}
-for kind in ['VirtualMahcinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
+for kind in ['VirtualMachine', 'VirtualMahcinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
     resource = {}
     for key in ['version', 'group', 'plural']:
         resource[key] = config_raw.get(kind, key)

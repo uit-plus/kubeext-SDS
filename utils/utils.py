@@ -16,14 +16,16 @@ import uuid
 from functools import wraps
 from json import loads, dumps, load, dump
 from sys import exit
-
+from xml.etree.ElementTree import fromstring
+from xmljson import badgerfish as bf
 import grpc
 import xmltodict
 import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from k8s import K8sHelper
+from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle
+from arraylist import vmArray
 
 try:
     import xml.etree.CElementTree as ET
@@ -1314,6 +1316,67 @@ def get_node_name_by_node_ip(ip):
         if node['ip'] == ip and node['nodeName'].find("vm.") >= 0:
             return node['nodeName']
     return None
+
+
+def get_vm_xml(domain):
+    return runCmdAndGetOutput('virsh dumpxml %s' % domain)
+
+def xmlToJson(xmlStr):
+    return dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
+
+def toKubeJson(json):
+    return json.replace('@', '_').replace('$', 'text').replace(
+            'interface', '_interface').replace('transient', '_transient').replace(
+                    'nested-hv', 'nested_hv').replace('suspend-to-mem', 'suspend_to_mem').replace('suspend-to-disk', 'suspend_to_disk')
+
+def _addListToSpecificField(data):
+    if isinstance(data, list):
+        return data
+    else:
+        return [data]
+
+'''
+Cautions! Do not modify this function because it uses reflections!
+'''
+def _userDefinedOperationInList(field, jsondict, alist):
+    jsondict = jsondict[field]
+    tmp = jsondict
+    do_it = False
+    for index, value in enumerate(alist):
+        if index == 0:
+            if value != field:
+                break;
+            continue
+        tmp = tmp.get(value)
+        if not tmp:
+            do_it = False
+            break;
+        do_it = True
+    if do_it:
+        tmp2 = None
+        for index, value in enumerate(alist):
+            if index == 0:
+                tmp2 = 'jsondict'
+            else:
+                tmp2 = '{}[\'{}\']'.format(tmp2, value)
+        exec('{} = {}').format(tmp2, _addListToSpecificField(tmp))
+    return
+
+def updateDomain(jsondict):
+    for line in vmArray:
+        alist = line.split('-')
+        _userDefinedOperationInList('domain', jsondict, alist)
+    return jsondict
+
+def modifyVMOnNode(domain):
+    helper = K8sHelper('VirtualMachine')
+    jsonDict = helper.get(domain)
+    vm_xml = get_vm_xml(domain)
+    vm_json = toKubeJson(xmlToJson(vm_xml))
+    vm_json = updateDomain(loads(vm_json))
+    vm_json = updateJsonRemoveLifecycle(jsonDict, vm_json)
+    jsonDict = addPowerStatusMessage(vm_json, 'Running', 'The VM is running.')
+    helper.updateAll(domain, jsonDict)
 
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
