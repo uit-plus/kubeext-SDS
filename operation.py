@@ -1228,6 +1228,7 @@ def migrateVMDisk(params):
         oldPools[prepare_info['disk']] = prepare_info['pool']
     vps = []
     migrateVols = []
+    notReleaseVols = []
     for line in params.migratedisks.split(';'):
         vp = {}
         vol = None
@@ -1245,7 +1246,8 @@ def migrateVMDisk(params):
                 raise ExecuteException('RunCmdError', 'not support migrate disk file to dev.')
             if source_pool_info['pooltype'] == 'uus' and target_pool_info['pooltype'] == 'uus' and source_pool_info['poolname'] != target_pool_info['poolname']:
                 raise ExecuteException('RunCmdError', 'not support migrate disk dev to dev with different poolname.')
-            migrateVols.append(prepare_info['disk'])
+            migrateVols.append(vol)
+            notReleaseVols.append(prepare_info['disk'])
             vp['vol'] = vol
             vp['pool'] = pool
             vps.append(vp)
@@ -1254,7 +1256,7 @@ def migrateVMDisk(params):
     for disk_path in specs.keys():
         # prepare
         prepare_info = prepare_disk_by_path(disk_path)
-        if prepare_info['disk'] not in migrateVols:
+        if disk_path not in migrateVols:
             # remote prepare
             remote_prepare_disk_by_path(params.ip, disk_path)
     uuid = randomUUID().replace('-', '')
@@ -1312,8 +1314,6 @@ def migrateVMDisk(params):
             raise e
         op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
         op.execute()
-        op = Operation('virsh undefine %s' % params.domain, {})
-        op.execute()
         op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
         op.execute()
         try:
@@ -1330,7 +1330,7 @@ def migrateVMDisk(params):
                     pass
             raise e
         for vol in vmVols:
-            if vol not in migrateVols:
+            if vol not in notReleaseVols:
                 # release
                 release_disk_by_metadataname(vol)
         apply_all_jsondict(all_jsondicts)
@@ -1340,6 +1340,8 @@ def migrateVMDisk(params):
             raise ExecuteException('RunCmdError', 'can not modify vm on k8s.')
         vmHelper = K8sHelper('VirtualMachine')
         vmHelper.change_node(params.domain, node_name)
+        op = Operation('virsh undefine %s' % params.domain, {})
+        op.execute()
         success_print("migrate vm disk %s successful." % params.domain, {})
     else:
         error_print(1, 'can not migrate vm disk, can not find target node.')
