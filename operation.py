@@ -1253,8 +1253,8 @@ def migrateVMDisk(params):
             raise ExecuteException('RunCmdError', 'migratedisks param is illegal.')
     for disk_path in specs.keys():
         # prepare
-        prepare_disk_by_path(disk_path)
-        if disk_path not in migrateVols:
+        prepare_info = prepare_disk_by_path(disk_path)
+        if prepare_info['disk'] not in migrateVols:
             # remote prepare
             remote_prepare_disk_by_path(params.ip, disk_path)
     uuid = randomUUID().replace('-', '')
