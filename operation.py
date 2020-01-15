@@ -1245,7 +1245,7 @@ def migrateVMDisk(params):
                 raise ExecuteException('RunCmdError', 'not support migrate disk file to dev.')
             if source_pool_info['pooltype'] == 'uus' and target_pool_info['pooltype'] == 'uus' and source_pool_info['poolname'] != target_pool_info['poolname']:
                 raise ExecuteException('RunCmdError', 'not support migrate disk dev to dev with different poolname.')
-            migrateVols.append(vol)
+            migrateVols.append(prepare_info['disk'])
             vp['vol'] = vol
             vp['pool'] = pool
             vps.append(vp)
