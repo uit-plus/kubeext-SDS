@@ -1330,8 +1330,9 @@ def migrateVMDisk(params):
                     pass
             raise e
         for vol in vmVols:
-            # release
-            release_disk_by_metadataname(vol)
+            if vol not in migrateVols:
+                # release
+                release_disk_by_metadataname(vol)
         apply_all_jsondict(all_jsondicts)
         op = Operation('kubesds-adm modifyVM --domain %s' % params.domain, {}, ip=params.ip, remote=True, with_result=True)
         result = op.execute()
