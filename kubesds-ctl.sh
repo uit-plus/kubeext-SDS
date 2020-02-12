@@ -6,14 +6,14 @@
 
 
 daemon_start() {
-    /usr/bin/kubesds-rpc start &
+    /usr/bin/kubesds-rpc-service start &
 
     echo "Server started."
 }
 
 daemon_stop() {
 
-    pid=`ps -ef | grep '/usr/bin/kubesds-rpc start' | awk '{ print $2 }'`
+    pid=`ps -ef | grep '/usr/bin/kubesds-rpc-service start' | awk '{ print $2 }'`
 
     echo $pid
 

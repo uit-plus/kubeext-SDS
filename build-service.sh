@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-pyinstaller -F kubesds-rpc.py
+pyinstaller -F kubesds-rpc-service.py
 
-chmod +x ./dist/kubesds-rpc kubesds-ctl.sh
+chmod +x ./dist/kubesds-rpc-service kubesds-ctl.sh
 
-cp -f ./dist/kubesds-rpc kubesds-ctl.sh /usr/bin
+cp -f ./dist/kubesds-rpc-service kubesds-ctl.sh /usr/bin
 
 chmod 754 kubesds.service
 

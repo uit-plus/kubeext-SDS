@@ -18,7 +18,7 @@ Description=kubesds rpc
 After=docker.service
 
 [Service]
-Type=forking
+Type=simple
 Restart=on-failure
 ExecStart=/usr/bin/kubesds-ctl.sh start
 ExecStop=/usr/bin/kubesds-ctl.sh stop
