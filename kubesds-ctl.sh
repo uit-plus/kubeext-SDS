@@ -6,9 +6,8 @@
 
 
 daemon_start() {
-    /usr/bin/kubesds-rpc-service start &
-
     echo "Server started."
+    /usr/bin/kubesds-rpc-service start
 }
 
 daemon_stop() {
