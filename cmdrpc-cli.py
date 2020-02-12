@@ -49,3 +49,6 @@ def rpcCallWithResult(cmd):
     except Exception:
         logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
+
+
+print rpcCallWithResult('kubectl get vmp -o json 7daed7737ea0480eb078567febda62ea')

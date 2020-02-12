@@ -1392,7 +1392,7 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
-    print get_disks_spec('vm006')
+    print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
     # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
     # apply_all_jsondict(jsondicts)
     # print remoteRunCmdWithResult('133.133.135.35', 'cstor-cli pool-show --poolname pooldir')
