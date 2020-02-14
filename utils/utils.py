@@ -484,6 +484,14 @@ def is_vm_active(domain):
             return True
     return False
 
+def is_vm_exist(domain):
+    output = runCmdAndGetOutput('virsh list --all')
+    lines = output.splitlines()
+    for line in lines:
+        if domain in line.split():
+            return True
+    return False
+
 
 def get_volume_size(pool, vol):
     disk_config = get_disk_config(pool, vol)

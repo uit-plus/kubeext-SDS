@@ -1346,6 +1346,37 @@ def migrateVMDisk(params):
     else:
         error_print(1, 'can not migrate vm disk, can not find target node.')
 
+
+def exportVM(params):
+    if not is_vm_exist(params.domain):
+        raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
+    if not os.path.exists(params.path):
+        os.makedirs(params.path)
+
+    # save vm xml file
+    op = Operation('virsh dumpxml %s > %s/tmp/%s.xml' % (params.domain, params.path, params.domain), {})
+    op.execute()
+    disk_specs = get_disks_spec(params.domain)
+    for disk_path in disk_specs.keys():
+        disk_info = get_disk_prepare_info_by_path(disk_path)
+        pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        if pool_info['pooltype'] == 'localfs':
+            if not os.path.exists(disk_path):
+                raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
+            dest = '%s/%s' % (params.path, os.path.basename(disk_path))
+            if os.path.exists(dest):
+                raise ExecuteException('', 'vm export disk file %s has existed in %s, plz delete old file first or choose another path.' % (dest, params.path))
+            disk_format = get_disk_info(disk_path)
+            # snapshot
+            op = Operation(
+                'qemu-img create -f %s -b %s -F %s %s' %
+                (disk_format, disk_path, disk_format, dest), {})
+            op.execute()
+
+            op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
+            op2.execute()
+    success_print("success exportVM.", {})
+
 def is_cstor_pool_exist(pool):
     op = Operation('cstor-cli pool-show ', {'poolname': pool}, with_result=True)
     cstor = op.execute()
