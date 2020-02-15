@@ -466,6 +466,11 @@ def modifyVMParser(args):
 def exportVMParser(args):
     execute('exportVM', args)
 
+def backupVMParser(args):
+    execute('backupVM', args)
+
+def restoreVMParser(args):
+    execute('restoreVM', args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
@@ -742,10 +747,12 @@ parser_upodate_current.set_defaults(func=updateDiskCurrentParser)
 parser_customize = subparsers.add_parser("customize", help="customize help")
 parser_customize.add_argument("--add", required=True, metavar="[ADD]", type=str,
                               help="storage pool type to use")
-parser_customize.add_argument("--user", required=True, metavar="[USER]", type=str,
+parser_customize.add_argument("--user", required=False, metavar="[USER]", type=str,
                               help="disk current file to use")
-parser_customize.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
+parser_customize.add_argument("--password", required=False, metavar="[PASSWORD]", type=str,
                               help="disk current file to use")
+parser_customize.add_argument("--ssh_inject", required=False, metavar="[SSH_INJECT]", type=str,
+                              help="disk ssh-inject")
 # set default func
 parser_customize.set_defaults(func=customizeParser)
 
@@ -815,6 +822,24 @@ parser_export_vm.add_argument("--path", required=True, metavar="[PATH]", type=st
                             help="vm disk file to export")
 # set default func
 parser_export_vm.set_defaults(func=exportVMParser)
+
+
+# -------------------- add backupVM cmd ----------------------------------
+parser_backup_vm = subparsers.add_parser("backupVM", help="backupVM help")
+parser_backup_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_backup_vm.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
+                            help="backup vm to remote server.")
+# set default func
+parser_backup_vm.set_defaults(func=backupVMParser)
+
+
+# -------------------- add restoreVM cmd ----------------------------------
+parser_restore_vm = subparsers.add_parser("restoreVM", help="restoreVM help")
+parser_restore_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+# set default func
+parser_restore_vm.set_defaults(func=restoreVMParser)
 
 try:
     args = parser.parse_args()

@@ -934,8 +934,13 @@ def updateDiskCurrent(params):
        error_print(400, "not support operation for uus")
 
 def customize(params):
-    op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
-    op.execute()
+    if params.user and params.password:
+        op = Operation('virt-customize --add %s --password %s:password:%s' % (params.add, params.user, params.password), {})
+        op.execute()
+    elif params.ssh_inject:
+        op = Operation('virt-customize --add %s --ssh-inject %s' % (params.add, params.ssh_inject),
+                       {})
+        op.execute()
     success_print("customize  successful.", {})
 
 def migrate(params):
@@ -1350,11 +1355,78 @@ def migrateVMDisk(params):
 def exportVM(params):
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
+
+    target_path = '%s/%s' % (params.path, params.domain)
+    if not os.path.exists(target_path):
+        os.makedirs(target_path)
+
+    # save vm xml file
+    op = Operation('virsh dumpxml %s > %s/%s.xml' % (params.domain, target_path, params.domain), {})
+    op.execute()
+    disk_specs = get_disks_spec(params.domain)
+    for disk_path in disk_specs.keys():
+        disk_info = get_disk_prepare_info_by_path(disk_path)
+        pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        if pool_info['pooltype'] == 'localfs':
+            if not os.path.exists(disk_path):
+                raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
+            dest = '%s/%s' % (target_path, os.path.basename(disk_path))
+            if os.path.exists(dest):
+                raise ExecuteException('', 'vm export disk file %s has existed in %s, plz delete old file first or choose another path.' % (dest, target_path))
+            disk_format = get_disk_info(disk_path)
+            # snapshot
+            op = Operation(
+                'qemu-img create -f %s -b %s -F %s %s' %
+                (disk_format, disk_path, disk_format, dest), {})
+            op.execute()
+
+            op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
+            op2.execute()
+    success_print("success exportVM.", {})
+
+def backupVM(params):
+    # default backup path
+    DEFAULT_BACKUP_PATH = '/var/lib/libvirt/backup'
+
+    if not is_vm_exist(params.domain):
+        raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
+    backup_path = '%s/%s' % (params.path, params.domain)
+    if not os.path.exists(backup_path):
+        os.makedirs(backup_path)
+
+    # save vm xml file
+    op = Operation('virsh dumpxml %s > %s/%s.xml' % (params.domain, backup_path, params.domain), {})
+    op.execute()
+    disk_specs = get_disks_spec(params.domain)
+    for disk_path in disk_specs.keys():
+        disk_info = get_disk_prepare_info_by_path(disk_path)
+        pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        if pool_info['pooltype'] == 'localfs':
+            if not os.path.exists(disk_path):
+                raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
+            dest = '%s/%s' % (backup_path, os.path.basename(disk_path))
+            if os.path.exists(dest):
+                raise ExecuteException('', 'vm export disk file %s has existed in %s, plz delete old file first or choose another path.' % (dest, backup_path))
+            disk_format = get_disk_info(disk_path)
+            # snapshot
+            op = Operation(
+                'qemu-img create -f %s -b %s -F %s %s' %
+                (disk_format, disk_path, disk_format, dest), {})
+            op.execute()
+
+            op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
+            op2.execute()
+    success_print("success exportVM.", {})
+
+
+def restoreVM(params):
+    if not is_vm_exist(params.domain):
+        raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
     if not os.path.exists(params.path):
         os.makedirs(params.path)
 
     # save vm xml file
-    op = Operation('virsh dumpxml %s > %s/tmp/%s.xml' % (params.domain, params.path, params.domain), {})
+    op = Operation('virsh dumpxml %s > %s/%s.xml' % (params.domain, params.path, params.domain), {})
     op.execute()
     disk_specs = get_disks_spec(params.domain)
     for disk_path in disk_specs.keys():
@@ -1375,7 +1447,7 @@ def exportVM(params):
 
             op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
             op2.execute()
-    success_print("success exportVM.", {})
+    success_print("success restoreVM.", {})
 
 def is_cstor_pool_exist(pool):
     op = Operation('cstor-cli pool-show ', {'poolname': pool}, with_result=True)
