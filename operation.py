@@ -939,9 +939,9 @@ def customize(params):
         op.execute()
     elif params.ssh_inject:
         cmd = 'virt-customize --add %s --ssh-inject \"%s\"' % (params.add, params.ssh_inject)
-        logger.debug(cmd)
-        op = Operation(cmd, {})
-        op.execute()
+        print cmd
+        # op = Operation(cmd, {})
+        # op.execute()
     else:
         raise ExecuteException('', 'plz give right args and value.')
     success_print("customize  successful.", {})
