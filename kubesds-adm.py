@@ -828,8 +828,14 @@ parser_export_vm.set_defaults(func=exportVMParser)
 parser_backup_vm = subparsers.add_parser("backupVM", help="backupVM help")
 parser_backup_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                             help="vm domain to export")
-parser_backup_vm.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
-                            help="backup vm to remote server.")
+parser_backup_vm.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_backup_vm.add_argument("--port", required=False, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_backup_vm.add_argument("--username", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server username.")
+parser_backup_vm.add_argument("--password", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server password.")
 # set default func
 parser_backup_vm.set_defaults(func=backupVMParser)
 

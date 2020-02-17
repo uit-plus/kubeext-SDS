@@ -1,4 +1,5 @@
 from netutils import get_host_IP
+from utils.ftp import *
 from utils.k8s import get_node_name, get_hostname_in_lower_case
 from utils.utils import *
 from utils import logger
@@ -312,7 +313,7 @@ def cstor_delete_disk(poolname, vol):
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
 
-
+# only can delete disk which not has snapshot.
 def deleteDisk(params):
     disk_info = get_vol_info_from_k8s(params.vol)
     poolname = disk_info['poolname']
@@ -1391,65 +1392,131 @@ def backupVM(params):
     # default backup path
     DEFAULT_BACKUP_PATH = '/var/lib/libvirt/backup'
 
+    if params.remote:
+        if not params.port or not params.username or not params.password:
+            raise ExecuteException('', 'ftp port, username, password must be set.')
+
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
-    backup_path = '%s/%s' % (params.path, params.domain)
+    backup_path = '%s/%s' % (DEFAULT_BACKUP_PATH, params.domain)
     if not os.path.exists(backup_path):
         os.makedirs(backup_path)
 
-    # save vm xml file
-    op = Operation('virsh dumpxml %s > %s/%s.xml' % (params.domain, backup_path, params.domain), {})
-    op.execute()
+    backup_files = []
+
     disk_specs = get_disks_spec(params.domain)
     for disk_path in disk_specs.keys():
         disk_info = get_disk_prepare_info_by_path(disk_path)
         pool_info = get_pool_info_from_k8s(disk_info['pool'])
         if pool_info['pooltype'] == 'localfs':
+            cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
             if not os.path.exists(disk_path):
                 raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
-            dest = '%s/%s' % (backup_path, os.path.basename(disk_path))
-            if os.path.exists(dest):
-                raise ExecuteException('', 'vm export disk file %s has existed in %s, plz delete old file first or choose another path.' % (dest, backup_path))
-            disk_format = get_disk_info(disk_path)
-            # snapshot
-            op = Operation(
-                'qemu-img create -f %s -b %s -F %s %s' %
-                (disk_format, disk_path, disk_format, dest), {})
-            op.execute()
 
-            op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
-            op2.execute()
-    success_print("success exportVM.", {})
+            dest = '%s/%s' % (backup_path, os.path.basename(disk_path))
+            backup_files.append(dest)
+            if os.path.exists(dest):
+                new_dest = '%s/%s' % (backup_path, randomUUID().replace('-', ''))
+                disk_format = get_disk_info(disk_path)
+                # snapshot
+                op = Operation(
+                    'qemu-img create -f %s -b %s -F %s %s' %
+                    (disk_format, disk_path, disk_format, new_dest), {})
+                op.execute()
+
+                op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, new_dest), {})
+                op2.execute()
+
+                op3 = Operation('rm -f %s' % dest, {})
+                op3.execute()
+
+                op4 = Operation('mv %s %s' % (new_dest, dest), {})
+                op4.execute()
+            else:
+                disk_format = get_disk_info(disk_path)
+                # snapshot
+                op = Operation(
+                    'qemu-img create -f %s -b %s -F %s %s' %
+                    (disk_format, disk_path, disk_format, dest), {})
+                op.execute()
+
+                op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
+                op2.execute()
+
+    # save vm xml file
+    xml_file_backup = '%s/%s.xml' % (backup_path, params.domain)
+    op = Operation('virsh dumpxml %s > %s' % (params.domain, xml_file_backup), {})
+    op.execute()
+    backup_files.append(xml_file_backup)
+
+    # delete old file
+    for file in os.listdir(backup_path):
+        if file not in backup_files:
+            os.remove('%s/%s' % (backup_path, file))
+
+    if params.remote:
+        target_path = '/%s' % params.domain
+        ftp = ftpconnect(params.remote, params.port, params.username, params.password)
+        uploadFile(ftp, backup_files, target_path)
+    success_print("success backupVM.", {})
 
 
 def restoreVM(params):
-    if not is_vm_exist(params.domain):
-        raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
-    if not os.path.exists(params.path):
-        os.makedirs(params.path)
+    # default backup path
+    DEFAULT_BACKUP_PATH = '/var/lib/libvirt/backup'
 
-    # save vm xml file
-    op = Operation('virsh dumpxml %s > %s/%s.xml' % (params.domain, params.path, params.domain), {})
-    op.execute()
-    disk_specs = get_disks_spec(params.domain)
-    for disk_path in disk_specs.keys():
-        disk_info = get_disk_prepare_info_by_path(disk_path)
-        pool_info = get_pool_info_from_k8s(disk_info['pool'])
-        if pool_info['pooltype'] == 'localfs':
-            if not os.path.exists(disk_path):
-                raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
-            dest = '%s/%s' % (params.path, os.path.basename(disk_path))
-            if os.path.exists(dest):
-                raise ExecuteException('', 'vm export disk file %s has existed in %s, plz delete old file first or choose another path.' % (dest, params.path))
-            disk_format = get_disk_info(disk_path)
-            # snapshot
-            op = Operation(
-                'qemu-img create -f %s -b %s -F %s %s' %
-                (disk_format, disk_path, disk_format, dest), {})
+    backup_path = '%s/%s' % (DEFAULT_BACKUP_PATH, params.domain)
+    if not os.path.exists(backup_path):
+        raise ExecuteException('', 'not exist this vm backup.')
+
+    if is_vm_exist(params.domain):
+        raise ExecuteException('', 'has exist this vm %s, plz check it.' % params.domain)
+
+    # restore vm disk
+    xml_file = '%s/%s.xml' % (backup_path, params.domain)
+    disks = get_vm_disks_from_xml(xml_file)
+    vm_disk_files_need_modify = {}
+    for disk in disks:
+        prepareInfo = get_disk_prepare_info_by_path(disk)
+        cstor_disk_prepare(prepareInfo['poolname'], prepareInfo['disk'], prepareInfo['uni'])
+        # if disk file is localfs, copy file.
+        poolInfo = get_pool_info_from_k8s(prepareInfo['pool'])
+
+        if poolInfo['pooltype'] == 'localfs':
+            real_path = '%s/%s' % (backup_path, os.path.basename(disk))
+            if not os.path.exists(real_path):
+                raise ExecuteException('', 'can not find vm disk file %s in backup dir %s' % (real_path, backup_path))
+            if os.path.basename(os.path.dirname(disk)) == 'snapshots':
+                diskDir = os.path.dirname(os.path.dirname(disk))
+                dest = '%s/%s' % (diskDir, os.path.basename(disk))
+                vm_disk_files_need_modify[disk] = dest
+            else:
+                diskDir = os.path.dirname(disk)
+                dest = '%s/%s' % (diskDir, os.path.basename(disk))
+
+            if not os.path.exists(diskDir):
+                os.makedirs(diskDir)
+            op = Operation('cp -f %s %s' % (real_path, dest), {})
             op.execute()
+            write_config(os.path.basename(disk), diskDir, dest, poolInfo['pool'], poolInfo['poolname'])
+            # TODO if disk was deleted, register it to k8s
 
-            op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
-            op2.execute()
+    # modify disk file in xml file.
+    tmp_xml_file = '/tmp/%s.xml' % params.domain
+    op = Operation('cp -f %s %s' % (xml_file, tmp_xml_file), {})
+    op.execute()
+    for oldDisk in vm_disk_files_need_modify.keys():
+        if not modofy_vm_disk_file(tmp_xml_file, oldDisk, vm_disk_files_need_modify[oldDisk]):
+            raise ExecuteException('', 'can not modify vm disk file in xml while restore vm.')
+
+    # define vm
+    op = Operation('virsh define %s' % tmp_xml_file, {})
+    op.execute()
+
+    # delete tmp xml file
+    op = Operation('rm -f %s' % tmp_xml_file, {})
+    op.execute()
+
     success_print("success restoreVM.", {})
 
 def is_cstor_pool_exist(pool):
@@ -1575,8 +1642,9 @@ def release_disk_by_path(path):
     cstor_release_disk(pool, disk, uni)
 
 if __name__ == '__main__':
+    print os.path.getmtime('build.sh')
     # print get_disks_spec('vm006')
-    print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev/vm003migratevmdisk2/snapshots/vm003migratevmdisk2.1')
+    # print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev/vm003migratevmdisk2/snapshots/vm003migratevmdisk2.1')
     # prepare_disk_by_path(
     #     '/var/lib/libvirt/cstor/1709accdd174caced76b0dbfccdev/1709accdd174caced76b0dbfccdev/vm00aadd6coddpdssdn/vm00aadd6coddpdssdn')
     # prepare_disk_by_metadataname('vm00aadd6coddpdssdn')

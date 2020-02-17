@@ -1,62 +1,91 @@
 import os
+import socket
 from ftplib import FTP, error_perm
 
+from exception import ExecuteException
 
-def list_ftp_all_file(host, port, username, password):
+
+def ftpconnect(host, port, username, password):
     ftp = FTP()
     # ftp.set_debuglevel(2)
-    ftp.connect("192.168.137.20", "21")
-    ftp.login("ftpuser", "onceas")
-    # print ftp.getwelcome()
+    ftp.encoding = 'utf-8'
+    try:
+        ftp.connect(host, port)
+        ftp.login(username, password)
+    except(socket.error, socket.gaierror):
+        raise ExecuteException('', 'can not connect ftp server.')
+    except error_perm:
+        raise ExecuteException('', 'can not connect ftp server.')
+    return ftp
+
+
+def dir(ftp, path):
+    if not is_exist(ftp, path):
+        raise ExecuteException('', 'not exist file %s on ftp server which need to download ' % path)
+    ftp.cwd(path)
     files = ftp.nlst()
-
-
-    # bufsize = 1024
-    # filename = "filename.txt"
-    # file_handle = open(filename, "wb").write
-    # ftp.retrbinary("RETR filename.txt", file_handle, bufsize)
-    # ftp.set_debuglevel(0)
-    ftp.quit()
     return files
 
 
-def is_exist(path):
-    ftp = FTP('10.35.1.86')  # my ftp
-    try:
-        ftp.login('thy', 'thy')
-    except error_perm:
-        print 'login error'
-
+def mkdir(ftp, path):
     # Suppose you want upload file to dir thy38
     try:
-        ftp.cwd('thy38')
+        ftp.cwd(path)
     except error_perm:
         try:
-            ftp.mkd('thy38')
+            ftp.mkd(path)
         except error_perm:
             print 'U have no authority to make dir'
-    finally:
-        ftp.quit()
 
-    ftp.close()
 
-def upload(file_path, target_path):
-    ftp = FTP()
-    # ftp.set_debuglevel(2)
-    ftp.connect("192.168.137.20", "21")
-    ftp.login("ftpuser", "onceas")
-    # print ftp.getwelcome()
-    dirname = os.path.dirname(target_path)
-    filename = os.path.basename(target_path)
-    ftp.cwd(dirname)
-    files = ftp.nlst()
-    if filename not in files:
-        ftp.quit()
+def is_exist(ftp, path):
+    # Suppose you want upload file to dir thy38
+    try:
+        ftp.cwd(path)
+    except error_perm:
         return False
-    ftp.quit()
     return True
-    # bufsize = 1024
-    # filename = "filename.txt"
-    # file_handle = open(filename, "wb").write
-    # ftp.retrbinary("RETR filename.txt", file_handle, bufsize)
-    # ftp.set_debuglevel(0)
+
+
+def uploadFile(ftp, files, target_path):
+    try:
+        if is_exist(ftp, target_path):
+            ftp.cwd(target_path)
+        else:
+            ftp.mkd(target_path)
+            ftp.cwd(target_path)
+
+        for filename in files:
+            bufsize = 1024
+            file_handle = open(filename, "rb")
+            ftp.storbinary("STOR %s" % os.path.basename(filename), file_handle, bufsize)
+    except error_perm:
+        raise ExecuteException('', 'error while upload file from ftp server. %s' % error_perm.message)
+
+
+
+def downloadDir(ftp, download_path, target_path):
+    if not os.path.exists(target_path):  # create file dir to save
+        os.mkdir(target_path)
+    try:
+        if not is_exist(ftp, download_path):
+            raise ExecuteException('', 'not exist file on ftp server which need to download ')
+        ftp.cwd(download_path)
+        files = dir(ftp, download_path)
+        for filename in files:
+            bufsize = 1024
+            file_handle = open('%s/%s' % (target_path, filename), "wb")
+            ftp.retrbinary("RETR %s" % filename, file_handle, bufsize)
+    except error_perm:
+        raise ExecuteException('', 'error while download file from ftp server. %s' % error_perm.message)
+
+
+if __name__ == '__main__':
+    ftp = ftpconnect('192.168.137.20', '21', 'ftpuser', 'onceas')
+    ftp.set_debuglevel(2)
+    uploadFile(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/vmtest')
+    # uploadFile(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/uuid')
+    # ftp.rmd('vmtest')
+    # ftp.rename('uuid', 'vmtest')
+    # downloadDir(ftp, '/vmtest', '/root/vmtest')
+    ftp.set_debuglevel(0)

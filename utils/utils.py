@@ -501,7 +501,7 @@ def get_volume_size(pool, vol):
 
 def get_disks_spec(domain):
     if domain is None:
-        raise ExecuteException('RunCmdError', 'domin is None. Can not get domain disk spec.')
+        raise ExecuteException('RunCmdError', 'domin is not set. Can not get domain disk spec.')
     output = runCmdAndGetOutput('virsh domblklist %s' % domain)
     lines = output.splitlines()
     spec = {}
@@ -988,6 +988,25 @@ def is_shared_storage(path):
     if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
         return True
     return False
+
+def get_vm_disks_from_xml(xmlfile):
+    tree = ET.parse(xmlfile)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    disks = []
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                disk_file = source_element.get("file")
+                if not is_shared_storage(disk_file):
+                    disks.append(disk_file)
+
+    return disks
 
 
 def is_vm_disk_not_shared_storage(vm):
