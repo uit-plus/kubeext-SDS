@@ -937,6 +937,26 @@ def check_disk_in_use(disk_path):
         return True
     return False
 
+def delete_vm_disk_in_xml(xmlfile, disk_file):
+    tree = ET.parse(xmlfile)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element.get("file") == disk_file:
+                    caption.remove(disk)
+                    tree.write(xmlfile)
+                    return True
+    return False
+
+
+
 def modofy_vm_disk_file(xmlfile, source, target):
     tree = ET.parse(xmlfile)
 
