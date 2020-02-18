@@ -2,8 +2,12 @@
 
 pyinstaller -F kubesds-adm.py
 pyinstaller -F kubesds-rpc.py
-pyinstaller -F kubesds-rpc-service.py
+#pyinstaller -F kubesds-rpc-service.py
 
-chmod +x ./dist/kubesds-adm ./dist/kubesds-rpc ./dist/kubesds-rpc-service
+chmod +x ./dist/kubesds-adm ./dist/kubesds-rpc
 
-cp -f ./dist/kubesds-adm ./dist/kubesds-rpc ./dist/kubesds-rpc-service /usr/bin
+#chmod +x ./dist/kubesds-rpc-service
+
+#cp -f ./dist/kubesds-rpc-service /usr/bin
+
+cp -f ./dist/kubesds-adm ./dist/kubesds-rpc /usr/bin

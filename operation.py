@@ -1448,6 +1448,7 @@ def backupVM(params):
     disk_specs = get_disks_spec(params.domain)
 
     # check os disk type
+    logger.debug(disk_specs)
     for disk_path in disk_specs.keys():
         if disk_specs[disk_path] == 'vda':
             disk_info = get_disk_prepare_info_by_path(disk_path)
@@ -1467,7 +1468,7 @@ def backupVM(params):
             backup_files.append(dest)
             if os.path.exists(dest):
                 new_dest = '%s/%s' % (backup_path, randomUUID().replace('-', ''))
-                disk_format = get_disk_info(disk_path)
+                disk_format = get_disk_info(disk_path)['format']
                 # snapshot
                 op = Operation(
                     'qemu-img create -f %s -b %s -F %s %s' %
@@ -1483,7 +1484,7 @@ def backupVM(params):
                 op4 = Operation('mv %s %s' % (new_dest, dest), {})
                 op4.execute()
             else:
-                disk_format = get_disk_info(disk_path)
+                disk_format = get_disk_info(disk_path)['format']
                 # snapshot
                 op = Operation(
                     'qemu-img create -f %s -b %s -F %s %s' %
@@ -1502,11 +1503,13 @@ def backupVM(params):
     for disk_file in needs_to_delete:
         if not delete_vm_disk_in_xml(xml_file_backup, disk_file):
             raise ExecuteException('', 'can not delete cloud disk file in vm xml.')
+    delete_vm_cdrom_file_in_xml(xml_file_backup)
     backup_files.append(xml_file_backup)
 
     # delete old file
     for file in os.listdir(backup_path):
-        if file not in backup_files:
+        backup_file = '%s/%s' % (backup_path, file)
+        if backup_file not in backup_files:
             os.remove('%s/%s' % (backup_path, file))
 
     if params.remote:
@@ -1546,7 +1549,7 @@ def restoreVM(params):
             raise ExecuteException('', 'not exist cstor pool %s' % poolname)
 
         # if disk file is localfs, copy file.
-        node_name = get_node_name_by_node_ip(params.ip)
+        node_name = get_hostname_in_lower_case()
         pools = get_pools_by_path(pool_path)
 
         poolInfo = None
@@ -1730,7 +1733,7 @@ def release_disk_by_path(path):
 
 
 if __name__ == '__main__':
-    print os.path.getmtime('build.sh')
+    print get_hostname_in_lower_case()
     # print get_disks_spec('vm006')
     # print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev/vm003migratevmdisk2/snapshots/vm003migratevmdisk2.1')
     # prepare_disk_by_path(

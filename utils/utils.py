@@ -955,6 +955,23 @@ def delete_vm_disk_in_xml(xmlfile, disk_file):
                     return True
     return False
 
+def delete_vm_cdrom_file_in_xml(xmlfile):
+    tree = ET.parse(xmlfile)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'cdrom' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element is not None:
+                    disk.remove(source_element)
+                    tree.write(xmlfile)
+                    return True
+    return False
 
 
 def modofy_vm_disk_file(xmlfile, source, target):
@@ -1004,9 +1021,10 @@ def is_shared_storage(path):
         raise ExecuteException('', 'missing parameter: no path.')
     cmd = 'df %s | awk \'{print $1}\' | sed -n "2, 1p"' % path
     fs = runCmdAndGetOutput(cmd)
-    fs = fs.strip()
-    if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
-        return True
+    if fs:
+        fs = fs.strip()
+        if re.match('^((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}:.*$', fs):
+            return True
     return False
 
 def get_vm_disks_from_xml(xmlfile):
@@ -1016,7 +1034,7 @@ def get_vm_disks_from_xml(xmlfile):
     # for child in root:
     #     print(child.tag, "----", child.attrib)
     captionList = root.findall("devices")
-    disks = []
+    all_disks = []
     for caption in captionList:
         disks = caption.findall("disk")
         for disk in disks:
@@ -1024,9 +1042,9 @@ def get_vm_disks_from_xml(xmlfile):
                 source_element = disk.find("source")
                 disk_file = source_element.get("file")
                 if not is_shared_storage(disk_file):
-                    disks.append(disk_file)
+                    all_disks.append(disk_file)
 
-    return disks
+    return all_disks
 
 
 def is_vm_disk_not_shared_storage(vm):
