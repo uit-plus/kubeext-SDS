@@ -21,7 +21,7 @@ def ftpconnect(host, port, username, password):
 
 def dir(ftp, path):
     if not is_exist(ftp, path):
-        raise ExecuteException('', 'not exist file %s on ftp server which need to download ' % path)
+        raise ExecuteException('', 'not exist path %s on ftp server.' % path)
     ftp.cwd(path)
     files = ftp.nlst()
     return files
