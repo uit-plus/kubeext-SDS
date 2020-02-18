@@ -1524,11 +1524,12 @@ def backupVM(params):
     if params.remote:
         target_path = '/%s' % params.domain
         ftp = ftpconnect(params.remote, params.port, params.username, params.password)
-        old_files = dir(ftp, target_path)
-        for old_file in old_files:
-            old_file_full_path = '%s/%s' % (backup_path, old_file)
-            if old_file_full_path not in backup_files:
-                delete_file(ftp, old_file)
+        if is_exist(ftp, target_path):
+            old_files = dir(ftp, target_path)
+            for old_file in old_files:
+                old_file_full_path = '%s/%s' % (backup_path, old_file)
+                if old_file_full_path not in backup_files:
+                    delete_file(ftp, old_file)
         uploadFile(ftp, backup_files, target_path)
     success_print("success backupVM.", {})
 
