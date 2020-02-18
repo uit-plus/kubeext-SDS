@@ -1413,25 +1413,25 @@ def exportVM(params):
             if not os.path.exists(disk_path):
                 raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
             dest = '%s/%s' % (target_path, os.path.basename(disk_path))
-            if os.path.exists(dest):
-                raise ExecuteException('',
-                                       'vm export disk file %s has existed in %s, plz delete old file first or choose another path.' % (
-                                           dest, target_path))
-            disk_format = get_disk_info(disk_path)
-            # snapshot
-            op = Operation(
-                'qemu-img create -f %s -b %s -F %s %s' %
-                (disk_format, disk_path, disk_format, dest), {})
-            op.execute()
 
-            op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
-            op2.execute()
+            # snapshot
+            op1 = Operation('cp -f %s %s' % (disk_path, dest), {})
+            op1.execute()
+
+            qemu_info = get_disk_info(dest)
+            if 'full_backing_filename' in qemu_info.keys():
+                disk_format = qemu_info['format']
+                op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
+                op2.execute()
     success_print("success exportVM.", {})
 
 
 def backupVM(params):
     # default backup path
     DEFAULT_BACKUP_PATH = '/var/lib/libvirt/backup'
+
+    # if is_vm_active(params.domain):
+    #     raise ExecuteException('', 'vm %s is still running, plz stop it first.' % params.domain)
 
     if params.remote:
         if not params.port or not params.username or not params.password:
@@ -1466,33 +1466,42 @@ def backupVM(params):
 
             dest = '%s/%s' % (backup_path, os.path.basename(disk_path))
             backup_files.append(dest)
-            if os.path.exists(dest):
-                new_dest = '%s/%s' % (backup_path, randomUUID().replace('-', ''))
-                disk_format = get_disk_info(disk_path)['format']
-                # snapshot
-                op = Operation(
-                    'qemu-img create -f %s -b %s -F %s %s' %
-                    (disk_format, disk_path, disk_format, new_dest), {})
-                op.execute()
+            op = Operation('cp -f %s %s' % (disk_path, dest), {})
+            op.execute()
 
-                op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, new_dest), {})
-                op2.execute()
-
-                op3 = Operation('rm -f %s' % dest, {})
-                op3.execute()
-
-                op4 = Operation('mv %s %s' % (new_dest, dest), {})
-                op4.execute()
-            else:
-                disk_format = get_disk_info(disk_path)['format']
-                # snapshot
-                op = Operation(
-                    'qemu-img create -f %s -b %s -F %s %s' %
-                    (disk_format, disk_path, disk_format, dest), {})
-                op.execute()
-
+            qemu_info = get_disk_info(dest)
+            if 'full_backing_filename' in qemu_info.keys():
+                disk_format = qemu_info['format']
                 op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
                 op2.execute()
+
+            # if os.path.exists(dest):
+            #     new_dest = '%s/%s' % (backup_path, randomUUID().replace('-', ''))
+            #     disk_format = get_disk_info(disk_path)['format']
+            #     # snapshot
+            #     op = Operation(
+            #         'qemu-img create -f %s -b %s -F %s %s' %
+            #         (disk_format, disk_path, disk_format, new_dest), {})
+            #     op.execute()
+            #
+            #     op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, new_dest), {})
+            #     op2.execute()
+            #
+            #     op3 = Operation('rm -f %s' % dest, {})
+            #     op3.execute()
+            #
+            #     op4 = Operation('mv %s %s' % (new_dest, dest), {})
+            #     op4.execute()
+            # else:
+            #     disk_format = get_disk_info(disk_path)['format']
+            #     # snapshot
+            #     op = Operation(
+            #         'qemu-img create -f %s -b %s -F %s %s' %
+            #         (disk_format, disk_path, disk_format, dest), {})
+            #     op.execute()
+            #
+            #     op2 = Operation('qemu-img rebase -f %s -b "" %s' % (disk_format, dest), {})
+            #     op2.execute()
         else:
             needs_to_delete.append(disk_path)
 
@@ -1580,7 +1589,8 @@ def restoreVM(params):
         write_config(os.path.basename(disk), diskDir, dest, poolInfo['pool'], poolInfo['poolname'])
         # register it to k8s
         helper = K8sHelper("VirtualMachineDisk")
-        helper.create(os.path.basename(disk), "volume", get_disk_info_to_k8s(poolInfo['poolname'], os.path.basename(disk)))
+        helper.create(os.path.basename(disk), "volume",
+                      get_disk_info_to_k8s(poolInfo['poolname'], os.path.basename(disk)))
 
     # modify disk file in xml file.
     tmp_xml_file = '/tmp/%s.xml' % params.domain
