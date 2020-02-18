@@ -46,6 +46,15 @@ def is_exist(ftp, path):
         return False
     return True
 
+def delete_file(ftp, path):
+    # Suppose you want upload file to dir thy38
+    try:
+        ftp.cwd(os.path.dirname(path))
+        ftp.delete(os.path.basename(path))
+    except error_perm:
+        return False
+    return True
+
 
 def uploadFile(ftp, files, target_path):
     try:
@@ -81,7 +90,7 @@ def downloadDir(ftp, download_path, target_path):
 
 
 if __name__ == '__main__':
-    ftp = ftpconnect('192.168.137.20', '21', 'ftpuser', 'onceas')
+    ftp = ftpconnect('172.16.1.214', '21', 'ftpuser', 'ftpuser')
     ftp.set_debuglevel(2)
     uploadFile(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/vmtest')
     # uploadFile(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/uuid')
