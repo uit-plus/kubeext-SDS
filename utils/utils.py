@@ -3,6 +3,7 @@ Run back-end command in subprocess.
 '''
 import atexit
 import fcntl
+import hashlib
 import os
 import re
 import random
@@ -1443,10 +1444,122 @@ def modifyVMOnNode(domain):
     jsonDict = addPowerStatusMessage(vm_json, 'Running', 'The VM is running.')
     helper.updateAll(domain, jsonDict)
 
+# def checkVMDiskFileChanged():
+#     p = subprocess.Popen('virt-diff ', shell=True, stdout=subprocess.PIPE)
+#     try:
+#         while True:
+#             output = p.stdout.readline()
+#             if output == '' and p.poll() is not None:
+#                 break
+#             if output:
+#                 # print output.strip()
+#                 p.terminate()
+#     except Exception:
+#         traceback.print_exc()
+#     finally:
+#         p.stdout.close()
+
+
+
+def checksum(path, block_size=8192):
+    with open(path, "rb") as f:
+        file_hash = hashlib.md5()
+        while True:
+            data = f.read(block_size)
+            if not data:
+                break
+            file_hash.update(data)
+        return file_hash.hexdigest()
+
+
+def backup_snapshots_chain(disk_dir, target):
+    if not os.path.exists(disk_dir):
+        raise ExecuteException('', 'not exist disk dir need to backup: %s' % disk_dir)
+    backup_files = set()
+    disk_files = os.listdir(disk_dir)
+    chains = []
+    checksums = {}
+    for disk in disk_files:
+        if disk != 'config.json' and disk != 'snapshots':
+            # backup file and return checksum
+            full_disk_path = '%s/%s' % (disk_dir, disk)
+            backup_files.add(full_disk_path)
+            # back up disk image
+            disk_info = get_disk_info(full_disk_path)
+            if disk_info['full_backing_filename'].find(disk_dir) < 0:
+                while 'full_backing_filename' in disk_info.keys():
+                    backup_files.add(disk_info['full_backing_filename'])
+                    disk_info = get_disk_info(disk_info['full_backing_filename'])
+
+    snapshots_dir = '%s/snapshots' % disk_dir
+    if os.path.exists(snapshots_dir):
+        disk_files = os.listdir(snapshots_dir)
+        for disk in disk_files:
+            # backup file and return checksum
+            full_disk_path = '%s/%s' % (snapshots_dir, disk)
+            backup_files.add(full_disk_path)
+            # back up disk image
+            disk_info = get_disk_info(full_disk_path)
+            if disk_info['full_backing_filename'].find(disk_dir) < 0:
+                while 'full_backing_filename' in disk_info.keys():
+                    backup_files.add(disk_info['full_backing_filename'])
+                    disk_info = get_disk_info(disk_info['full_backing_filename'])
+
+    # current not need backup
+    config = get_disk_config_by_path('%s/config.json' % disk_dir)
+    backup_files.remove(config['current'])
+
+    # record snapshot chain
+    for bf in backup_files:
+        disk_checksum = backup_file(bf, target)
+        checksums[bf] = disk_checksum
+    for bf in backup_files:
+        disk_info = get_disk_info(bf)
+        record = {}
+        record['disk'] = bf
+        record['disk_checksum'] = checksums[bf]
+        if 'full_backing_filename' in disk_info.keys():
+            record['parent'] = disk_info['full_backing_filename']
+            record['parent_checksum'] = checksums[disk_info['full_backing_filename']]
+        else:
+            record['parent'] = ''
+            record['parent_checksum'] = ''
+        chains.append(record)
+    return chains
+
+def backup_file(file, target_dir):
+    if not os.path.exists(target_dir):
+        os.mkdir(target_dir)
+    file_checksum = checksum(file)
+    history_file = '%s/checksum.json' % target_dir
+    if not os.path.exists(history_file):
+        history = []
+    else:
+        with open(history_file, 'r') as f:
+            history = load(f)
+            for record in history:
+                if record['checksum'] == file_checksum:
+                    return file_checksum
+    # backup file
+    target = '%s/%s' % (target_dir, os.path.basename(file))
+    if os.path.exists(target):
+        uuid = randomUUID().replace('-', '')
+        target = '%s/%s' % (target_dir, uuid)
+    runCmd('cp -f %s %s' % (file, target))
+
+    # dump hisory
+    record = {}
+    record['checksum'] = file_checksum
+    record['old_path'] = file
+    record['new_name'] = target
+    history.append(record)
+    with open(history_file, 'w') as f:
+        dump(history, f)
+    return file_checksum
+
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
     exit(0)
-
 
 def error_print(code, msg, data=None):
     if data is None:
@@ -1457,7 +1570,8 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
-    print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
+    print checksum('ftp.py')
+    # print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
     # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
     # apply_all_jsondict(jsondicts)
     # print remoteRunCmdWithResult('133.133.135.35', 'cstor-cli pool-show --poolname pooldir')

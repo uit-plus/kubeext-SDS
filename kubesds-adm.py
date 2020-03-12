@@ -828,6 +828,10 @@ parser_export_vm.set_defaults(func=exportVMParser)
 parser_backup_vm = subparsers.add_parser("backupVM", help="backupVM help")
 parser_backup_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                             help="vm domain to export")
+parser_backup_vm.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="vm domain backup pool, must shared type, like nfs")
+parser_backup_vm.add_argument("--all", required=True, metavar="[ALL]", type=str,
+                            help="all vm disk")
 parser_backup_vm.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
                             help="remote server host.")
 parser_backup_vm.add_argument("--port", required=False, metavar="[PORT]", type=str,
