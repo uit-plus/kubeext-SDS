@@ -1446,6 +1446,13 @@ def backupVM(params):
     if not os.path.exists(disk_back_path):
         os.makedirs(disk_back_path)
 
+    vm_backup_record_id = params.version
+    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_id)
+    if not os.path.exists(vm_backup_record_dir):
+        os.mkdir(vm_backup_record_dir)
+    else:
+        raise ExecuteException('', 'vm %s backup version %s has exist, plz use another version.' % (params.domain, params.version))
+
     backup_dirs = set()
     disk_specs = get_disks_spec(params.domain)
 
@@ -1486,11 +1493,6 @@ def backupVM(params):
             dump(config, f)
 
     # save vm xml file
-    vm_backup_record = {}
-    vm_backup_record_id = randomUUID().replace('-', '')
-    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_id)
-    if not os.path.exists(vm_backup_record_dir):
-        os.mkdir(vm_backup_record_dir)
     xml_file_backup = '%s/%s.xml' % (vm_backup_record_dir, vm_backup_record_id)
     op = Operation('virsh dumpxml %s > %s' % (params.domain, xml_file_backup), {})
     op.execute()
@@ -1503,6 +1505,7 @@ def backupVM(params):
         chain = backup_snapshots_chain(disk_dir, disk_back_path)
         disks[disk] = chain
 
+    vm_backup_record = {}
     vm_backup_record['id'] = vm_backup_record_id
     vm_backup_record['dir'] = vm_backup_record_dir
     vm_backup_record['xml'] = xml_file_backup
@@ -1533,7 +1536,19 @@ def backupVM(params):
 
 def restoreVM(params):
     # default backup path
-    DEFAULT_BACKUP_PATH = '/var/lib/libvirt/backup'
+    pool_info = get_pool_info_from_k8s(params.pool)
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+
+    disk_back_path = '%s/vmbackup/diskbackup' % pool_info['path']
+    vm_backup_path = '%s/vmbackup/%s/%s' % (pool_info['path'], params.domain, params.version)
+    if not os.path.exists(vm_backup_path):
+        os.makedirs(vm_backup_path)
+
+    if not os.path.exists(disk_back_path):
+        os.makedirs(disk_back_path)
+
+    backup_dirs = set()
 
     backup_path = '%s/%s' % (DEFAULT_BACKUP_PATH, params.domain)
     if not os.path.exists(backup_path):

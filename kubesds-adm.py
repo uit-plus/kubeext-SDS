@@ -830,7 +830,9 @@ parser_backup_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", typ
                             help="vm domain to export")
 parser_backup_vm.add_argument("--pool", required=True, metavar="[POOL]", type=str,
                             help="vm domain backup pool, must shared type, like nfs")
-parser_backup_vm.add_argument("--all", required=True, metavar="[ALL]", type=str,
+parser_backup_vm.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_backup_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool,
                             help="all vm disk")
 parser_backup_vm.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
                             help="remote server host.")
@@ -848,6 +850,12 @@ parser_backup_vm.set_defaults(func=backupVMParser)
 parser_restore_vm = subparsers.add_parser("restoreVM", help="restoreVM help")
 parser_restore_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                             help="vm domain to export")
+parser_restore_vm.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="vm domain backup pool, must shared type, like nfs")
+parser_restore_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool,
+                            help="all vm disk")
+parser_restore_vm.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
 # set default func
 parser_restore_vm.set_defaults(func=restoreVMParser)
 
