@@ -832,7 +832,7 @@ parser_backup_vm.add_argument("--pool", required=True, metavar="[POOL]", type=st
                             help="vm domain backup pool, must shared type, like nfs")
 parser_backup_vm.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
-parser_backup_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool,
+parser_backup_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool, nargs='?', const=True,
                             help="all vm disk")
 parser_backup_vm.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
                             help="remote server host.")
@@ -852,10 +852,14 @@ parser_restore_vm.add_argument("--domain", required=True, metavar="[DOMAIN]", ty
                             help="vm domain to export")
 parser_restore_vm.add_argument("--pool", required=True, metavar="[POOL]", type=str,
                             help="vm domain backup pool, must shared type, like nfs")
-parser_restore_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool,
+parser_restore_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool, nargs='?', const=True,
                             help="all vm disk")
 parser_restore_vm.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
+parser_restore_vm.add_argument("--new", required=False, metavar="[NEW]", type=bool, nargs='?', const=True,
+                            help="create a new domain")
+parser_restore_vm.add_argument("--target", required=False, metavar="[TARGET]", type=str,
+                            help="use target pool to create a new domain")
 # set default func
 parser_restore_vm.set_defaults(func=restoreVMParser)
 

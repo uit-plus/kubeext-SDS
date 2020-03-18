@@ -735,6 +735,13 @@ def get_pool_info_from_k8s(pool):
         return result['spec']['pool']
     raise ExecuteException('', 'can not get pool info from k8s')
 
+def get_image_info_from_k8s(image):
+    if not image:
+        raise ExecuteException('', 'missing parameter: no image name.')
+    result = runCmdWithResult('kubectl get vmdi -o json %s' % image)
+    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
+        return result['spec']['volume']
+    raise ExecuteException('', 'can not get vol info from k8s')
 
 def get_vol_info_from_k8s(vol):
     if not vol:
@@ -794,6 +801,17 @@ def get_disk_info(ss_path):
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
+def change_vol_current(vol, current):
+    vol_info = get_vol_info_from_k8s(vol)
+    pool_info = get_pool_info_from_k8s(vol_info['pool'])
+    config_path = '%s/%s/config.json' % (pool_info['path'], vol)
+    with open(config_path, 'r') as f:
+        config = load(f)
+    config['current'] = current
+    with open(config_path, 'w') as f:
+        dump(config, f)
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.update(vol, 'volume', get_disk_info_to_k8s(pool_info['poolname'], vol))
 
 def get_pool_info_to_k8s(type, pool, poolname, content):
     result = get_pool_info(poolname)
@@ -993,6 +1011,29 @@ def modofy_vm_disk_file(xmlfile, source, target):
                     return True
     return False
 
+def modofy_vm_disks(vm, source_to_target):
+    if not vm or not source or not target:
+        raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (
+            vm, source, target))
+    runCmd('virsh dumpxml %s > /tmp/%s.xml' % (vm, vm))
+    tree = ET.parse('/tmp/%s.xml' % vm)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element.get("file") == source:
+                    source_element.set("file", target)
+                    tree.write('/tmp/%s.xml' % vm)
+                    runCmd('virsh define /tmp/%s.xml' % vm)
+                    return True
+    return False
+
 def change_vm_os_disk_file(vm, source, target):
     if not vm or not source or not target:
         raise ExecuteException('', 'missing parameter: no vm name(%s) or source path(%s) or target path(%s).' % (
@@ -1046,7 +1087,6 @@ def get_vm_disks_from_xml(xmlfile):
                     all_disks.append(disk_file)
 
     return all_disks
-
 
 def is_vm_disk_not_shared_storage(vm):
     if not vm:
@@ -1459,8 +1499,6 @@ def modifyVMOnNode(domain):
 #     finally:
 #         p.stdout.close()
 
-
-
 def checksum(path, block_size=8192):
     with open(path, "rb") as f:
         file_hash = hashlib.md5()
@@ -1472,10 +1510,15 @@ def checksum(path, block_size=8192):
         return file_hash.hexdigest()
 
 
-def backup_snapshots_chain(disk_dir, target):
+def backup_snapshots_chain(domain, tag, disk_dir, current, backup_path):
     if not os.path.exists(disk_dir):
         raise ExecuteException('', 'not exist disk dir need to backup: %s' % disk_dir)
+    result = {}
+    result['current'] = DiskImageHelper.get_backing_file(current, True)
+    result['tag'] = tag
     backup_files = set()
+    images = set()
+    image_files = set()
     disk_files = os.listdir(disk_dir)
     chains = []
     checksums = {}
@@ -1486,7 +1529,14 @@ def backup_snapshots_chain(disk_dir, target):
             backup_files.add(full_disk_path)
             # back up disk image
             disk_info = get_disk_info(full_disk_path)
-            if disk_info['full_backing_filename'].find(disk_dir) < 0:
+            if disk_info['full_backing_filename'].find(disk_dir) < 0:  # not in disk dir, use image
+                try:
+                    image = os.path.basename(disk_info['full_backing_filename'])
+                    image_info = get_image_info_from_k8s(image)
+                    image_files.add(disk_info['full_backing_filename'])
+                    images.add(image)
+                except:
+                    pass
                 while 'full_backing_filename' in disk_info.keys():
                     backup_files.add(disk_info['full_backing_filename'])
                     disk_info = get_disk_info(disk_info['full_backing_filename'])
@@ -1501,23 +1551,40 @@ def backup_snapshots_chain(disk_dir, target):
             # back up disk image
             disk_info = get_disk_info(full_disk_path)
             if disk_info['full_backing_filename'].find(disk_dir) < 0:
+                try:
+                    image = os.path.basename(disk_info['full_backing_filename'])
+                    image_info = get_image_info_from_k8s(image)
+                    image_files.add(disk_info['full_backing_filename'])
+                    images.add(image)
+                except:
+                    pass
                 while 'full_backing_filename' in disk_info.keys():
                     backup_files.add(disk_info['full_backing_filename'])
                     disk_info = get_disk_info(disk_info['full_backing_filename'])
 
+    # backup image
+    image_backup_path = '%s/image' % backup_path
+    if not os.path.exists(image_backup_path):
+        os.makedirs(image_backup_path)
+    for image_file in image_files:
+        image = os.path.basename(image_file)
+        if not os.path.exists('%s/%s' % (image_backup_path, image)):
+            runCmd('cp -f %s %s' % (image_file, image_backup_path))
+        backup_files.remove(image_file)
+
     # current not need backup
-    config = get_disk_config_by_path('%s/config.json' % disk_dir)
-    backup_files.remove(config['current'])
+    backup_files.remove(current)
 
     # record snapshot chain
+    disk_backup_dir = '%s/%s/diskbackup' % (backup_path, domain)
     for bf in backup_files:
-        disk_checksum = backup_file(bf, target)
+        disk_checksum = backup_file(bf, disk_backup_dir)
         checksums[bf] = disk_checksum
     for bf in backup_files:
         disk_info = get_disk_info(bf)
         record = {}
-        record['disk'] = bf
-        record['disk_checksum'] = checksums[bf]
+        record['path'] = bf
+        record['checksum'] = checksums[bf]
         if 'full_backing_filename' in disk_info.keys():
             record['parent'] = disk_info['full_backing_filename']
             record['parent_checksum'] = checksums[disk_info['full_backing_filename']]
@@ -1525,7 +1592,14 @@ def backup_snapshots_chain(disk_dir, target):
             record['parent'] = ''
             record['parent_checksum'] = ''
         chains.append(record)
-    return chains
+
+    if len(images) > 0:
+        result['image'] = images.pop()
+        result['image_path'] = image_files.pop()
+    else:
+        result['image'] = ''
+    result['chains'] = chains
+    return result
 
 def backup_file(file, target_dir):
     if not os.path.exists(target_dir):
@@ -1551,12 +1625,84 @@ def backup_file(file, target_dir):
     record = {}
     record['checksum'] = file_checksum
     record['old_path'] = file
-    record['new_name'] = target
+    record['new_path'] = target
     history.append(record)
     with open(history_file, 'w') as f:
         dump(history, f)
     return file_checksum
 
+def restore_snapshots_chain(backup_path, domain, version, disk):
+    vm_backup_path = '%s/%s' % (backup_path, domain)
+    disk_back_dir = '%s/diskbackup' % vm_backup_path
+
+    disks = None
+    history_file = '%s/history.json' % vm_backup_path
+    with open(history_file, 'r') as f:
+        history = load(f)
+        for h in history:
+            if h['version'] == version:
+                disks = h['disk']
+    if disks is None:
+        raise ExecuteException('', 'can not find vm %s disk backup record %s' % (domain, version))
+
+    checksums = None
+    checksum_file = '%s/checksum.json' % disk_back_dir
+    with open(checksum_file, 'r') as f:
+        checksums = load(f)
+    if checksums is None:
+        raise ExecuteException('', 'can not find disk backup checksum record file : %s.' % checksum_file)
+
+    backup_disk = disks[disk]
+    disk_info = get_vol_info_from_k8s(disk)
+    pool_info = get_pool_info_from_k8s(disk_info['pool'])
+    disk_dir = '%s/%s/' % (pool_info['path'], disk)
+
+    old_to_new = {}
+
+    # cp all file and make a chain
+    if backup_disk['image']:
+        image_backup_path = '%s/image/%s' % (backup_path, backup_disk['image'])
+        if not os.path.exists(image_backup_path):
+            raise ExecuteException('', 'can not find image backup file.')
+        if os.path.exists('%s/%s' %(disk_dir, backup_disk['image'])):
+            image_checksum = checksum('%s/%s' % (disk_dir, backup_disk['image']))
+            backup_checksum = checksum(image_backup_path)
+            if image_checksum != backup_checksum:
+                uuid = randomUUID().replace('-', '')
+                new_image_path = '%s/%s' % (disk_dir, uuid)
+                runCmd('cp  %s %s' % (image_backup_path, new_image_path))
+                old_to_new[backup_disk['image_path']] = new_image_path
+        else:
+            new_image_path = '%s/%s' % (disk_dir, backup_disk['image'])
+            runCmd('cp  %s %s' % (image_backup_path, new_image_path))
+            old_to_new[backup_disk['image_path']] = new_image_path
+
+    for chain in backup_disk['chains']:
+        record = None
+        for disk_checksum in checksums:
+            if chain['path'] == disk_checksum['old_path']:
+                record = disk_checksum
+                break
+        if not record:
+            raise ExecuteException('', 'can not find disk file backup checksum.')
+        if not os.path.exists(record['new_path']):
+            raise ExecuteException('', 'can not find disk backup file %s.' % record['new_path'])
+        old_disk_file = '%s/%s' % (disk_dir, os.path.basename(record['old_path']))
+        if os.path.exists(old_disk_file):
+            if checksum(old_disk_file) != record['checksum']:
+                uuid = randomUUID().replace('-', '')
+                new_disk_file = '%s/%s' % (disk_dir, uuid)
+                runCmd('cp -f %s %s' % (record['new_path'], new_disk_file))
+                old_to_new[backup_disk['image_path']] = new_disk_file
+        else:
+            runCmd('cp -f %s %s' % (record['new_path'], old_disk_file))
+            old_to_new[backup_disk['image_path']] = old_disk_file
+
+    # reconnect snapshot chain
+    for chain in backup_disk['chains']:
+        if chain['parent']:
+            runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['path']], old_to_new[chain['parent']]))
+    return old_to_new[backup_disk['current']]
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
     exit(0)
