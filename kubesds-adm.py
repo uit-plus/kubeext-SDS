@@ -858,6 +858,8 @@ parser_restore_vm.add_argument("--version", required=True, metavar="[VERSION]", 
                             help="backup version id")
 parser_restore_vm.add_argument("--new", required=False, metavar="[NEW]", type=bool, nargs='?', const=True,
                             help="create a new domain")
+parser_restore_vm.add_argument("--newname", required=False, metavar="[NEWNAME]", type=str,
+                            help="name when create a new domain")
 parser_restore_vm.add_argument("--target", required=False, metavar="[TARGET]", type=str,
                             help="use target pool to create a new domain")
 # set default func
