@@ -472,6 +472,12 @@ def backupVMParser(args):
 def restoreVMParser(args):
     execute('restoreVM', args)
 
+def backupDiskParser(args):
+    execute('backupDisk', args)
+
+def restoreDiskParser(args):
+    execute('restoreDisk', args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -864,6 +870,49 @@ parser_restore_vm.add_argument("--target", required=False, metavar="[TARGET]", t
                             help="use target pool to create a new domain")
 # set default func
 parser_restore_vm.set_defaults(func=restoreVMParser)
+
+# -------------------- add backupDisk cmd ----------------------------------
+parser_backup_disk = subparsers.add_parser("backupDisk", help="backupDisk help")
+parser_backup_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_backup_disk.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_backup_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="vm domain backup pool, must shared type, like nfs")
+parser_backup_disk.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_backup_disk.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_backup_disk.add_argument("--port", required=False, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_backup_disk.add_argument("--username", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server username.")
+parser_backup_disk.add_argument("--password", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server password.")
+# set default func
+parser_backup_disk.set_defaults(func=backupDiskParser)
+
+# -------------------- add restoreDisk cmd ----------------------------------
+parser_restore_disk = subparsers.add_parser("restoreDisk", help="restoreDisk help")
+parser_restore_disk.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_restore_disk.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_restore_disk.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="vm domain backup pool, must shared type, like nfs")
+parser_restore_disk.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_restore_disk.add_argument("--new", required=False, metavar="[NEW]", type=bool, nargs='?', const=True,
+                            help="create a new domain")
+parser_restore_disk.add_argument("--newname", required=False, metavar="[NEWNAME]", type=str,
+                            help="name when create a new domain")
+parser_restore_disk.add_argument("--target", required=False, metavar="[TARGET]", type=str,
+                            help="use target pool to create a new domain")
+parser_restore_disk.add_argument("--targetDomain", required=False, metavar="[TARGETDOMAIN]", type=str,
+                            help="target domain to attach disk")
+# set default func
+parser_restore_disk.set_defaults(func=restoreDiskParser)
+
 
 try:
     args = parser.parse_args()
