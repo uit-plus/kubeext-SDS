@@ -354,8 +354,7 @@ def deleteDisk(params):
                     continue
                 else:
                     try:
-                        # if success, disk has right snapshot, raise ExecuteException
-                        chain = get_sn_chain_path('%s/%s' % (snapshots_path, file))
+                        ss_info = get_snapshot_info_from_k8s(file)
                     except:
                         continue
                     raise ExecuteException('', 'error: disk %s still has snapshot %s.' % (params.vol, file))

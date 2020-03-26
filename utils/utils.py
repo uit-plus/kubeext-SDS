@@ -1586,63 +1586,36 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
     result = {}
     result['current'] = get_disk_info(current)['full_backing_filename']
     backup_files = set()
-    images = set()
-    image_files = set()
-    disk_files = os.listdir(disk_dir)
+    image_file = None
     chains = []
     checksums = {}
-    for disk in disk_files:
-        if disk != 'config.json' and disk != 'snapshots':
-            # backup file and return checksum
-            full_disk_path = '%s/%s' % (disk_dir, disk)
-            backup_files.add(full_disk_path)
-            # back up disk image
-            disk_info = get_disk_info(full_disk_path)
-            if 'full_backing_filename' in disk_info.keys() and disk_info['full_backing_filename'].find(disk_dir) < 0:  # not in disk dir, use image
-                try:
-                    image = os.path.basename(disk_info['full_backing_filename'])
-                    image_info = get_image_info_from_k8s(image)
-                    image_files.add(disk_info['full_backing_filename'])
-                    images.add(image)
-                except:
-                    pass
-                while 'full_backing_filename' in disk_info.keys():
-                    backup_files.add(disk_info['full_backing_filename'])
-                    disk_info = get_disk_info(disk_info['full_backing_filename'])
 
-    snapshots_dir = '%s/snapshots' % disk_dir
-    if os.path.exists(snapshots_dir):
-        disk_files = os.listdir(snapshots_dir)
-        for disk in disk_files:
-            # backup file and return checksum
-            full_disk_path = '%s/%s' % (snapshots_dir, disk)
-            backup_files.add(full_disk_path)
-            # back up disk image
-            disk_info = get_disk_info(full_disk_path)
-            if 'full_backing_filename' in disk_info.keys() and disk_info['full_backing_filename'].find(disk_dir) < 0:
-                try:
-                    image = os.path.basename(disk_info['full_backing_filename'])
-                    image_info = get_image_info_from_k8s(image)
-                    image_files.add(disk_info['full_backing_filename'])
-                    images.add(image)
-                except:
-                    pass
-                while 'full_backing_filename' in disk_info.keys():
-                    backup_files.add(disk_info['full_backing_filename'])
-                    disk_info = get_disk_info(disk_info['full_backing_filename'])
+    # only backup the current chain
+    old_current = result['current']
+    backup_files.add(old_current)
+    # back up disk image
+    disk_info = get_disk_info(old_current)
+    while 'full_backing_filename' in disk_info.keys():
+        backup_files.add(disk_info['full_backing_filename'])
+        if disk_info['full_backing_filename'].find(disk_dir) < 0:  # not in disk dir, use image
+            try:
+                image = os.path.basename(disk_info['full_backing_filename'])
+                image_info = get_image_info_from_k8s(image)
+                image_file = disk_info['full_backing_filename']
+            except:
+                pass
+
+        disk_info = get_disk_info(disk_info['full_backing_filename'])
 
     # backup image
-    image_backup_path = '%s/image' % backup_path
-    if not os.path.exists(image_backup_path):
-        os.makedirs(image_backup_path)
-    for image_file in image_files:
+    if image_file:
+        image_backup_path = '%s/image' % backup_path
+        if not os.path.exists(image_backup_path):
+            os.makedirs(image_backup_path)
         image = os.path.basename(image_file)
         if not os.path.exists('%s/%s' % (image_backup_path, image)):
             runCmd('cp -f %s %s' % (image_file, image_backup_path))
         backup_files.remove(image_file)
-
-    # current not need backup
-    backup_files.remove(current)
 
     # record snapshot chain
     disk_backup_dir = '%s/%s/diskbackup' % (backup_path, domain)
@@ -1662,9 +1635,9 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
             record['parent_checksum'] = ''
         chains.append(record)
 
-    if len(images) > 0:
-        result['image'] = images.pop()
-        result['image_path'] = image_files.pop()
+    if image_file:
+        result['image'] = os.path.basename(image_file)
+        result['image_path'] = image_file
     else:
         result['image'] = ''
         result['image_path'] = ''
@@ -1718,6 +1691,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         image_backup_path = '%s/image/%s' % (backup_path, backup_disk['image'])
         if not os.path.exists(image_backup_path):
             raise ExecuteException('', 'can not find image backup file.')
+
         # check image source can use or not
         try:
             image_info = get_image_info_from_k8s(backup_disk['image'])
@@ -1749,18 +1723,11 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         backup_file = '%s/%s' % (disk_back_dir, checksums[chain['checksum']])
         if not os.path.exists(backup_file):
             raise ExecuteException('', 'can not find disk backup file %s.' % backup_file)
-        old_disk_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
-        if os.path.exists(old_disk_file):
-            if checksum(old_disk_file) != chain['checksum']:
-                uuid = randomUUID().replace('-', '')
-                new_disk_file = '%s/%s' % (disk_dir, uuid)
-                runCmd('cp -f %s %s' % (backup_file, new_disk_file))
-                old_to_new[chain['path']] = new_disk_file
-            else:
-                old_to_new[chain['path']] = old_disk_file
-        else:
-            runCmd('cp -f %s %s' % (backup_file, old_disk_file))
-            old_to_new[chain['path']] = old_disk_file
+
+        uuid = randomUUID().replace('-', '')
+        new_disk_file = '%s/%s' % (disk_dir, uuid)
+        runCmd('cp -f %s %s' % (backup_file, new_disk_file))
+        old_to_new[chain['path']] = new_disk_file
 
     # print dumps(old_to_new)
     # print dumps(backup_disk['chains'])
@@ -1771,8 +1738,8 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
             parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))
             # print 'qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[parent], old_to_new[chain['path']])
             runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[parent], old_to_new[chain['path']]))
-    disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
 
+    disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
     return old_to_new[disk_current]
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
