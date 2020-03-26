@@ -1718,7 +1718,6 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         image_backup_path = '%s/image/%s' % (backup_path, backup_disk['image'])
         if not os.path.exists(image_backup_path):
             raise ExecuteException('', 'can not find image backup file.')
-
         # check image source can use or not
         try:
             image_info = get_image_info_from_k8s(backup_disk['image'])
