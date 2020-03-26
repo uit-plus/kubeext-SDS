@@ -1590,9 +1590,14 @@ def restoreDisk(params):
     else:
         raise ExecuteException('', 'not exist disk %s backup history file %s' % (params.vol, history_file_path))
 
-    if params.new:
+    if params.newname:
         if params.newname is None or params.target is None:
             raise ExecuteException('', 'new disk name or target pool must be set.')
+        if params.targetDomain:
+            if not is_vm_exist(params.targetDomain):
+                raise ExecuteException('', 'target domain %s will be attached new disk not set.')
+        else:
+            raise ExecuteException('', 'target domain %s will be attached new disk not set.')
         disk_heler = K8sHelper('VirtualMachineDisk')
         if disk_heler.exist(params.newname):
             raise ExecuteException('', 'new disk %s has exist' % params.newname)
@@ -1606,7 +1611,7 @@ def restoreDisk(params):
         current = restore_snapshots_chain(disk_back_dir, backupRecord, new_disk_dir)
 
         # attach vm disk
-        attach_vm_disk(params.domain, current)
+        attach_vm_disk(params.targetDomain, current)
         write_config(params.newname, os.path.dirname(current), current, params.target, disk_pool_info['poolname'])
         disk_heler.create(params.newname, "volume", get_disk_info(current))
     else:
@@ -1806,7 +1811,7 @@ def restoreVM(params):
         history = load(f)
         disks = history['disks']
 
-    if not params.new:
+    if not params.newname:
         # be sure vm still use the disks in the backup record.
         disk_specs = get_disks_spec(params.domain)
         vm_disks = {}

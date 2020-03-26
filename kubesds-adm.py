@@ -862,8 +862,6 @@ parser_restore_vm.add_argument("--all", required=False, metavar="[ALL]", type=bo
                             help="all vm disk")
 parser_restore_vm.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
-parser_restore_vm.add_argument("--new", required=False, metavar="[NEW]", type=bool, nargs='?', const=True,
-                            help="create a new domain")
 parser_restore_vm.add_argument("--newname", required=False, metavar="[NEWNAME]", type=str,
                             help="name when create a new domain")
 parser_restore_vm.add_argument("--target", required=False, metavar="[TARGET]", type=str,
@@ -902,8 +900,6 @@ parser_restore_disk.add_argument("--pool", required=True, metavar="[POOL]", type
                             help="vm domain backup pool, must shared type, like nfs")
 parser_restore_disk.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
-parser_restore_disk.add_argument("--new", required=False, metavar="[NEW]", type=bool, nargs='?', const=True,
-                            help="create a new domain")
 parser_restore_disk.add_argument("--newname", required=False, metavar="[NEWNAME]", type=str,
                             help="name when create a new domain")
 parser_restore_disk.add_argument("--target", required=False, metavar="[TARGET]", type=str,
