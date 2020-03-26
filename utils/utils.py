@@ -1735,9 +1735,9 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     for chain in backup_disk['chains']:
         # print dumps(chain)
         if chain['parent']:
-            parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))
+            # parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))
             # print 'qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[parent], old_to_new[chain['path']])
-            runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[parent], old_to_new[chain['path']]))
+            runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']]))
 
     disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
     return old_to_new[disk_current]
