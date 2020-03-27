@@ -76,7 +76,10 @@ class Operation(object):
 
 def createPool(params):
     #  {"result":{"code":0, "msg":"success"}, "data":{"status": "active", "mountpath": "/Disk240", "proto": "localfs", "url": "/dev/sdb1", "poolname": "pool1", "free": 223363817472, "disktype": "file", "maintain": "normal", "used": 768970752, "total": 236152303616}, "obj":"pooladd"}
-    kv = {"type": params.type, "poolname": params.uuid, "url": params.url, "opt": params.opt, "uuid": params.pool}
+    if params.opt:
+        kv = {"type": params.type, "poolname": params.uuid, "url": params.url, "opt": params.opt, "uuid": params.pool}
+    else:
+        kv = {"type": params.type, "poolname": params.uuid, "url": params.url, "uuid": params.pool}
     op = Operation("cstor-cli pool-add", kv, with_result=True)
     cstor = op.execute()
     if cstor['result']['code'] != 0:
@@ -876,50 +879,51 @@ def deleteExternalSnapshot(params):
             except:
                 continue
 
-        # if snapshot to delete is current, delelte vmsn from server.
+        # if snapshot to delete is current, delete vmsn from server.
         if params.name not in snapshots_to_delete:
             snapshots_to_delete.append(params.name)
 
-        if params.domain:
-            current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
-            # reconnect the snapshot chain
-            bf_bf_path = DiskImageHelper.get_backing_file(backing_file)
-            if bf_bf_path:
-                op = Operation('virsh blockpull --domain %s --path %s --base %s --wait' %
-                               (params.domain, disk_config['current'], backing_file), {})
-                op.execute()
-            else:
-                op = Operation('virsh blockpull --domain %s --path %s --wait' %
-                               (params.domain, disk_config['current']), {})
-                op.execute()
-                op = Operation('rm -f %s' % backing_file, {})
-                op.execute()
-
-            # # if the snapshot to delete is not current, delete snapshot's backing file
-            # if current_backing_file != backing_file:
-            #     op = Operation('rm -f %s' % backing_file, {})
-            #     op.execute()
-
-        else:
-            current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
-            # reconnect the snapshot chain
-            paths = get_sn_chain_path(disk_config['current'])
-            if backing_file in paths:
+        if backing_file in get_sn_chain_path(disk_config['current']):
+            if params.domain:
+                current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
+                # reconnect the snapshot chain
                 bf_bf_path = DiskImageHelper.get_backing_file(backing_file)
                 if bf_bf_path:
-                    # effect current and backing file is not head, rabse current to reconnect
-                    op = Operation('qemu-img rebase -b %s %s' % (bf_bf_path, disk_config['current']), {})
+                    op = Operation('virsh blockpull --domain %s --path %s --base %s --wait' %
+                                   (params.domain, disk_config['current'], backing_file), {})
                     op.execute()
                 else:
-                    # effect current and backing file is head, rabse current to itself
-                    op = Operation('qemu-img rebase -b "" %s' % disk_config['current'], {})
+                    op = Operation('virsh blockpull --domain %s --path %s --wait' %
+                                   (params.domain, disk_config['current']), {})
                     op.execute()
                     op = Operation('rm -f %s' % backing_file, {})
                     op.execute()
-            # # if the snapshot to delete is not current, delete snapshot's backing file
-            # if current_backing_file != backing_file:
-            #     op = Operation('rm -f %s' % backing_file, {})
-            #     op.execute()
+
+                # # if the snapshot to delete is not current, delete snapshot's backing file
+                # if current_backing_file != backing_file:
+                #     op = Operation('rm -f %s' % backing_file, {})
+                #     op.execute()
+
+            else:
+                current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
+                # reconnect the snapshot chain
+                paths = get_sn_chain_path(disk_config['current'])
+                if backing_file in paths:
+                    bf_bf_path = DiskImageHelper.get_backing_file(backing_file)
+                    if bf_bf_path:
+                        # effect current and backing file is not head, rabse current to reconnect
+                        op = Operation('qemu-img rebase -b %s %s' % (bf_bf_path, disk_config['current']), {})
+                        op.execute()
+                    else:
+                        # effect current and backing file is head, rabse current to itself
+                        op = Operation('qemu-img rebase -b "" %s' % disk_config['current'], {})
+                        op.execute()
+                        op = Operation('rm -f %s' % backing_file, {})
+                        op.execute()
+                # # if the snapshot to delete is not current, delete snapshot's backing file
+                # if current_backing_file != backing_file:
+                #     op = Operation('rm -f %s' % backing_file, {})
+                #     op.execute()
 
         for df in snapshots_to_delete:
             if df != os.path.basename(disk_config['current']):

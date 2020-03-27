@@ -1723,12 +1723,21 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         backup_file = '%s/%s' % (disk_back_dir, checksums[chain['checksum']])
         if not os.path.exists(backup_file):
             raise ExecuteException('', 'can not find disk backup file %s.' % backup_file)
-
-        uuid = randomUUID().replace('-', '')
-        new_disk_file = '%s/%s' % (disk_dir, uuid)
-        runCmd('cp -f %s %s' % (backup_file, new_disk_file))
-        old_to_new[chain['path']] = new_disk_file
-
+        if chain['parent']:
+            uuid = randomUUID().replace('-', '')
+            new_disk_file = '%s/%s' % (disk_dir, uuid)
+            runCmd('cp -f %s %s' % (backup_file, new_disk_file))
+            old_to_new[chain['path']] = new_disk_file
+        else:
+            # base image
+            if chain['path'].find('snapshots') >= 0:
+                base_file = '%s/snapshots/%s' % (disk_dir, os.path.basename(chain['path']))
+            else:
+                base_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
+            new_disk_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
+            if not os.path.exists(base_file):
+                runCmd('cp -f %s %s' % (base_file, new_disk_file))
+            old_to_new[chain['path']] = base_file
     # print dumps(old_to_new)
     # print dumps(backup_disk['chains'])
     # reconnect snapshot chain
