@@ -1693,6 +1693,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
             raise ExecuteException('', 'can not find image backup file.')
 
         # check image source can use or not
+        image_info = None
         try:
             image_info = get_image_info_from_k8s(backup_disk['image'])
         except:
@@ -1736,8 +1737,10 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
                 base_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
             new_disk_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
             if not os.path.exists(base_file):
-                runCmd('cp -f %s %s' % (base_file, new_disk_file))
-            old_to_new[chain['path']] = base_file
+                runCmd('cp -f %s %s' % (backup_file, new_disk_file))
+                old_to_new[chain['path']] = new_disk_file
+            else:
+                old_to_new[chain['path']] = base_file
     # print dumps(old_to_new)
     # print dumps(backup_disk['chains'])
     # reconnect snapshot chain
@@ -1748,8 +1751,34 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
             # print 'qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[parent], old_to_new[chain['path']])
             runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']]))
 
-    disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
-    return old_to_new[disk_current]
+    # if this disk has no snapshots, try to delete other file
+    ss_dir = '%s/snapshots' % disk_dir
+    exist_ss = False
+    if os.path.exists(ss_dir):
+        for ss in os.listdir(ss_dir):
+            try:
+                ss_info = get_snapshot_info_from_k8s(ss)
+                exist_ss = True
+            except:
+                pass
+    file_to_delete = []
+    if not exist_ss:
+        for ss in os.listdir(ss_dir):
+            ss_file = '%s/%s' % (ss_dir, ss)
+            if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
+                file_to_delete.append(ss_file)
+        for ss in os.listdir(disk_dir):
+            if ss == 'config.json':
+                continue
+            ss_file = '%s/%s' % (disk_dir, ss)
+            if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
+                file_to_delete.append(ss_file)
+
+    if backup_disk['current'].find('snapshots') >= 0:
+        disk_current = '%s/snapshots/%s' % (disk_dir, os.path.basename(backup_disk['current']))
+    else:
+        disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
+    return old_to_new[disk_current], file_to_delete
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
     exit(0)
@@ -1763,7 +1792,7 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
-    print is_vm_active('vmbackuptest')
+    print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
     # print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
     # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
     # apply_all_jsondict(jsondicts)

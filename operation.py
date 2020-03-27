@@ -884,7 +884,7 @@ def deleteExternalSnapshot(params):
             snapshots_to_delete.append(params.name)
 
         if backing_file in get_sn_chain_path(disk_config['current']):
-            if params.domain:
+            if params.domain and is_vm_active(params.domain):
                 current_backing_file = DiskImageHelper.get_backing_file(disk_config['current'])
                 # reconnect the snapshot chain
                 bf_bf_path = DiskImageHelper.get_backing_file(backing_file)
@@ -1611,7 +1611,7 @@ def restoreDisk(params):
             os.mkdir(new_disk_dir)
 
         disk_back_dir = '%s/diskbackup' % vm_backup_path
-        current = restore_snapshots_chain(disk_back_dir, backupRecord, new_disk_dir)
+        current, file_to_delete = restore_snapshots_chain(disk_back_dir, backupRecord, new_disk_dir)
 
         # attach vm disk
         attach_vm_disk(params.targetDomain, current)
@@ -1641,12 +1641,15 @@ def restoreDisk(params):
         disk_back_dir = '%s/diskbackup' % vm_backup_path
         disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
         # restore disk dir
-        current = restore_snapshots_chain(disk_back_dir, backupRecord, disk_dir)
+        current, file_to_delete = restore_snapshots_chain(disk_back_dir, backupRecord, disk_dir)
         # change vm disk
         modofy_vm_disks(params.domain, {vm_disks[params.vol]: current})
 
         # change disk current
         change_vol_current(params.vol, current)
+
+    for file in file_to_delete:
+        runCmd('rm -f %s' % file)
 
     success_print("success restoreDisk.", {})
 
@@ -1814,6 +1817,7 @@ def restoreVM(params):
         history = load(f)
         disks = history['disks']
 
+    file_to_deletes = []
     if not params.newname:
         # be sure vm still use the disks in the backup record.
         disk_specs = get_disks_spec(params.domain)
@@ -1846,7 +1850,8 @@ def restoreVM(params):
                 continue
             disk_back_dir = '%s/diskbackup' % vm_backup_path
             target_path = '%s/%s' % (pool_info['path'], name)
-            new_current = restore_snapshots_chain(disk_back_dir, disk, target_path)
+            new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
+            file_to_deletes.extend(file_to_delete)
             restore_disk_current[name] = new_current
         # restore vm disk
         # xml_file = '%s/%s.xml' % (vm_backup_record_dir, params.domain)
@@ -1879,7 +1884,8 @@ def restoreVM(params):
                 uuid = randomUUID().replace('-', '')
             disk_back_dir = '%s/diskbackup' % vm_backup_path
             target_path = '%s/%s' % (target_pool_info['path'], uuid)
-            new_current = restore_snapshots_chain(disk_back_dir, disk, target_path)
+            new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
+            file_to_deletes.extend(file_to_delete)
             disk_currents[name] = new_current
 
         # TODO delete all uus disk in xml
@@ -1897,6 +1903,8 @@ def restoreVM(params):
             write_config(name, os.path.dirname(disk_currents[name]), disk_currents[name], params.target, target_pool_info['poolname'])
             disk_heler.create(name, "volume", get_disk_info(disk_currents[name]))
 
+    for file in file_to_deletes:
+        runCmd('rm -f %s' % file)
     # vm_disk_files_need_modify = {}  # TODO
     #
     # disks_need_copy = {}
