@@ -1036,6 +1036,42 @@ def migrate(params):
 
     success_print("migrate vm %s successful." % params.domain, {})
 
+def changeDiskPool(params):
+    if not os.path.exists(params.xml):
+        raise ExecuteException('RunCmdError', 'can not find vm xml file: %s.' % params.xml)
+
+    # get disk node label in ip
+    node_name = get_hostname_in_lower_case()
+    # node_name = get_node_name_by_node_ip(params.ip)
+    logger.debug("node_name: %s" % node_name)
+    specs = get_disks_spec_by_xml(params.xml)
+    all_jsondicts = []
+    logger.debug(specs)
+    for disk_path in specs.keys():
+        prepare_info = get_disk_prepare_info_by_path(disk_path)
+        pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+        pools = get_pools_by_path(pool_info['path'])
+
+        # change disk node label in k8s.
+        targetPool = None
+        for pool in pools:
+            if pool['host'] == node_name:
+                targetPool = pool['pool']
+        if targetPool:
+            logger.debug("targetPool is %s." % targetPool)
+            if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
+                config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
+                write_config(config['name'], config['dir'], config['current'], targetPool, config['poolname'])
+                jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
+                all_jsondicts.extend(jsondicts)
+            else:
+                cstor_release_disk(prepare_info['poolname'], prepare_info['disk'], prepare_info['uni'])
+                jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
+                all_jsondicts.extend(jsondicts)
+        else:
+            raise ExecuteException('RunCmdError', 'can not find pool %s on node %s.' % (pool_info['poolname'], node_name))
+    apply_all_jsondict(all_jsondicts)
+    success_print("register vm disk %s successful.", {})
 
 def migrateDiskFunc(sourceVol, targetPool):
     disk_info = get_vol_info_from_k8s(sourceVol)

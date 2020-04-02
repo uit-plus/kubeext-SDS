@@ -460,6 +460,9 @@ def migrateDiskParser(args):
 def migrateVMDiskParser(args):
     execute('migrateVMDisk', args)
 
+def changeDiskPoolParser(args):
+    execute('changeDiskPool', args)
+
 def modifyVMParser(args):
     execute('modifyVM', args)
 
@@ -809,6 +812,15 @@ parser_migrate_vm_disk.add_argument("--migratedisks", required=True, metavar="[M
 #                             help="target storage pool to use")
 # set default func
 parser_migrate_vm_disk.set_defaults(func=migrateVMDiskParser)
+
+
+# -------------------- add restoreDisk cmd ----------------------------------
+parser_change_disk_pool = subparsers.add_parser("changeDiskPool", help="changeDiskPool help")
+parser_change_disk_pool.add_argument("--xml", required=True, metavar="[XML]", type=str,
+                            help="vm disk to backup")
+# set default func
+parser_change_disk_pool.set_defaults(func=changeDiskPoolParser)
+
 
 # -------------------- add migrateVMDisk cmd ----------------------------------
 parser_modify_vm = subparsers.add_parser("modifyVM", help="modifyVM help")
