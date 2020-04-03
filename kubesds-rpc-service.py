@@ -20,7 +20,7 @@ sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
 from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndGetOutput, runCmd, runCmdAndTransferXmlToJson, \
-    runCmdAndSplitKvToJson
+    runCmdAndSplitKvToJson, get_pools_by_node
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 

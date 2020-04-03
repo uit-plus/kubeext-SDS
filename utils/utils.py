@@ -1805,8 +1805,9 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
+    print runCmdAndGetOutput('virsh pool-list')
     # print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
-    print get_pools_by_node('vm.node25')
+    # print get_pools_by_node('vm.node25')
     # print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
     # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
     # apply_all_jsondict(jsondicts)
