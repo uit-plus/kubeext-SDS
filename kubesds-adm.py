@@ -923,6 +923,7 @@ parser_restore_disk.set_defaults(func=restoreDiskParser)
 
 
 try:
+    os.putenv('LANG', 'en_US.UTF-8')
     args = parser.parse_args()
     args.func(args)
 except TypeError:
