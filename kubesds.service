@@ -15,7 +15,9 @@
 
 [Unit]
 Description=kubesds rpc
+Before=libvirtd.service
 After=docker.service
+
 
 [Service]
 Type=simple

@@ -14,6 +14,7 @@ from concurrent import futures
 
 from netutils import get_host_ip, get_docker0_IP
 from utils.exception import ExecuteException
+from utils.k8s import get_hostname_in_lower_case
 
 sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
@@ -143,6 +144,24 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
 
 def run_server():
+    # cp k8s config file
+    if os.path.exists('/root/.kube/config') and not os.path.exists('/etc/kubernetes/admin.conf'):
+        try:
+            runCmd('cp -f /root/.kube/config /etc/kubernetes/admin.conf')
+        except:
+            pass
+
+    # auto mount cstor pool
+    node_name = get_hostname_in_lower_case()
+    pools = get_pools_by_node(node_name)
+    for pool in pools:
+        op = Operation('cstor-cli pool-show ', {'poolname': pool['poolname']}, with_result=True)
+        cstor = op.execute()
+        if cstor['result']['code'] != 0:
+            logger.debug('can not auto mount cstor pool %s' % pool['poolname'])
+            raise ExecuteException('', 'can not auto mount cstor pool %s' % pool['poolname'])
+
+
     # 多线程服务器
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     # 实例化 计算len的类

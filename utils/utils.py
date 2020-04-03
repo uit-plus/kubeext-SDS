@@ -1201,6 +1201,19 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
+def get_pools_by_node(node_name):
+    output = runCmdAndGetOutput(
+        'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
+    pools = []
+    for line in output.splitlines():
+        pool = {}
+        if len(line.split()) < 3:
+            continue
+        pool['pool'] = line.split()[0]
+        pool['poolname'] = line.split()[1]
+        pools.append(pool)
+    return pools
+
 def get_pools_by_path(path):
     output = runCmdAndGetOutput(
         'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.path==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % path)
@@ -1792,7 +1805,8 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
-    print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
+    # print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
+    print get_pools_by_node('vm.node25')
     # print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
     # jsondicts = get_migrate_disk_jsondict('vm006migratedisk1', 'migratepoolnode35')
     # apply_all_jsondict(jsondicts)
