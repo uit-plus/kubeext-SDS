@@ -26,7 +26,7 @@ import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle
+from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle, get_hostname_in_lower_case
 from arraylist import vmArray
 
 try:
@@ -1200,6 +1200,28 @@ def is_vm_disk_driver_cache_none(vm):
                 else:
                     return False
     return True
+
+def poolActive(poolname):
+    cstor = runCmdWithResult('cstor-cli pool-active --poolname %s' % poolname)
+    if cstor['result']['code'] != 0:
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+
+    # make other vdiskfs pool inactice
+    pool_path = '%s/%s' % (cstor['data']['mountpath'], poolname)
+    pools = get_pools_by_path(pool_path)
+    node_name = get_hostname_in_lower_case()
+    poolHelper = K8sHelper('VirtualMahcinePool')
+    for pool in pools:
+        if pool['host'] != node_name:
+            pool_info = get_pool_info_from_k8s(pool['pool'])
+            pool_info['state'] = 'inactive'
+            poolHelper.update(pool['pool'], 'pool', pool_info)
+        else:
+            pool_info = get_pool_info_from_k8s(pool['pool'])
+            if pool_info['state'] != 'active':
+                pool_info['state'] = 'active'
+                poolHelper.update(pool['pool'], 'pool', pool_info)
 
 def get_pools_by_node(node_name):
     output = runCmdAndGetOutput(

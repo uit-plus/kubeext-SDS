@@ -234,20 +234,20 @@ def deletePoolParser(args):
 
 def startPoolParser(args):
     if args.type == "uus":
-        error_print(500, "not support operation for uus or vdiskfs")
+        error_print(500, "not support operation for uus")
     execute('startPool', args)
 
 
 def autoStartPoolParser(args):
     if args.type == "uus":
-        error_print(500, "not support operation for uus or vdiskfs")
+        error_print(500, "not support operation for uus")
 
     execute('autoStartPool', args)
 
 
 def stopPoolParser(args):
     if args.type == "uus":
-        error_print(500, "not support operation for uus or vdiskfs")
+        error_print(500, "not support operation for uus")
 
     execute('stopPool', args)
 
