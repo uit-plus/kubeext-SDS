@@ -11,3 +11,6 @@ chmod +x ./dist/kubesds-adm ./dist/kubesds-rpc
 #cp -f ./dist/kubesds-rpc-service /usr/bin
 
 cp -f ./dist/kubesds-adm ./dist/kubesds-rpc /usr/bin
+
+cp -f ./dist/kubesds-adm /usr/bin
+
