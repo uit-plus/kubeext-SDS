@@ -313,6 +313,8 @@ def releaseDiskParser(args):
 
 def showDiskSnapshotParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
+
     pool = pool_info['poolname']
     # check cstor disk
     check_cstor_disk_not_exist(pool, args.vol)
@@ -324,13 +326,14 @@ def showDiskSnapshotParser(args):
 
 def createExternalSnapshotParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
+
     pool = pool_info['poolname']
     if args.type == "uus":
         pass
     else:
         if args.format is None:
             error_print(100, "less arg, format must be set")
-        check_pool_active(pool_info)
         check_virsh_disk_snapshot_exist(pool, args.vol, args.name)
 
         disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
@@ -347,6 +350,8 @@ def createExternalSnapshotParser(args):
 
 def revertExternalSnapshotParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
+
     pool = pool_info['poolname']
     if args.type == "uus":
         pass
@@ -354,7 +359,6 @@ def revertExternalSnapshotParser(args):
         if args.format is None:
             error_print(100, "less arg, format must be set")
 
-        check_pool_active(pool_info)
         check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
         disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
@@ -377,11 +381,12 @@ def deleteExternalSnapshotParser(args):
     except ExecuteException, e:
         error_print(400, e.message)
     pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
+
     pool = pool_info['poolname']
     if args.type == "uus":
         pass
     else:
-        check_pool_active(pool_info)
         check_virsh_disk_snapshot_not_exist(pool, args.vol, args.name)
 
         disk_dir = '%s/%s' % (get_pool_info(pool)['path'], args.vol)
@@ -409,6 +414,8 @@ def customizeParser(args):
 
 def createDiskFromImageParser(args):
     pool_info = get_pool_info_from_k8s(args.targetPool)
+    check_pool_active(pool_info)
+
     pool = pool_info['poolname']
     check_pool_active(pool_info)
 

@@ -310,6 +310,7 @@ def qemu_create_disk(pool, poolname, vol, format, capacity):
 
 def createDisk(params):
     pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
     poolname = pool_info['poolname']
     createInfo = cstor_create_disk(poolname, params.vol, params.capacity)
 
@@ -428,9 +429,11 @@ def cloneDisk(params):
     pool_node_name = get_node_name(pool_helper.get(params.pool))
 
     pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
     poolname = pool_info['poolname']
     disk_info = get_vol_info_from_k8s(params.vol)
     old_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+    check_pool_active(old_pool_info)
 
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], params.vol, disk_info['uni'])
 
@@ -545,6 +548,7 @@ def rebaseDiskSnapshot(params):
 
 def createDiskFromImage(params):
     pool_info = get_pool_info_from_k8s(params.targetPool)
+    check_pool_active(pool_info)
     poolname = pool_info['poolname']
     dest_dir = '%s/%s' % (pool_info['path'], params.name)
     dest = '%s/%s' % (dest_dir, params.name)
@@ -784,8 +788,9 @@ def createExternalSnapshot(params):
 
 # create snapshot on params.name, then rename snapshot to current
 def revertExternalSnapshot(params):
-    disk_info = get_pool_info_from_k8s(params.pool)
-    poolname = disk_info['poolname']
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+    poolname = pool_info['poolname']
 
     helper = K8sHelper("VirtualMachineDiskSnapshot")
     k8s_ss_info = helper.get_data(params.name, "volume")
@@ -796,7 +801,7 @@ def revertExternalSnapshot(params):
         cstor_disk_prepare(poolname, os.path.basename(backing_file), backing_file)
     else:
         # prepare base
-        cstor_disk_prepare(poolname, params.vol, disk_info['uni'])
+        cstor_disk_prepare(poolname, params.vol, pool_info['uni'])
 
     op = Operation('cstor-cli vdisk-rr-ss ', {'poolname': poolname, 'name': params.vol,
                                               'sname': params.name}, with_result=True)
@@ -850,8 +855,9 @@ def revertExternalSnapshot(params):
 
 
 def deleteExternalSnapshot(params):
-    disk_info = get_pool_info_from_k8s(params.pool)
-    poolname = disk_info['poolname']
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+    poolname = pool_info['poolname']
 
     helper = K8sHelper("VirtualMachineDiskSnapshot")
     k8s_ss_info = helper.get_data(params.name, "volume")
@@ -864,7 +870,7 @@ def deleteExternalSnapshot(params):
         cstor_disk_prepare(poolname, os.path.basename(disk_config['current']), disk_config['current'])
     else:
         # prepare base
-        cstor_disk_prepare(poolname, params.vol, disk_info['uni'])
+        cstor_disk_prepare(poolname, params.vol, pool_info['uni'])
 
     op = Operation('cstor-cli vdisk-rm-ss ', {'poolname': poolname, 'name': params.vol,
                                               'sname': params.name}, with_result=True)
@@ -1028,6 +1034,8 @@ def migrate(params):
         for disk_path in specs.keys():
             prepare_info = get_disk_prepare_info_by_path(disk_path)
             pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+            check_pool_active(pool_info)
+
             pools = get_pools_by_path(pool_info['path'])
 
             # change disk node label in k8s.
@@ -1064,6 +1072,8 @@ def changeDiskPool(params):
     for disk_path in specs.keys():
         prepare_info = get_disk_prepare_info_by_path(disk_path)
         pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+        check_pool_active(pool_info)
+
         pools = get_pools_by_path(pool_info['path'])
 
         # change disk node label in k8s.
@@ -1094,7 +1104,10 @@ def migrateDiskFunc(sourceVol, targetPool):
     # prepare disk
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], sourceVol, disk_info['uni'])
     source_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+    check_pool_active(source_pool_info)
     pool_info = get_pool_info_from_k8s(targetPool)
+    check_pool_active(pool_info)
+
     logger.debug(disk_info)
     logger.debug(pool_info)
     if disk_info['pool'] == pool_info['pool']:
@@ -1296,6 +1309,8 @@ def migrateDiskFunc(sourceVol, targetPool):
 
 
 def migrateDisk(params):
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
     migrateDiskFunc(params.vol, params.pool)
     success_print("success migrate disk.", {})
 
@@ -1340,7 +1355,9 @@ def migrateVMDisk(params):
         if vol and pool:
             prepare_info = get_disk_prepare_info_by_path(vol)
             source_pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+            check_pool_active(source_pool_info)
             target_pool_info = get_pool_info_from_k8s(pool)
+            check_pool_active(target_pool_info)
             if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs'] and target_pool_info[
                 'pooltype'] == 'uus':
                 raise ExecuteException('RunCmdError', 'not support migrate disk file to dev.')
@@ -1377,6 +1394,7 @@ def migrateVMDisk(params):
                 if disk_path not in migrateVols:
                     prepare_info = get_disk_prepare_info_by_path(disk_path)
                     pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+                    check_pool_active(pool_info)
                     pools = get_pools_by_path(pool_info['path'])
 
                     # change disk node label in k8s.
@@ -1464,6 +1482,8 @@ def exportVM(params):
     for disk_path in disk_specs.keys():
         disk_info = get_disk_prepare_info_by_path(disk_path)
         pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        check_pool_active(pool_info)
+
         if pool_info['pooltype'] == 'localfs':
             if not os.path.exists(disk_path):
                 raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
@@ -1482,6 +1502,8 @@ def exportVM(params):
 
 
 def backupDisk(params):
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
@@ -1496,11 +1518,15 @@ def backupDisk(params):
 
     disk_info = get_vol_info_from_k8s(params.vol)
     disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+    check_pool_active(disk_pool_info)
+
     if disk_pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'disk %s is uus type, not support backup.' % params.vol)
 
     # check backup pool path exist or not
     pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'disk backup pool can not be uus.')
     if not os.path.exists(pool_info['path']):
@@ -1613,6 +1639,8 @@ def backupDisk(params):
     success_print("success backupDisk.", {})
 
 def restoreDisk(params):
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
     # check vm exist or not
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
@@ -1622,6 +1650,8 @@ def restoreDisk(params):
 
     # check backup pool path exist or not
     pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'disk backup pool can not be uus.')
     if not os.path.exists(pool_info['path']):
@@ -1658,6 +1688,8 @@ def restoreDisk(params):
             raise ExecuteException('', 'new disk %s has exist' % params.newname)
 
         disk_pool_info = get_pool_info_from_k8s(params.target)
+        check_pool_active(disk_pool_info)
+
         new_disk_dir = '%s/%s' % (disk_pool_info['path'], params.newname)
         if not os.path.exists(new_disk_dir):
             os.mkdir(new_disk_dir)
@@ -1672,6 +1704,7 @@ def restoreDisk(params):
     else:
         disk_info = get_vol_info_from_k8s(params.vol)
         disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        check_pool_active(disk_pool_info)
 
         cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
 
@@ -1714,6 +1747,8 @@ def backupVM(params):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
 
     pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
     if not os.path.exists(pool_info['path']):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
@@ -1752,6 +1787,8 @@ def backupVM(params):
             disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
         disk_info = get_vol_info_from_k8s(disk_mn)
         pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        check_pool_active(pool_info)
+
         if pool_info['pooltype'] == 'uus':
             if disk_specs[disk_path] == 'vda':
                 raise ExecuteException('', 'uus disk %s is vm os disk, not support backup vm %s' % (disk_path, params.domain) )
@@ -1853,6 +1890,8 @@ def restoreVM(params):
 
     # default backup path
     pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
     if not os.path.exists(pool_info['path']):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
@@ -1919,6 +1958,8 @@ def restoreVM(params):
             raise ExecuteException('', 'arg target must be set.')
         # create disk in target pool
         target_pool_info = get_pool_info_from_k8s(params.target)
+        check_pool_active(target_pool_info)
+
         if target_pool_info['pooltype'] == 'uus':
             raise ExecuteException('', 'target pooltype must be localfs, nfs, glusterfs or vdiskfs.')
 

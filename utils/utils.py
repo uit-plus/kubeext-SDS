@@ -26,7 +26,7 @@ import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle, get_hostname_in_lower_case
+from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle, get_hostname_in_lower_case, get_node_name
 from arraylist import vmArray
 
 try:
@@ -747,13 +747,27 @@ def modify_snapshot_info_in_k8s(poolname, vol, name):
     helper = K8sHelper("VirtualMachineDiskSnapshot")
     helper.update(name, "volume", get_snapshot_info_to_k8s(poolname, vol, name))
 
+def cstor_pool_active(poolname):
+    cstor = runCmdWithResult('cstor-cli pool-active --poolname %s' % poolname)
+    if cstor['result']['code'] != 0:
+        logger.debug('can not active cstor pool %s' % poolname)
+        raise ExecuteException('', 'can not active cstor pool %s' % poolname)
 
 def get_pool_info_from_k8s(pool):
     if not pool:
         raise ExecuteException('', 'missing parameter: no pool name.')
     result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
     if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
-        return result['spec']['pool']
+        pool_info = result['spec']['pool']
+        # # try make pool active
+        # pool_helper = K8sHelper('VirtualMahcinePool')
+        # this_node_name = get_hostname_in_lower_case()
+        # pool_node_name = get_node_name(pool_helper.get(pool))
+        # if this_node_name == pool_node_name and pool_info['state'] == 'active':
+        #     cstor_pool_active(pool_info['poolname'])
+        #     if pool_info['pooltype'] != 'uus':
+        #         runCmd('virsh pool-start %s' % pool_info['poolname'])
+        return pool_info
     raise ExecuteException('', 'can not get pool info from k8s')
 
 def get_image_info_from_k8s(image):
@@ -825,6 +839,8 @@ def get_disk_info(ss_path):
 def change_vol_current(vol, current):
     vol_info = get_vol_info_from_k8s(vol)
     pool_info = get_pool_info_from_k8s(vol_info['pool'])
+    check_pool_active(pool_info)
+
     config_path = '%s/%s/config.json' % (pool_info['path'], vol)
     with open(config_path, 'r') as f:
         config = load(f)
@@ -1346,7 +1362,8 @@ def get_disk_jsondict(pool, disk):
     pool_helper = K8sHelper('VirtualMahcinePool')
     pool_jsondict = pool_helper.get(pool)
     pool_node_name = pool_jsondict['metadata']['labels']['host']
-    pool_info = pool_helper.get_data(pool, 'pool')
+    pool_info = get_pool_info_from_k8s(pool)
+    check_pool_active(pool_info)
 
     # get disk jsondict
     disk_helper = K8sHelper('VirtualMachineDisk')
@@ -1426,8 +1443,11 @@ def get_disk_jsondict(pool, disk):
 
 def rebase_snapshot_with_config(pool, vol):
     pool_info = get_pool_info_from_k8s(pool)
+    check_pool_active(pool_info)
     old_disk_info = get_vol_info_from_k8s(vol)
     old_pool_info = get_pool_info_from_k8s(old_disk_info['pool'])
+    check_pool_active(old_pool_info)
+
     old_disk_dir = '%s/%s' % (old_pool_info['path'], vol)
     disk_dir = '%s/%s' % (pool_info['path'], vol)
 
@@ -1817,7 +1837,22 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     return old_to_new[disk_current], file_to_delete
 
 def check_pool_active(info):
+    pool_helper = K8sHelper('VirtualMahcinePool')
+    this_node_name = get_hostname_in_lower_case()
+    pool_node_name = get_node_name(pool_helper.get(info['pool']))
+    if this_node_name != pool_node_name:
+        if info['state'] == 'inactive':
+            error_print(221, 'pool %s is not active, please run "startPool" first' % info['pool'])
+        else:
+            return
+
+    if this_node_name == pool_node_name and info['state'] == 'active':
+        cstor_pool_active(info['poolname'])
+        if info['pooltype'] != 'uus':
+            runCmd('virsh pool-start %s' % info['poolname'])
+
     cstor = get_cstor_pool_info(info['poolname'])
+
     if info['pooltype'] == 'uus':
         result = {
             "pooltype": info['pooltype'],
@@ -1850,7 +1885,7 @@ def check_pool_active(info):
             pass
 
     if result['state'] != 'active':
-        error_print(221, 'pool is not active, please run "startPool" first')
+        error_print(221, 'pool %s is not active, please run "startPool" first' % info['pool'])
 
 def change_k8s_pool_state(pool, state):
     helper = K8sHelper("VirtualMahcinePool")
