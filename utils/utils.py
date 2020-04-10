@@ -1257,26 +1257,28 @@ def get_pool_all_disk(poolname):
     output = runCmdAndGetOutput(
         'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
     disks = []
-    for line in output.splitlines():
-        disk = {}
-        if len(line.split()) < 2:
-            continue
-        disk['disk'] = line.split()[0]
-        disk['host'] = line.split()[1]
-        disks.append(disk)
+    if output:
+        for line in output.splitlines():
+            disk = {}
+            if len(line.split()) < 2:
+                continue
+            disk['disk'] = line.split()[0]
+            disk['host'] = line.split()[1]
+            disks.append(disk)
     return disks
 
 def get_pool_all_ss(poolname):
     output = runCmdAndGetOutput(
         'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
     disks = []
-    for line in output.splitlines():
-        disk = {}
-        if len(line.split()) < 2:
-            continue
-        disk['ss'] = line.split()[0]
-        disk['host'] = line.split()[1]
-        disks.append(disk)
+    if output:
+        for line in output.splitlines():
+            disk = {}
+            if len(line.split()) < 2:
+                continue
+            disk['ss'] = line.split()[0]
+            disk['host'] = line.split()[1]
+            disks.append(disk)
     return disks
 
 def get_pools_by_node(node_name):
