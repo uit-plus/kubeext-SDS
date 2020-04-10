@@ -2015,6 +2015,11 @@ def restoreVM(params):
     success_print("success restoreVM.", {})
 
 
+def showDiskPool(params):
+    prepare_info = get_disk_prepare_info_by_path(params.path)
+    pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+    success_print("success show pool info by disk path", pool_info)
+
 
 def is_cstor_pool_exist(pool):
     op = Operation('cstor-cli pool-show ', {'poolname': pool}, with_result=True)

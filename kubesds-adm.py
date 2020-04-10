@@ -461,6 +461,10 @@ def restoreDiskParser(args):
         check_pool_active(pool_info)
     execute('restoreDisk', args)
 
+def showDiskPoolParser(args):
+    execute('showDiskPool', args)
+
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -901,6 +905,13 @@ parser_restore_disk.add_argument("--targetDomain", required=False, metavar="[TAR
 # set default func
 parser_restore_disk.set_defaults(func=restoreDiskParser)
 
+
+# -------------------- add showDiskPool cmd ----------------------------------
+parser_show_disk_pool = subparsers.add_parser("showDiskPool", help="showDiskPool help")
+parser_show_disk_pool.add_argument("--path", required=True, metavar="[PATH]", type=str,
+                            help="vm disk path")
+# set default func
+parser_show_disk_pool.set_defaults(func=showDiskPoolParser)
 
 try:
     os.putenv('LANG', 'en_US.UTF-8')
