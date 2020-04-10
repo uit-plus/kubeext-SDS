@@ -255,11 +255,11 @@ def deleteDiskParser(args):
 def resizeDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     pool = pool_info['poolname']
+    check_pool_active(pool_info)
     if args.type == "uus":
         # check cstor disk
         check_cstor_disk_not_exist(pool, args.vol)
     else:
-        check_pool_active(pool_info)
         check_virsh_disk_not_exist(pool, args.vol)
         check_virsh_disk_size(pool, args.vol, args.capacity)
 
