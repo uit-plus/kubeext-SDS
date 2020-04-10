@@ -40,48 +40,13 @@ def check_storage_type(args):
     if hasattr(args, 'type') and args.type not in SUPPORT_STORAGE_TYPE:
         error_print(100, "unsupported value type: %s" % args.type)
 
-
-def check_pool_active(info):
-    if info['pooltype'] == 'uus':
-        cstor = get_cstor_pool_info(info['poolname'])
-        result = {
-            "pooltype": info['pooltype'],
-            "pool": info['pool'],
-            "poolname": info['poolname'],
-            "capacity": cstor["data"]["total"],
-            "autostart": "no",
-            "path": cstor["data"]["url"],
-            "state": cstor["data"]["status"],
-            "uuid": randomUUID(),
-            "content": 'vmd'
-        }
-    else:
-        result = get_pool_info(info['poolname'])
-        if is_pool_started(info['poolname']):
-            result['state'] = "active"
-        else:
-            result['state'] = "inactive"
-        result['content'] = info["content"]
-        result["pooltype"] = info["pooltype"]
-        result["pool"] = info["pool"]
-        result["poolname"] = info["poolname"]
-
-    # update pool
-    if cmp(info, result) != 0:
-        k8s = K8sHelper('VirtualMahcinePool')
-        try:
-            k8s.update(info['pool'], 'pool', result)
-        except:
-            pass
-
-    if result['state'] != 'active':
-        error_print(221, 'pool is not active, please run "startPool" first')
-
-
 def get_cstor_pool_info(pool):
     op = Operation("cstor-cli pool-show", {"poolname": pool}, with_result=True)
-    result = op.execute()
-    return result
+    cstor = op.execute()
+    if cstor['result']['code'] != 0:
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+    return cstor
 
 
 # check pool type, if pool type not match, stop delete pool
@@ -262,11 +227,10 @@ def createDiskParser(args):
     if args.type != "uus":
         if args.format is None:
             error_print(100, "less arg, format must be set")
-        check_pool_active(pool_info)
         check_virsh_disk_exist(pool, args.vol)
 
+    check_pool_active(pool_info)
     execute('createDisk', args)
-
 
 def deleteDiskParser(args):
     try:
@@ -311,6 +275,7 @@ def cloneDiskParser(args):
     except ExecuteException:
         pass
 
+    check_pool_active(pool_info)
     # check cstor disk
     # check_cstor_disk_not_exist(pool, args.vol)
     # if args.type != "uus":
@@ -328,6 +293,7 @@ def rebaseDiskSnapshotParser(args):
 
 def showDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
     pool = pool_info['poolname']
     # check cstor disk
     check_cstor_disk_not_exist(pool, args.vol)
@@ -470,15 +436,27 @@ def exportVMParser(args):
     execute('exportVM', args)
 
 def backupVMParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
     execute('backupVM', args)
 
 def restoreVMParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
+    pool_info = get_pool_info_from_k8s(args.target)
+    check_pool_active(pool_info)
     execute('restoreVM', args)
 
 def backupDiskParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
     execute('backupDisk', args)
 
 def restoreDiskParser(args):
+    pool_info = get_pool_info_from_k8s(args.pool)
+    check_pool_active(pool_info)
+    pool_info = get_pool_info_from_k8s(args.target)
+    check_pool_active(pool_info)
     execute('restoreDisk', args)
 
 # --------------------------- cmd line parser ---------------------------------------

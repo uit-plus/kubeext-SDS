@@ -202,9 +202,10 @@ def stopPool(params):
 def showPool(params):
     pool_info = get_pool_info_from_k8s(params.pool)
     poolname = pool_info['poolname']
+    cstor = get_cstor_pool_info(poolname)
     if params.type != 'uus':
         result = get_pool_info(poolname)
-        if is_pool_started(poolname):
+        if is_pool_started(poolname) and cstor['data']['status'] == 'active':
             result['state'] = "active"
         else:
             result['state'] = "inactive"

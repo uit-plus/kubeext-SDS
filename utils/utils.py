@@ -1814,6 +1814,49 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     else:
         disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
     return old_to_new[disk_current], file_to_delete
+
+def check_pool_active(info):
+    cstor = get_cstor_pool_info(info['poolname'])
+    if info['pooltype'] == 'uus':
+        result = {
+            "pooltype": info['pooltype'],
+            "pool": info['pool'],
+            "poolname": info['poolname'],
+            "capacity": cstor["data"]["total"],
+            "autostart": "no",
+            "path": cstor["data"]["url"],
+            "state": cstor["data"]["status"],
+            "uuid": randomUUID(),
+            "content": 'vmd'
+        }
+    else:
+        result = get_pool_info(info['poolname'])
+        if is_pool_started(info['poolname']) and cstor['data']['status'] == 'active':
+            result['state'] = "active"
+        else:
+            result['state'] = "inactive"
+        result['content'] = info["content"]
+        result["pooltype"] = info["pooltype"]
+        result["pool"] = info["pool"]
+        result["poolname"] = info["poolname"]
+
+    # update pool
+    if cmp(info, result) != 0:
+        k8s = K8sHelper('VirtualMahcinePool')
+        try:
+            k8s.update(info['pool'], 'pool', result)
+        except:
+            pass
+
+    if result['state'] != 'active':
+        error_print(221, 'pool is not active, please run "startPool" first')
+
+def change_k8s_pool_state(pool, state):
+    helper = K8sHelper("VirtualMahcinePool")
+    pool_info = helper.get_data(pool, "pool")
+    pool_info['state'] = state
+    helper.update(pool, 'pool', pool_info)
+
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
     exit(0)
