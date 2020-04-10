@@ -130,6 +130,17 @@ def createPool(params):
 
         result = get_pool_info_to_k8s(params.type, params.pool, params.uuid, params.content)
 
+        if params.type == 'vdiskfs' and cstor['data']['status'] == 'active':
+            # make other vdiskfs pool inactive
+            pool_path = '%s/%s' % (cstor['data']['mountpath'], params.uuid)
+            pools = get_pools_by_path(pool_path)
+            node_name = get_hostname_in_lower_case()
+            poolHelper = K8sHelper('VirtualMahcinePool')
+            for pool in pools:
+                if pool['host'] != node_name:
+                    pool_info = get_pool_info_from_k8s(pool['pool'])
+                    pool_info['state'] = 'inactive'
+                    poolHelper.update(pool['pool'], 'pool', pool_info)
     success_print("create pool %s successful." % params.pool, result)
 
 

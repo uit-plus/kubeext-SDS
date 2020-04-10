@@ -835,12 +835,13 @@ def change_vol_current(vol, current):
     helper.update(vol, 'volume', get_disk_info_to_k8s(pool_info['poolname'], vol))
 
 def get_pool_info_to_k8s(type, pool, poolname, content):
+    cstor = get_cstor_pool_info(poolname)
     result = get_pool_info(poolname)
     result['content'] = content
     result["pooltype"] = type
     result["pool"] = pool
     result["poolname"] = poolname
-    if is_pool_started(poolname):
+    if is_pool_started(poolname) and cstor['data']['status'] == 'active':
         result["state"] = "active"
     else:
         result["state"] = "inactive"
@@ -1207,7 +1208,7 @@ def poolActive(poolname):
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
-    # make other vdiskfs pool inactice
+    # make other vdiskfs pool inactive
     pool_path = '%s/%s' % (cstor['data']['mountpath'], poolname)
     pools = get_pools_by_path(pool_path)
     node_name = get_hostname_in_lower_case()
