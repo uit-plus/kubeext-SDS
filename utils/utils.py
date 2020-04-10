@@ -1848,7 +1848,7 @@ def check_pool_active(info):
 
     if this_node_name == pool_node_name and info['state'] == 'active':
         cstor_pool_active(info['poolname'])
-        if info['pooltype'] != 'uus':
+        if info['pooltype'] != 'uus' and not is_pool_started(info['poolname']):
             runCmd('virsh pool-start %s' % info['poolname'])
 
     cstor = get_cstor_pool_info(info['poolname'])
