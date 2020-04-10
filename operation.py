@@ -172,8 +172,9 @@ def startPool(params):
     if params.type != "uus":
         if pool_info['pooltype'] == 'vdiskfs':
             poolActive(pool_info['poolname'])
-        op1 = Operation("virsh pool-start", {"pool": poolname})
-        op1.execute()
+        if not is_pool_started(pool_info['poolname']):
+            op1 = Operation("virsh pool-start", {"pool": poolname})
+            op1.execute()
         pool_info["state"] = "active"
         success_print("start pool %s successful." % params.pool, pool_info)
     else:
