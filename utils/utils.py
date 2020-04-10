@@ -1240,6 +1240,45 @@ def poolActive(poolname):
                 pool_info['state'] = 'active'
                 poolHelper.update(pool['pool'], 'pool', pool_info)
 
+    # change all disk and snapshot to this node
+    all_disk = get_pool_all_disk(poolname)
+    disk_helper = K8sHelper('VirtualMachineDisk')
+    for disk in all_disk:
+        if disk['host'] != node_name:
+            disk_helper.change_node(disk['disk'], node_name)
+
+    ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
+    all_ss = get_pool_all_ss(poolname)
+    for ss in all_ss:
+        if ss['host'] != node_name:
+            ss_helper.change_node(ss['ss'], node_name)
+
+def get_pool_all_disk(poolname):
+    output = runCmdAndGetOutput(
+        'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
+    disks = []
+    for line in output.splitlines():
+        disk = {}
+        if len(line.split()) < 2:
+            continue
+        disk['disk'] = line.split()[0]
+        disk['host'] = line.split()[1]
+        disks.append(disk)
+    return disks
+
+def get_pool_all_ss(poolname):
+    output = runCmdAndGetOutput(
+        'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
+    disks = []
+    for line in output.splitlines():
+        disk = {}
+        if len(line.split()) < 2:
+            continue
+        disk['ss'] = line.split()[0]
+        disk['host'] = line.split()[1]
+        disks.append(disk)
+    return disks
+
 def get_pools_by_node(node_name):
     output = runCmdAndGetOutput(
         'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
@@ -1909,7 +1948,7 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
-    print get_disks_spec_by_xml('/root/t2.xml')
+    print get_pool_all_disk('170dd9accdd174caced76b0db2551')
     # print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
     # print get_pools_by_node('vm.node25')
     # print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')
