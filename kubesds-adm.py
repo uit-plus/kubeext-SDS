@@ -443,8 +443,9 @@ def backupVMParser(args):
 def restoreVMParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     check_pool_active(pool_info)
-    pool_info = get_pool_info_from_k8s(args.target)
-    check_pool_active(pool_info)
+    if args.target:
+        pool_info = get_pool_info_from_k8s(args.target)
+        check_pool_active(pool_info)
     execute('restoreVM', args)
 
 def backupDiskParser(args):
@@ -455,8 +456,9 @@ def backupDiskParser(args):
 def restoreDiskParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     check_pool_active(pool_info)
-    pool_info = get_pool_info_from_k8s(args.target)
-    check_pool_active(pool_info)
+    if args.target:
+        pool_info = get_pool_info_from_k8s(args.target)
+        check_pool_active(pool_info)
     execute('restoreDisk', args)
 
 # --------------------------- cmd line parser ---------------------------------------
