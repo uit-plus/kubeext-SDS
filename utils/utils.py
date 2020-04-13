@@ -155,6 +155,7 @@ def remoteRunCmdWithResult(ip, cmd):
         p.stdout.close()
         p.stderr.close()
 
+
 def runCmdAndTransferXmlToJson(cmd):
     xml_str = runCmdAndGetOutput(cmd)
     dic = xmltodict.parse(xml_str, encoding='utf-8')
@@ -229,6 +230,7 @@ def runCmdAndGetOutput(cmd):
         p.stdout.close()
         p.stderr.close()
 
+
 def remoteRunCmd(ip, cmd):
     if not cmd:
         logger.debug('No CMD to execute.')
@@ -251,9 +253,12 @@ def remoteRunCmd(ip, cmd):
         p.stdout.close()
         p.stderr.close()
 
+
 '''
 Run back-end command in subprocess.
 '''
+
+
 def runCmd(cmd):
     if not cmd:
         #         logger.debug('No CMD to execute.')
@@ -486,6 +491,7 @@ def is_vm_active(domain):
             return True
     return False
 
+
 def is_vm_exist(domain):
     output = runCmdAndGetOutput('virsh list --all')
     lines = output.splitlines()
@@ -513,6 +519,7 @@ def get_disks_spec(domain):
             spec[kv[1]] = kv[0]
     return spec
 
+
 def get_disks_spec_by_xml(xmlfile):
     if xmlfile is None:
         raise ExecuteException('RunCmdError', 'domin xml file is not set. Can not get domain disk spec.')
@@ -533,6 +540,7 @@ def get_disks_spec_by_xml(xmlfile):
                     target_element = disk.find("target")
                     spec[source_element.get("file")] = target_element.get('dev')
     return spec
+
 
 class CDaemon:
     '''
@@ -747,11 +755,13 @@ def modify_snapshot_info_in_k8s(poolname, vol, name):
     helper = K8sHelper("VirtualMachineDiskSnapshot")
     helper.update(name, "volume", get_snapshot_info_to_k8s(poolname, vol, name))
 
+
 def cstor_pool_active(poolname):
     cstor = runCmdWithResult('cstor-cli pool-active --poolname %s' % poolname)
     if cstor['result']['code'] != 0:
         logger.debug('can not active cstor pool %s' % poolname)
         raise ExecuteException('', 'can not active cstor pool %s' % poolname)
+
 
 def get_pool_info_from_k8s(pool):
     if not pool:
@@ -770,6 +780,7 @@ def get_pool_info_from_k8s(pool):
         return pool_info
     raise ExecuteException('', 'can not get pool info from k8s')
 
+
 def get_image_info_from_k8s(image):
     if not image:
         raise ExecuteException('', 'missing parameter: no image name.')
@@ -777,6 +788,7 @@ def get_image_info_from_k8s(image):
     if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
         return result['spec']['volume']
     raise ExecuteException('', 'can not get vol info from k8s')
+
 
 def get_vol_info_from_k8s(vol):
     if not vol:
@@ -836,6 +848,7 @@ def get_disk_info(ss_path):
     json_str = dumps(result)
     return loads(json_str.replace('-', '_'))
 
+
 def change_vol_current(vol, current):
     vol_info = get_vol_info_from_k8s(vol)
     pool_info = get_pool_info_from_k8s(vol_info['pool'])
@@ -850,6 +863,7 @@ def change_vol_current(vol, current):
     helper = K8sHelper("VirtualMachineDisk")
     helper.update(vol, 'volume', get_disk_info_to_k8s(pool_info['poolname'], vol))
 
+
 def get_pool_info_to_k8s(type, pool, poolname, content):
     cstor = get_cstor_pool_info(poolname)
     result = get_pool_info(poolname)
@@ -863,6 +877,7 @@ def get_pool_info_to_k8s(type, pool, poolname, content):
         result["state"] = "inactive"
     return result
 
+
 def write_config(vol, dir, current, pool, poolname):
     config = {}
     config['name'] = vol
@@ -874,6 +889,7 @@ def write_config(vol, dir, current, pool, poolname):
     with open('%s/config.json' % dir, "w") as f:
         logger.debug(config)
         dump(config, f)
+
 
 def get_disk_info_to_k8s(poolname, vol):
     config_path = '%s/%s/config.json' % (get_pool_info(poolname)['path'], vol)
@@ -888,6 +904,7 @@ def get_disk_info_to_k8s(poolname, vol):
     result["uni"] = config['current']
     result["current"] = config['current']
     return result
+
 
 def get_cstor_disk_info_to_k8s(pool, poolname, vol):
     disk_info_k8s = get_vol_info_from_k8s(vol)
@@ -998,6 +1015,7 @@ def check_disk_in_use(disk_path):
         return True
     return False
 
+
 def delete_vm_disk_in_xml(xmlfile, disk_file):
     tree = ET.parse(xmlfile)
 
@@ -1015,6 +1033,7 @@ def delete_vm_disk_in_xml(xmlfile, disk_file):
                     tree.write(xmlfile)
                     return True
     return False
+
 
 def delete_vm_cdrom_file_in_xml(xmlfile):
     tree = ET.parse(xmlfile)
@@ -1053,6 +1072,7 @@ def modofy_vm_disk_file(xmlfile, source, target):
                     return True
     return False
 
+
 def attach_vm_disk(vm, disk):
     disk_specs = get_disks_spec(vm)
     if not os.path.exists(disk):
@@ -1066,7 +1086,9 @@ def attach_vm_disk(vm, disk):
             tag = 'vd' + i
             break
     disk_info = get_disk_info(disk)
-    runCmd('virsh attach-disk --domain %s --cache none  --config %s --target %s --subdriver %s' % (vm, disk, tag, disk_info['format']))
+    runCmd('virsh attach-disk --domain %s --cache none  --config %s --target %s --subdriver %s' % (
+    vm, disk, tag, disk_info['format']))
+
 
 def modofy_vm_disks(vm, source_to_target):
     if not vm or not source_to_target:
@@ -1090,6 +1112,7 @@ def modofy_vm_disks(vm, source_to_target):
         runCmd('rm /tmp/%s.xml' % vm)
         return True
     return False
+
 
 def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
     if not xmlfile or not source_to_target:
@@ -1160,6 +1183,7 @@ def is_shared_storage(path):
             return True
     return False
 
+
 def get_vm_disks_from_xml(xmlfile):
     tree = ET.parse(xmlfile)
 
@@ -1178,6 +1202,7 @@ def get_vm_disks_from_xml(xmlfile):
                     all_disks.append(disk_file)
 
     return all_disks
+
 
 def is_vm_disk_not_shared_storage(vm):
     if not vm:
@@ -1222,6 +1247,7 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
+
 def poolActive(poolname):
     cstor = runCmdWithResult('cstor-cli pool-active --poolname %s' % poolname)
     if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
@@ -1259,6 +1285,7 @@ def poolActive(poolname):
                 if ss['host'] != node_name:
                     ss_helper.change_node(ss['ss'], node_name)
 
+
 def get_pool_all_disk(poolname):
     output = runCmdAndGetOutput(
         'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
@@ -1272,6 +1299,7 @@ def get_pool_all_disk(poolname):
             disk['host'] = line.split()[1]
             disks.append(disk)
     return disks
+
 
 def get_pool_all_ss(poolname):
     output = runCmdAndGetOutput(
@@ -1287,6 +1315,7 @@ def get_pool_all_ss(poolname):
             disks.append(disk)
     return disks
 
+
 def get_pools_by_node(node_name):
     output = runCmdAndGetOutput(
         'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
@@ -1299,6 +1328,7 @@ def get_pools_by_node(node_name):
         pool['poolname'] = line.split()[1]
         pools.append(pool)
     return pools
+
 
 def get_pools_by_path(path):
     output = runCmdAndGetOutput(
@@ -1314,6 +1344,7 @@ def get_pools_by_path(path):
             pools.append(pool)
     return pools
 
+
 def get_pools_by_poolname(poolname):
     output = runCmdAndGetOutput(
         'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % poolname)
@@ -1327,6 +1358,7 @@ def get_pools_by_poolname(poolname):
             pool['host'] = line.split()[1]
             pools.append(pool)
     return pools
+
 
 def get_all_node_ip():
     all_node_ip = []
@@ -1349,6 +1381,7 @@ def get_all_node_ip():
 
     return all_node_ip
 
+
 def get_spec(jsondict):
     spec = jsondict.get('spec')
     if not spec:
@@ -1356,6 +1389,7 @@ def get_spec(jsondict):
         if raw_object:
             spec = raw_object.get('spec')
     return spec
+
 
 # get disk and snapshot jsondict and change to targetPool
 # def get_migrate_disk_jsondict(disk, targetPool):
@@ -1490,6 +1524,7 @@ def get_disk_jsondict(pool, disk):
 
     return jsondicts
 
+
 def rebase_snapshot_with_config(pool, vol):
     pool_info = get_pool_info_from_k8s(pool)
     check_pool_active(pool_info)
@@ -1544,6 +1579,7 @@ def rebase_snapshot_with_config(pool, vol):
 
     apply_all_jsondict(jsondicts)
 
+
 def apply_all_jsondict(jsondicts):
     if len(jsondicts) == 0:
         return
@@ -1558,11 +1594,15 @@ def apply_all_jsondict(jsondicts):
     try:
         runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
     except ExecuteException, e:
-        pass
+        if (e.message.find('Warning') >= 0):
+            pass
+        else:
+            raise e
     try:
         runCmd('rm -f /tmp/%s.yaml' % filename)
     except ExecuteException:
         pass
+
 
 def create_all_jsondict(jsondicts):
     if len(jsondicts) == 0:
@@ -1581,6 +1621,7 @@ def create_all_jsondict(jsondicts):
     except ExecuteException:
         pass
 
+
 def get_node_ip_by_node_name(nodeName):
     all_node_ip = get_all_node_ip()
     if all_node_ip:
@@ -1588,6 +1629,7 @@ def get_node_ip_by_node_name(nodeName):
             if ip['nodeName'] == nodeName:
                 return ip['ip']
     return None
+
 
 def get_node_name_by_node_ip(ip):
     all_node_ip = get_all_node_ip()
@@ -1601,13 +1643,17 @@ def get_node_name_by_node_ip(ip):
 def get_vm_xml(domain):
     return runCmdAndGetOutput('virsh dumpxml %s' % domain)
 
+
 def xmlToJson(xmlStr):
     return dumps(bf.data(fromstring(xmlStr)), sort_keys=True, indent=4)
 
+
 def toKubeJson(json):
     return json.replace('@', '_').replace('$', 'text').replace(
-            'interface', '_interface').replace('transient', '_transient').replace(
-                    'nested-hv', 'nested_hv').replace('suspend-to-mem', 'suspend_to_mem').replace('suspend-to-disk', 'suspend_to_disk')
+        'interface', '_interface').replace('transient', '_transient').replace(
+        'nested-hv', 'nested_hv').replace('suspend-to-mem', 'suspend_to_mem').replace('suspend-to-disk',
+                                                                                      'suspend_to_disk')
+
 
 def _addListToSpecificField(data):
     if isinstance(data, list):
@@ -1615,9 +1661,12 @@ def _addListToSpecificField(data):
     else:
         return [data]
 
+
 '''
 Cautions! Do not modify this function because it uses reflections!
 '''
+
+
 def _userDefinedOperationInList(field, jsondict, alist):
     jsondict = jsondict[field]
     tmp = jsondict
@@ -1639,14 +1688,16 @@ def _userDefinedOperationInList(field, jsondict, alist):
                 tmp2 = 'jsondict'
             else:
                 tmp2 = '{}[\'{}\']'.format(tmp2, value)
-        exec('{} = {}').format(tmp2, _addListToSpecificField(tmp))
+        exec ('{} = {}').format(tmp2, _addListToSpecificField(tmp))
     return
+
 
 def updateDomain(jsondict):
     for line in vmArray:
         alist = line.split('-')
         _userDefinedOperationInList('domain', jsondict, alist)
     return jsondict
+
 
 def modifyVMOnNode(domain):
     helper = K8sHelper('VirtualMachine')
@@ -1657,6 +1708,7 @@ def modifyVMOnNode(domain):
     vm_json = updateJsonRemoveLifecycle(jsonDict, vm_json)
     jsonDict = addPowerStatusMessage(vm_json, 'Running', 'The VM is running.')
     helper.updateAll(domain, jsonDict)
+
 
 # def checkVMDiskFileChanged():
 #     p = subprocess.Popen('virt-diff ', shell=True, stdout=subprocess.PIPE)
@@ -1748,6 +1800,7 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
     result['chains'] = chains
     return result
 
+
 def backup_file(file, target_dir):
     # print file
     if not os.path.exists(target_dir):
@@ -1777,6 +1830,7 @@ def backup_file(file, target_dir):
             dump(history, f)
     return file_checksum
 
+
 def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     vm_backup_path = os.path.dirname(disk_back_dir)
     backup_path = os.path.dirname(vm_backup_path)
@@ -1803,7 +1857,8 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         except:
             pass
         backup_checksum = checksum(image_backup_path)
-        if image_info and os.path.exists(image_info['filename']) and checksum(image_info['filename']) == backup_checksum:  # image still can be used
+        if image_info and os.path.exists(image_info['filename']) and checksum(
+                image_info['filename']) == backup_checksum:  # image still can be used
             old_to_new[backup_disk['image_path']] = backup_disk['image_path']
         else:
             if os.path.exists('%s/%s' % (disk_dir, backup_disk['image'])):
@@ -1884,6 +1939,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
     return old_to_new[disk_current], file_to_delete
 
+
 def check_pool_active(info):
     pool_helper = K8sHelper('VirtualMahcinePool')
     this_node_name = get_hostname_in_lower_case()
@@ -1938,15 +1994,18 @@ def check_pool_active(info):
     if result['state'] != 'active':
         error_print(221, 'pool %s is not active, please run "startPool" first' % info['pool'])
 
+
 def change_k8s_pool_state(pool, state):
     helper = K8sHelper("VirtualMahcinePool")
     pool_info = helper.get_data(pool, "pool")
     pool_info['state'] = state
     helper.update(pool, 'pool', pool_info)
 
+
 def success_print(msg, data):
     print dumps({"result": {"code": 0, "msg": msg}, "data": data})
     exit(0)
+
 
 def error_print(code, msg, data=None):
     if data is None:
@@ -1955,6 +2014,7 @@ def error_print(code, msg, data=None):
     else:
         print dumps({"result": {"code": code, "msg": msg}, "data": data})
         exit(1)
+
 
 if __name__ == '__main__':
     print get_all_node_ip()
