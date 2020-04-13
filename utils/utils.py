@@ -1242,16 +1242,18 @@ def poolActive(poolname):
 
     # change all disk and snapshot to this node
     all_disk = get_pool_all_disk(poolname)
-    disk_helper = K8sHelper('VirtualMachineDisk')
-    for disk in all_disk:
-        if disk['host'] != node_name:
-            disk_helper.change_node(disk['disk'], node_name)
+    if all_disk:
+        disk_helper = K8sHelper('VirtualMachineDisk')
+        for disk in all_disk:
+            if disk['host'] != node_name:
+                disk_helper.change_node(disk['disk'], node_name)
 
-    ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
-    all_ss = get_pool_all_ss(poolname)
-    for ss in all_ss:
-        if ss['host'] != node_name:
-            ss_helper.change_node(ss['ss'], node_name)
+        all_ss = get_pool_all_ss(poolname)
+        if all_ss:
+            ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
+            for ss in all_ss:
+                if ss['host'] != node_name:
+                    ss_helper.change_node(ss['ss'], node_name)
 
 def get_pool_all_disk(poolname):
     output = runCmdAndGetOutput(
