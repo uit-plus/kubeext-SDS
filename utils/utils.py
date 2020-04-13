@@ -1582,16 +1582,18 @@ def create_all_jsondict(jsondicts):
 
 def get_node_ip_by_node_name(nodeName):
     all_node_ip = get_all_node_ip()
-    for ip in all_node_ip:
-        if ip['nodeName'] == nodeName:
-            return ip['ip']
+    if all_node_ip:
+        for ip in all_node_ip:
+            if ip['nodeName'] == nodeName:
+                return ip['ip']
     return None
 
 def get_node_name_by_node_ip(ip):
     all_node_ip = get_all_node_ip()
-    for node in all_node_ip:
-        if node['ip'] == ip and node['nodeName'].find("vm.") >= 0:
-            return node['nodeName']
+    if all_node_ip:
+        for node in all_node_ip:
+            if node['ip'] == ip and node['nodeName'].find("vm.") >= 0:
+                return node['nodeName']
     return None
 
 
