@@ -1416,7 +1416,7 @@ def get_disk_jsondict(pool, disk):
     #     raise ExecuteException("RunCmdError", "not support pool type %s" % pool_info['pooltype'])
 
     if disk_helper.exist(disk):  # migrate disk or migrate vm
-        if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs']:
+        if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
             disk_jsondict = disk_helper.get(disk)
             # update disk jsondict
             logger.debug(disk_jsondict)
@@ -1428,7 +1428,10 @@ def get_disk_jsondict(pool, disk):
                 nodeName = spec.get('nodeName')
                 if nodeName:
                     spec['nodeName'] = pool_node_name
-                disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
+                if pool_info['pooltype'] == 'vdiskfs' and pool_info['state'] == 'inactive':
+                    disk_info = get_vol_info_from_k8s(disk)
+                else:
+                    disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
                 spec['volume'] = disk_info
                 logger.debug(disk_jsondict)
                 jsondicts.append(disk_jsondict)
@@ -1447,7 +1450,10 @@ def get_disk_jsondict(pool, disk):
                                 nodeName = spec.get('nodeName')
                                 if nodeName:
                                     spec['nodeName'] = pool_node_name
-                                ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
+                                if pool_info['pooltype'] == 'vdiskfs' and pool_info['state'] == 'inactive':
+                                    ss_info = get_snapshot_info_from_k8s(ss)
+                                else:
+                                    ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
                                 spec['volume'] = ss_info
                                 jsondicts.append(ss_jsondict)
                     except ExecuteException:
