@@ -155,17 +155,18 @@ def run_server():
     node_name = get_hostname_in_lower_case()
     pools = get_pools_by_node(node_name)
     for pool in pools:
-        pool_info = get_pool_info_from_k8s(pool['pool'])
-        if pool_info['pooltype'] == 'vdiskfs':
-            if pool_info['state'] == 'active':
-                poolActive(pool_info['poolname'])
-        else:
-            op = Operation('cstor-cli pool-active ', {'poolname': pool['poolname']}, with_result=True)
-            cstor = op.execute()
-            if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
-                logger.debug('can not auto mount cstor pool %s' % pool['poolname'])
-                raise ExecuteException('', 'can not auto mount cstor pool %s' % pool['poolname'])
-
+        try:
+            pool_info = get_pool_info_from_k8s(pool['pool'])
+            if pool_info['pooltype'] == 'vdiskfs':
+                if pool_info['state'] == 'active':
+                    poolActive(pool_info['poolname'])
+            else:
+                op = Operation('cstor-cli pool-active ', {'poolname': pool['poolname']}, with_result=True)
+                cstor = op.execute()
+                if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
+                    logger.debug('can not auto mount cstor pool %s' % pool['poolname'])
+        except ExecuteException, e:
+            logger.debug('can not auto mount cstor pool %s' % pool['poolname'])
 
     # 多线程服务器
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
