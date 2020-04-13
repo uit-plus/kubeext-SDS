@@ -843,6 +843,8 @@ parser_backup_vm.add_argument("--version", required=True, metavar="[VERSION]", t
                             help="backup version id")
 parser_backup_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool, nargs='?', const=True,
                             help="all vm disk")
+parser_backup_disk.add_argument("--full", required=False, metavar="[FULL]", type=bool, nargs='?', const=True,
+                            help="full backup")
 parser_backup_vm.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
                             help="remote server host.")
 parser_backup_vm.add_argument("--port", required=False, metavar="[PORT]", type=str,
@@ -882,6 +884,8 @@ parser_backup_disk.add_argument("--pool", required=True, metavar="[POOL]", type=
                             help="vm domain backup pool, must shared type, like nfs")
 parser_backup_disk.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
+parser_backup_disk.add_argument("--full", required=False, metavar="[FULL]", type=bool, nargs='?', const=True,
+                            help="full backup")
 parser_backup_disk.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
                             help="remote server host.")
 parser_backup_disk.add_argument("--port", required=False, metavar="[PORT]", type=str,
