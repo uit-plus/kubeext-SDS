@@ -162,7 +162,7 @@ def run_server():
         else:
             op = Operation('cstor-cli pool-active ', {'poolname': pool['poolname']}, with_result=True)
             cstor = op.execute()
-            if cstor['result']['code'] != 0:
+            if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
                 logger.debug('can not auto mount cstor pool %s' % pool['poolname'])
                 raise ExecuteException('', 'can not auto mount cstor pool %s' % pool['poolname'])
 

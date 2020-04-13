@@ -1220,7 +1220,7 @@ def is_vm_disk_driver_cache_none(vm):
 
 def poolActive(poolname):
     cstor = runCmdWithResult('cstor-cli pool-active --poolname %s' % poolname)
-    if cstor['result']['code'] != 0:
+    if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
