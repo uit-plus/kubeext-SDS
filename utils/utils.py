@@ -1416,7 +1416,7 @@ def get_disk_jsondict(pool, disk):
     #     raise ExecuteException("RunCmdError", "not support pool type %s" % pool_info['pooltype'])
 
     if disk_helper.exist(disk):  # migrate disk or migrate vm
-        if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+        if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs']:
             disk_jsondict = disk_helper.get(disk)
             # update disk jsondict
             logger.debug(disk_jsondict)
