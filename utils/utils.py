@@ -877,6 +877,8 @@ def write_config(vol, dir, current, pool, poolname):
 
 def get_disk_info_to_k8s(poolname, vol):
     config_path = '%s/%s/config.json' % (get_pool_info(poolname)['path'], vol)
+    if not os.path.exists(config_path):
+        return get_vol_info_from_k8s(vol)
     with open(config_path, "r") as f:
         config = load(f)
     result = get_disk_info(config['current'])
@@ -908,6 +910,8 @@ def get_cstor_disk_info_to_k8s(pool, poolname, vol):
 
 def get_snapshot_info_to_k8s(poolname, vol, name):
     config_path = '%s/%s/config.json' % (get_pool_info(poolname)['path'], vol)
+    if not os.path.exists(config_path):
+        return get_snapshot_info_from_k8s(name)
     with open(config_path, "r") as f:
         config = load(f)
     ss_path = '%s/snapshots/%s' % (config['dir'], name)
@@ -1428,10 +1432,7 @@ def get_disk_jsondict(pool, disk):
                 nodeName = spec.get('nodeName')
                 if nodeName:
                     spec['nodeName'] = pool_node_name
-                if pool_info['pooltype'] == 'vdiskfs' and pool_info['state'] == 'inactive':
-                    disk_info = get_vol_info_from_k8s(disk)
-                else:
-                    disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
+                disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
                 spec['volume'] = disk_info
                 logger.debug(disk_jsondict)
                 jsondicts.append(disk_jsondict)
@@ -1450,10 +1451,7 @@ def get_disk_jsondict(pool, disk):
                                 nodeName = spec.get('nodeName')
                                 if nodeName:
                                     spec['nodeName'] = pool_node_name
-                                if pool_info['pooltype'] == 'vdiskfs' and pool_info['state'] == 'inactive':
-                                    ss_info = get_snapshot_info_from_k8s(ss)
-                                else:
-                                    ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
+                                ss_info = get_snapshot_info_to_k8s(pool_info['poolname'], disk, ss)
                                 spec['volume'] = ss_info
                                 jsondicts.append(ss_jsondict)
                     except ExecuteException:
