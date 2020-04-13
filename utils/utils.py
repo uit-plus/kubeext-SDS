@@ -1558,10 +1558,7 @@ def apply_all_jsondict(jsondicts):
     try:
         runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
     except ExecuteException, e:
-        if (e.message == 'Warning: kubectl apply should be used on resource created by either kubectl create --save-config or kubectl apply\n'):
-            pass
-        else:
-            raise e
+        pass
     try:
         runCmd('rm -f /tmp/%s.yaml' % filename)
     except ExecuteException:
