@@ -1594,7 +1594,7 @@ def apply_all_jsondict(jsondicts):
     try:
         runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
     except ExecuteException, e:
-        if (e.message.find('Warning') >= 0):
+        if e.message.find('Warning') >= 0:
             pass
         else:
             raise e
