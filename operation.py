@@ -1046,7 +1046,7 @@ def migrate(params):
                     targetPool = pool['pool']
             if targetPool:
                 logger.debug("targetPool is %s." % targetPool)
-                if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
+                if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs']:
                     config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
                     write_config(config['name'], config['dir'], config['current'], targetPool, config['poolname'])
                     jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
