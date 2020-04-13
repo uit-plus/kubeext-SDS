@@ -1395,7 +1395,7 @@ def migrateVMDisk(params):
                 if disk_path not in migrateVols:
                     prepare_info = get_disk_prepare_info_by_path(disk_path)
                     pool_info = get_pool_info_from_k8s(prepare_info['pool'])
-                    check_pool_active(pool_info)
+                    # check_pool_active(pool_info)
                     pools = get_pools_by_path(pool_info['path'])
 
                     # change disk node label in k8s.
