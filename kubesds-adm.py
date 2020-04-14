@@ -471,6 +471,14 @@ def restoreDiskParser(args):
 def showDiskPoolParser(args):
     execute('showDiskPool', args)
 
+def deleteVMBackupParser(args):
+    execute('deleteVMBackup', args)
+
+def deleteVMDiskBackupParser(args):
+    execute('deleteVMDiskBackup', args)
+
+def deleteVMDiskBackupParser(args):
+    execute('deleteRemoteBackupParser', args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
@@ -843,7 +851,7 @@ parser_backup_vm.add_argument("--version", required=True, metavar="[VERSION]", t
                             help="backup version id")
 parser_backup_vm.add_argument("--all", required=False, metavar="[ALL]", type=bool, nargs='?', const=True,
                             help="all vm disk")
-parser_backup_disk.add_argument("--full", required=False, metavar="[FULL]", type=bool, nargs='?', const=True,
+parser_backup_vm.add_argument("--full", required=False, metavar="[FULL]", type=bool, nargs='?', const=True,
                             help="full backup")
 parser_backup_vm.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
                             help="remote server host.")
@@ -923,6 +931,57 @@ parser_show_disk_pool.add_argument("--path", required=True, metavar="[PATH]", ty
                             help="vm disk path")
 # set default func
 parser_show_disk_pool.set_defaults(func=showDiskPoolParser)
+
+
+# -------------------- add deleteVMBackup cmd ----------------------------------
+parser_delete_vm_backup = subparsers.add_parser("deleteVMBackup", help="restoreVM help")
+parser_delete_vm_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_delete_vm_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="vm domain backup pool, must shared type, like nfs")
+parser_delete_vm_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_delete_vm_backup.add_argument("--remote", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_delete_vm_backup.add_argument("--port", required=False, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_delete_vm_backup.add_argument("--username", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server username.")
+parser_delete_vm_backup.add_argument("--password", required=False, metavar="[REMOTE]", type=str,
+                            help="remote server password.")
+# set default func
+parser_delete_vm_backup.set_defaults(func=deleteVMBackupParser)
+
+# -------------------- add deleteVMDiskBackup cmd ----------------------------------
+parser_delete_vm_disk_backup = subparsers.add_parser("deleteVMDiskBackup", help="restoreVM help")
+parser_delete_vm_disk_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_delete_vm_disk_backup.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_delete_vm_disk_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="vm domain backup pool, must shared type, like nfs")
+parser_delete_vm_disk_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+# set default func
+parser_delete_vm_disk_backup.set_defaults(func=deleteVMDiskBackupParser)
+
+
+# -------------------- add deleteRemoteBackup cmd ----------------------------------
+parser_delete_remote_backup = subparsers.add_parser("deleteRemoteBackup", help="restoreVM help")
+parser_delete_remote_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_delete_remote_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_delete_remote_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_delete_remote_backup.add_argument("--port", required=True, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_delete_remote_backup.add_argument("--username", required=True, metavar="[USERNAME]", type=str,
+                            help="remote server username.")
+parser_delete_remote_backup.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
+                            help="remote server password.")
+# set default func
+parser_delete_remote_backup.set_defaults(func=deleteRemoteBackupParser)
 
 try:
     os.putenv('LANG', 'en_US.UTF-8')

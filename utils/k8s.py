@@ -208,6 +208,8 @@ class K8sHelper(object):
 
     def create(self, name, key, data):
         try:
+            if self.exist(name):
+                return
             hostname = get_hostname_in_lower_case()
             jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
                         'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
@@ -224,6 +226,8 @@ class K8sHelper(object):
 
     def update(self, name, key, data):
         try:
+            if not self.exist(name):
+                return
             jsondict = self.get(name)
             jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
             jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
@@ -235,6 +239,8 @@ class K8sHelper(object):
 
     def updateAll(self, name, jsondict):
         try:
+            if not self.exist(name):
+                return
             jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
             jsondict = deleteLifecycleInJson(jsondict)
             return client.CustomObjectsApi().replace_namespaced_custom_object(
@@ -254,6 +260,8 @@ class K8sHelper(object):
 
     def delete_lifecycle(self, name):
         try:
+            if not self.exist(name):
+                return
             jsondict = self.get(name)
             if hasLifeCycle(jsondict):
                 jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
@@ -265,6 +273,8 @@ class K8sHelper(object):
             raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 
     def change_node(self, name, newNodeName):
+        if not self.exist(name):
+            return
         jsondict = self.get(name)
         if jsondict:
             jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
