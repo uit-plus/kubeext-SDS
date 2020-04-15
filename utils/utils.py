@@ -1366,14 +1366,16 @@ def get_all_node_ip():
         jsondict = client.CoreV1Api().list_node().to_dict()
         nodes = jsondict['items']
         for node in nodes:
-            node_ip = {}
-            for address in node['status']['addresses']:
-                if address['type'] == 'InternalIP':
-                    node_ip['ip'] = address['address']
-                    break
-            node_ip['nodeName'] = node['metadata']['name']
-            all_node_ip.append(node_ip)
-
+            try:
+                node_ip = {}
+                for address in node['status']['addresses']:
+                    if address['type'] == 'InternalIP':
+                        node_ip['ip'] = address['address']
+                        break
+                node_ip['nodeName'] = node['metadata']['name']
+                all_node_ip.append(node_ip)
+            except:
+                pass
     except ApiException as e:
         logger.debug("Exception when calling CoreV1Api->list_node: %s\n" % e)
     except Exception as e:

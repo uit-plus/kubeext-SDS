@@ -2405,7 +2405,8 @@ def release_disk_by_path(path):
 
 
 if __name__ == '__main__':
-    print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/39829673ec934c2786b7715a96a7d878/39829673ec934c2786b7715a96a7d878/ff8538567f1a4ec8ab0257e5b2ece4b3/30ca01637b444a0c9c9e3c0adcd3e364')
+    print get_node_name_by_node_ip('172.16.1.25')
+    # print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/39829673ec934c2786b7715a96a7d878/39829673ec934c2786b7715a96a7d878/ff8538567f1a4ec8ab0257e5b2ece4b3/30ca01637b444a0c9c9e3c0adcd3e364')
     # print get_disks_spec('vm006')
     # print get_disk_prepare_info_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev/vm003migratevmdisk2/snapshots/vm003migratevmdisk2.1')
     # prepare_disk_by_path(
