@@ -1585,6 +1585,7 @@ def rebase_snapshot_with_config(pool, vol):
 def apply_all_jsondict(jsondicts):
     if len(jsondicts) == 0:
         return
+    logger.debug(jsondicts)
     filename = randomUUID()
     logger.debug(filename)
     with open('/tmp/%s.yaml' % filename, 'w') as f:
@@ -1596,6 +1597,7 @@ def apply_all_jsondict(jsondicts):
     try:
         runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
     except ExecuteException, e:
+        logger.debug(e.message)
         if e.message.find('Warning') >= 0:
             pass
         else:
