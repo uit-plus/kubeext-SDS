@@ -1330,9 +1330,6 @@ def migrateVMDisk(params):
     # if not is_vm_disk_not_shared_storage(params.domain):
     #     raise ExecuteException('', 'error: still has disk not create in shared storage.')
 
-    if params.ip in get_host_IP():
-        raise ExecuteException('', 'error: not valid ip address.')
-
     # prepare all disk
     specs = get_disks_spec(params.domain)
     oldPools = {}
@@ -1372,12 +1369,7 @@ def migrateVMDisk(params):
             vps.append(vp)
         else:
             raise ExecuteException('RunCmdError', 'migratedisks param is illegal.')
-    for disk_path in specs.keys():
-        # prepare
-        prepare_info = prepare_disk_by_path(disk_path)
-        if disk_path not in migrateVols:
-            # remote prepare
-            remote_prepare_disk_by_path(params.ip, disk_path)
+
     uuid = randomUUID().replace('-', '')
     xmlfile = '/tmp/%s.xml' % uuid
     logger.debug("xmlfile: %s" % xmlfile)
@@ -1387,85 +1379,113 @@ def migrateVMDisk(params):
     # get disk node label in ip
     node_name = get_node_name_by_node_ip(params.ip)
     logger.debug("node_name: %s" % node_name)
-    if node_name:
-        all_jsondicts = []
-        logger.debug(specs)
-        try:
-            for disk_path in specs.keys():
-                if disk_path not in migrateVols:
-                    prepare_info = get_disk_prepare_info_by_path(disk_path)
-                    pool_info = get_pool_info_from_k8s(prepare_info['pool'])
-                    # check_pool_active(pool_info)
-                    pools = get_pools_by_path(pool_info['path'])
 
-                    # change disk node label in k8s.
-                    targetPool = None
-                    for pool in pools:
-                        if pool['host'] == node_name:
-                            targetPool = pool['pool']
-                    if targetPool:
-                        logger.debug("targetPool is %s." % targetPool)
-                        if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
-                            config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
-                            write_config(config['name'], config['dir'], config['current'], targetPool,
-                                         config['poolname'])
-                            jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
-                            all_jsondicts.extend(jsondicts)
-                        else:
-                            jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
-                            all_jsondicts.extend(jsondicts)
-                else:
-                    logger.debug(vps)
-                    logger.debug('migrate disks')
-                    for vp in vps:
-                        vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                        logger.debug('migrate disk %s to %s.' % (vol, vp['pool']))
-                        migrateDiskFunc(vol, vp['pool'])
-                        disk_info = get_vol_info_from_k8s(vol)
-                        if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
-                            raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
-        except ExecuteException, e:
-            for vp in vps:
-                try:
-                    vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                    migrateDiskFunc(vol, oldPools[vol])
-                except:
-                    pass
-            raise e
-        op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
+    if params.ip in get_host_IP():
+        # not migrate vm, just migrate some disk to other pool
+        for disk_path in specs.keys():
+            # prepare
+            prepare_info = prepare_disk_by_path(disk_path)
+        logger.debug(specs)
+        for vp in vps:
+            vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
+            logger.debug('migrate disk %s to %s.' % (vol, vp['pool']))
+            migrateDiskFunc(vol, vp['pool'])
+            disk_info = get_vol_info_from_k8s(vol)
+            if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
+                raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
+
+        op = Operation('virsh define %s' % xmlfile, {})
         op.execute()
-        op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
-        op.execute()
-        try:
-            op = Operation('virsh start %s' % params.domain, {}, ip=params.ip, remote=True)
-            op.execute()
-        except ExecuteException, e:
-            op = Operation('virsh undefine %s' % params.domain, {}, ip=params.ip, remote=True)
-            op.execute()
-            for vp in vps:
-                try:
-                    vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                    migrateDiskFunc(vol, oldPools[vol])
-                except:
-                    pass
-            raise e
-        for vol in vmVols:
-            if vol not in notReleaseVols:
-                # release
-                release_disk_by_metadataname(vol)
-        apply_all_jsondict(all_jsondicts)
-        op = Operation('kubesds-adm modifyVM --domain %s' % params.domain, {}, ip=params.ip, remote=True,
-                       with_result=True)
-        result = op.execute()
-        if result['result']['code'] != 0:
-            raise ExecuteException('RunCmdError', 'can not modify vm on k8s.')
-        vmHelper = K8sHelper('VirtualMachine')
-        vmHelper.change_node(params.domain, node_name)
-        op = Operation('virsh undefine %s' % params.domain, {})
-        op.execute()
+
+        modifyVMOnNode(params.domain)
         success_print("migrate vm disk %s successful." % params.domain, {})
     else:
-        error_print(1, 'can not migrate vm disk, can not find target node.')
+        # migrate vm to another node
+        if node_name:
+            for disk_path in specs.keys():
+                # prepare
+                prepare_info = prepare_disk_by_path(disk_path)
+                if disk_path not in migrateVols:
+                    # remote prepare
+                    remote_prepare_disk_by_path(params.ip, disk_path)
+            all_jsondicts = []
+            logger.debug(specs)
+            try:
+                for disk_path in specs.keys():
+                    if disk_path not in migrateVols:
+                        prepare_info = get_disk_prepare_info_by_path(disk_path)
+                        pool_info = get_pool_info_from_k8s(prepare_info['pool'])
+                        # check_pool_active(pool_info)
+                        pools = get_pools_by_path(pool_info['path'])
+
+                        # change disk node label in k8s.
+                        targetPool = None
+                        for pool in pools:
+                            if pool['host'] == node_name:
+                                targetPool = pool['pool']
+                        if targetPool:
+                            logger.debug("targetPool is %s." % targetPool)
+                            if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
+                                config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
+                                write_config(config['name'], config['dir'], config['current'], targetPool,
+                                             config['poolname'])
+                                jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
+                                all_jsondicts.extend(jsondicts)
+                            else:
+                                jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
+                                all_jsondicts.extend(jsondicts)
+                    else:
+                        logger.debug(vps)
+                        logger.debug('migrate disks')
+                        for vp in vps:
+                            vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
+                            logger.debug('migrate disk %s to %s.' % (vol, vp['pool']))
+                            migrateDiskFunc(vol, vp['pool'])
+                            disk_info = get_vol_info_from_k8s(vol)
+                            if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
+                                raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
+            except ExecuteException, e:
+                for vp in vps:
+                    try:
+                        vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
+                        migrateDiskFunc(vol, oldPools[vol])
+                    except:
+                        pass
+                raise e
+            op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
+            op.execute()
+            op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
+            op.execute()
+            try:
+                op = Operation('virsh start %s' % params.domain, {}, ip=params.ip, remote=True)
+                op.execute()
+            except ExecuteException, e:
+                op = Operation('virsh undefine %s' % params.domain, {}, ip=params.ip, remote=True)
+                op.execute()
+                for vp in vps:
+                    try:
+                        vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
+                        migrateDiskFunc(vol, oldPools[vol])
+                    except:
+                        pass
+                raise e
+            for vol in vmVols:
+                if vol not in notReleaseVols:
+                    # release
+                    release_disk_by_metadataname(vol)
+            apply_all_jsondict(all_jsondicts)
+            op = Operation('kubesds-adm modifyVM --domain %s' % params.domain, {}, ip=params.ip, remote=True,
+                           with_result=True)
+            result = op.execute()
+            if result['result']['code'] != 0:
+                raise ExecuteException('RunCmdError', 'can not modify vm on k8s.')
+            vmHelper = K8sHelper('VirtualMachine')
+            vmHelper.change_node(params.domain, node_name)
+            op = Operation('virsh undefine %s' % params.domain, {})
+            op.execute()
+            success_print("migrate vm disk %s successful." % params.domain, {})
+        else:
+            error_print(1, 'can not migrate vm disk, can not find target node.')
 
 
 def exportVM(params):

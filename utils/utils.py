@@ -1705,13 +1705,16 @@ def updateDomain(jsondict):
 
 def modifyVMOnNode(domain):
     helper = K8sHelper('VirtualMachine')
-    jsonDict = helper.get(domain)
-    vm_xml = get_vm_xml(domain)
-    vm_json = toKubeJson(xmlToJson(vm_xml))
-    vm_json = updateDomain(loads(vm_json))
-    vm_json = updateJsonRemoveLifecycle(jsonDict, vm_json)
-    jsonDict = addPowerStatusMessage(vm_json, 'Running', 'The VM is running.')
-    helper.updateAll(domain, jsonDict)
+    try:
+        jsonDict = helper.get(domain)
+        vm_xml = get_vm_xml(domain)
+        vm_json = toKubeJson(xmlToJson(vm_xml))
+        vm_json = updateDomain(loads(vm_json))
+        vm_json = updateJsonRemoveLifecycle(jsonDict, vm_json)
+        jsonDict = addPowerStatusMessage(vm_json, 'Running', 'The VM is running.')
+        helper.updateAll(domain, jsonDict)
+    except:
+        pass
 
 
 # def checkVMDiskFileChanged():
