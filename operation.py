@@ -1877,9 +1877,8 @@ def backupVM(params):
             checksum1 = load(f1)
         ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
         if ftp.is_exist_file(ftp_checksum_file):
-            uuid = randomUUID().replace('-', '')
-            ftp.download_file(ftp_checksum_file, '/tmp/%s.json' % uuid)
-            with open('/tmp/%s.json' % uuid, 'r') as f2:
+            ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
+            with open('/tmp/checksum.json', 'r') as f2:
                 checksum2 = load(f2)
         else:
             ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
@@ -1898,9 +1897,9 @@ def backupVM(params):
                 image_files = ftp.listdir('/image')
                 if not os.path.basename(chain['image_path']) in image_files:
                     ftp.upload_file(chain['image_path'], '/image')
-        with open('/tmp/%s.json' % uuid, 'w') as f2:
+        with open('/tmp/checksum.json', 'w') as f2:
             dump(checksum2, f2)
-        ftp.upload_file('/tmp/%s.json' % uuid, '/%s/diskbackup' % params.domain)
+        ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
 
     success_print("success backupVM.", {})
 
@@ -2215,7 +2214,7 @@ def deleteVMDiskBackup(params):
         dump(history, f)
     success_print("success deleteVMDiskBackup.", {})
 
-def deleteRemoteBackupParser(params):
+def deleteRemoteBackup(params):
     # default backup path
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
     checksum_to_deletes = []
@@ -2241,17 +2240,17 @@ def deleteRemoteBackupParser(params):
                         checksum_to_deletes.remove(chain['checksum'])
 
         clouddisk_backup_dir = '%s/clouddiskbackup' % vm_backup_dir
-        for disk in ftp.listdir(clouddisk_backup_dir):
-            history_file = '%s/%s/history.json' % (clouddisk_backup_dir, disk)
-            with open(history_file, 'r') as f:
-                record_history = load(f)
-                for version in record_history.keys():
-                    if params.version == version and disk == params.vol:
-                        continue
-                    for chain in record_history[version]['chains']:
-                        if chain['checksum'] in checksum_to_deletes:
-                            checksum_to_deletes.remove(chain['checksum'])
-
+        if ftp.is_exist_dir(clouddisk_backup_dir):
+            for disk in ftp.listdir(clouddisk_backup_dir):
+                history_file = '%s/%s/history.json' % (clouddisk_backup_dir, disk)
+                with open(history_file, 'r') as f:
+                    record_history = load(f)
+                    for version in record_history.keys():
+                        if params.version == version and disk == params.vol:
+                            continue
+                        for chain in record_history[version]['chains']:
+                            if chain['checksum'] in checksum_to_deletes:
+                                checksum_to_deletes.remove(chain['checksum'])
     else:
         clouddisk_backup_dir = '/%s/clouddiskbackup' % params.domain
         vm_backup_dir = '/%s' % params.domain
@@ -2277,13 +2276,39 @@ def deleteRemoteBackupParser(params):
                         checksum_to_deletes.remove(chain['checksum'])
 
         clouddisk_backup_dir = '%s/clouddiskbackup' % vm_backup_dir
-        for disk in ftp.listdir(clouddisk_backup_dir):
-            history_file = '%s/%s/history.json' % (clouddisk_backup_dir, disk)
-            record_history = ftp.get_json_file_data(history_file)
-            for version in record_history.keys():
-                for chain in record_history[version]['chains']:
-                    if chain['checksum'] in checksum_to_deletes:
-                        checksum_to_deletes.remove(chain['checksum'])
+        if ftp.is_exist_dir(clouddisk_backup_dir):
+            for disk in ftp.listdir(clouddisk_backup_dir):
+                history_file = '%s/%s/history.json' % (clouddisk_backup_dir, disk)
+                record_history = ftp.get_json_file_data(history_file)
+                for version in record_history.keys():
+                    for chain in record_history[version]['chains']:
+                        if chain['checksum'] in checksum_to_deletes:
+                            checksum_to_deletes.remove(chain['checksum'])
+    diskbackup_dir = '%s/diskbackup' % vm_backup_dir
+    checksum_file = '%s/checksum.json' % diskbackup_dir
+    checksums = ftp.get_json_file_data(checksum_file)
+    for checksum in checksum_to_deletes:
+        file_path = '%s/%s' % (diskbackup_dir, checksums[checksum])
+        ftp.delete_file(file_path)
+        del checksums[checksum]
+    tmp_file = '/tmp/checksum.json'
+    with open(tmp_file, 'w') as f:
+        dump(checksums, f)
+    ftp.upload_file(tmp_file, diskbackup_dir)
+
+    if params.vol:
+        clouddisk_backup_dir = '/%s/clouddiskbackup' % params.domain
+        history_file = '%s/%s/history.json' % (clouddisk_backup_dir, params.vol)
+        history = ftp.get_json_file_data(history_file)
+        del history[params.version]
+        tmp_file = '/tmp/history.json'
+        with open(tmp_file, 'w') as f:
+            dump(history, f)
+        ftp.upload_file(tmp_file, clouddisk_backup_dir)
+    else:
+        vm_backup_dir = '/%s' % params.domain
+        vm_backup_record_dir = '%s/%s' % (vm_backup_dir, params.version)
+        ftp.delete_dir(vm_backup_record_dir)
 
     success_print("success deleteRemoteBackup.", {})
 

@@ -44,7 +44,7 @@ class FtpHelper(object):
             try:
                 if os.path.dirname(path) != '/':
                     self.makedirs(os.path.dirname(path))
-                self.self.ftp.cwd(os.path.dirname(path))
+                self.ftp.cwd(os.path.dirname(path))
                 self.ftp.mkd(os.path.basename(path))
             except error_perm:
                 print 'U have no authority to make dir'
@@ -100,6 +100,15 @@ class FtpHelper(object):
         except error_perm:
             raise ExecuteException('', 'error while upload file from ftp server. %s' % error_perm.message)
 
+    def delete_dir(self, target):
+        if not self.is_exist_dir(target):
+            return
+        self.ftp.cwd(target)
+        for file in self.listdir(target):
+            self.ftp.delete(file)
+        self.ftp.cwd(os.path.dirname(target))
+        self.ftp.rmd(target)
+
     def upload_file(self, file, target_dir):
         try:
             if self.is_exist_dir(target_dir):
@@ -115,7 +124,8 @@ class FtpHelper(object):
             bufsize = 1024
             file_handle = open(file, "rb")
             self.ftp.storbinary("STOR %s" % os.path.basename(file), file_handle, bufsize)
-
+            if '%s.bak' % filename in self.ftp.nlst():
+                self.ftp.delete('%s.bak' % filename)
         except error_perm:
             # traceback.print_exc()
             raise ExecuteException('', 'error while upload file from ftp server. %s' % error_perm.message)
