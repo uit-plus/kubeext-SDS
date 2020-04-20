@@ -1778,7 +1778,6 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
         image = os.path.basename(image_file)
         if not os.path.exists('%s/%s' % (image_backup_path, image)):
             runCmd('cp -f %s %s' % (image_file, image_backup_path))
-        checksums[image_file] = checksum(image_file)
         backup_files.remove(image_file)
 
     # record snapshot chain
