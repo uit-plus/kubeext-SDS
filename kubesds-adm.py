@@ -480,6 +480,9 @@ def deleteVMDiskBackupParser(args):
 def deleteRemoteBackupParser(args):
     execute('deleteRemoteBackup', args)
 
+def pullRemoteBackupParser(args):
+    execute('pullRemoteBackup', args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -976,6 +979,29 @@ parser_delete_remote_backup.add_argument("--password", required=True, metavar="[
                             help="remote server password.")
 # set default func
 parser_delete_remote_backup.set_defaults(func=deleteRemoteBackupParser)
+
+
+# -------------------- add deleteRemoteBackup cmd ----------------------------------
+parser_pull_remote_backup = subparsers.add_parser("pullRemoteBackup", help="pullRemoteBackup help")
+parser_pull_remote_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_pull_remote_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_pull_remote_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_pull_remote_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_pull_remote_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_pull_remote_backup.add_argument("--port", required=True, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_pull_remote_backup.add_argument("--username", required=True, metavar="[USERNAME]", type=str,
+                            help="remote server username.")
+parser_pull_remote_backup.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
+                            help="remote server password.")
+# set default func
+parser_pull_remote_backup.set_defaults(func=pullRemoteBackupParser)
+
 
 try:
     os.putenv('LANG', 'en_US.UTF-8')

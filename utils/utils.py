@@ -1778,6 +1778,7 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
         image = os.path.basename(image_file)
         if not os.path.exists('%s/%s' % (image_backup_path, image)):
             runCmd('cp -f %s %s' % (image_file, image_backup_path))
+        checksums[image_file] = checksum(image_file)
         backup_files.remove(image_file)
 
     # record snapshot chain
@@ -1792,10 +1793,8 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
         record['checksum'] = checksums[bf]
         if 'full_backing_filename' in disk_info.keys():
             record['parent'] = disk_info['full_backing_filename']
-            record['parent_checksum'] = checksums[disk_info['full_backing_filename']]
         else:
             record['parent'] = ''
-            record['parent_checksum'] = ''
         chains.append(record)
 
     if image_file:
@@ -1863,6 +1862,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
             image_info = get_image_info_from_k8s(backup_disk['image'])
         except:
             pass
+
         backup_checksum = checksum(image_backup_path)
         if image_info and os.path.exists(image_info['filename']) and checksum(
                 image_info['filename']) == backup_checksum:  # image still can be used
