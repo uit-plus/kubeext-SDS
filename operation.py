@@ -1618,43 +1618,40 @@ def backupDisk(params):
         ftp_history_dir = '/%s/clouddiskbackup/%s' % (params.domain, params.vol)
         ftp_history_file = '%s/history.json' % ftp_history_dir
         if ftp.is_exist_file(ftp_history_file):
-            uuid = randomUUID().replace('-', '')
-            ftp.download_file(ftp_history_file, '/tmp/%s.json' % uuid)
-
-            with open('/tmp/%s.json' % uuid, 'r') as f2:
+            ftp.download_file(ftp_history_file, '/tmp/history.json')
+            with open('/tmp/history.json', 'r') as f2:
                 ftp_history = load(f2)
                 if params.version not in ftp_history.keys():
                     ftp_history[params.version] = chain
-            with open('/tmp/%s.json' % uuid, 'w') as f2:
+            with open('/tmp/history.json', 'w') as f2:
                 dump(ftp_history, f2)
-            ftp.upload_file('/tmp/%s.json' % uuid, ftp_history_dir)
+            ftp.upload_file('/tmp/history.json', ftp_history_dir)
         else:
             ftp.upload_file(history_file_path, ftp_history_dir)
 
         # modify checksum file
         ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
         if ftp.is_exist_file(ftp_checksum_file):
-            uuid = randomUUID().replace('-', '')
-            ftp.download_file(ftp_checksum_file, '/tmp/%s.json' % uuid)
+            ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
 
             with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
                 checksum1 = load(f1)
-                with open('/tmp/%s.json' % uuid, 'r') as f2:
+                with open('/tmp/checksum.json', 'r') as f2:
                     checksum2 = load(f2)
-                for record in chain:
+                for record in chain['chains']:
                     if record['checksum'] not in checksum2.keys():
                         checksum2[record['checksum']] = checksum1[record['checksum']]
                         # upload disk file
                         backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
                         ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
-            with open('/tmp/%s.json' % uuid, 'w') as f2:
+            with open('/tmp/checksum.json', 'w') as f2:
                 dump(checksum2, f2)
-            ftp.upload_file('/tmp/%s.json' % uuid, '/%s/diskbackup' % params.domain)
+            ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
         else:
             ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
         # image file
         if chain['image_path']:
-            image_files = ftp.listdir( '/image')
+            image_files = ftp.listdir('/image')
             if not os.path.basename(chain['image_path']) in image_files:
                 ftp.upload_file(chain['image_path'], '/image')
     success_print("success backupDisk.", {})
@@ -2243,14 +2240,13 @@ def deleteRemoteBackup(params):
         if ftp.is_exist_dir(clouddisk_backup_dir):
             for disk in ftp.listdir(clouddisk_backup_dir):
                 history_file = '%s/%s/history.json' % (clouddisk_backup_dir, disk)
-                with open(history_file, 'r') as f:
-                    record_history = load(f)
-                    for version in record_history.keys():
-                        if params.version == version and disk == params.vol:
-                            continue
-                        for chain in record_history[version]['chains']:
-                            if chain['checksum'] in checksum_to_deletes:
-                                checksum_to_deletes.remove(chain['checksum'])
+                record_history = ftp.get_json_file_data(history_file)
+                for version in record_history.keys():
+                    if params.version == version and disk == params.vol:
+                        continue
+                    for chain in record_history[version]['chains']:
+                        if chain['checksum'] in checksum_to_deletes:
+                            checksum_to_deletes.remove(chain['checksum'])
     else:
         clouddisk_backup_dir = '/%s/clouddiskbackup' % params.domain
         vm_backup_dir = '/%s' % params.domain
