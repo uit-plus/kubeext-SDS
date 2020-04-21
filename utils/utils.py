@@ -1890,8 +1890,10 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         if not os.path.exists(backup_file):
             raise ExecuteException('', 'can not find disk backup file %s.' % backup_file)
         if chain['parent']:
-            uuid = randomUUID().replace('-', '')
-            new_disk_file = '%s/%s' % (disk_dir, uuid)
+            new_disk_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
+            if os.path.exists('%s/%s' % (disk_dir, os.path.basename(chain['path']))):
+                uuid = randomUUID().replace('-', '')
+                new_disk_file = '%s/%s' % (disk_dir, uuid)
             runCmd('cp -f %s %s' % (backup_file, new_disk_file))
             old_to_new[chain['path']] = new_disk_file
         else:
@@ -1913,7 +1915,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         # print dumps(chain)
         if chain['parent']:
             # parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))
-            # print 'qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[parent], old_to_new[chain['path']])
+            # print 'qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']])
             runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']]))
 
     # if this disk has no snapshots, try to delete other file
@@ -1928,16 +1930,18 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
                 pass
     file_to_delete = []
     if not exist_ss:
-        for ss in os.listdir(ss_dir):
-            ss_file = '%s/%s' % (ss_dir, ss)
-            if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
-                file_to_delete.append(ss_file)
-        for ss in os.listdir(disk_dir):
-            if ss == 'config.json':
-                continue
-            ss_file = '%s/%s' % (disk_dir, ss)
-            if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
-                file_to_delete.append(ss_file)
+        if os.path.exists(ss_dir):
+            for ss in os.listdir(ss_dir):
+                ss_file = '%s/%s' % (ss_dir, ss)
+                if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
+                    file_to_delete.append(ss_file)
+        if os.path.exists(disk_dir):
+            for ss in os.listdir(disk_dir):
+                if ss == 'config.json':
+                    continue
+                ss_file = '%s/%s' % (disk_dir, ss)
+                if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
+                    file_to_delete.append(ss_file)
 
     if backup_disk['current'].find('snapshots') >= 0:
         disk_current = '%s/snapshots/%s' % (disk_dir, os.path.basename(backup_disk['current']))
