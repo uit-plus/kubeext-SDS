@@ -1972,7 +1972,8 @@ def restoreVM(params):
             if not params.all and disk['tag'] != 'vda':
                 continue
             disk_back_dir = '%s/diskbackup' % vm_backup_path
-            target_path = '%s/%s' % (pool_info['path'], name)
+            target_pool_info = get_pool_info_from_k8s(get_vol_info_from_k8s(name)['pool'])
+            target_path = '%s/%s' % (target_pool_info['path'], name)
             new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
             file_to_deletes.extend(file_to_delete)
             restore_disk_current[name] = new_current
