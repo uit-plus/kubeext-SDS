@@ -2214,14 +2214,15 @@ def deleteVMDiskBackup(params):
 
     diskbackup_dir = '%s/diskbackup' % vm_backup_dir
     checksum_file = '%s/checksum.json' % diskbackup_dir
-    with open(checksum_file, 'r') as f:
-        checksums = load(f)
-        for checksum in checksum_to_deletes:
-            file_path = '%s/%s' % (diskbackup_dir, checksums[checksum])
-            runCmd('rm -f %s' % file_path)
-            del checksums[checksum]
-    with open(checksum_file, 'w') as f:
-        dump(checksums, f)
+    if os.path.exists(checksum_file):
+        with open(checksum_file, 'r') as f:
+            checksums = load(f)
+            for checksum in checksum_to_deletes:
+                file_path = '%s/%s' % (diskbackup_dir, checksums[checksum])
+                runCmd('rm -f %s' % file_path)
+                del checksums[checksum]
+        with open(checksum_file, 'w') as f:
+            dump(checksums, f)
 
     history_file = '%s/%s/history.json' % (clouddisk_backup_dir, params.vol)
     with open(history_file, 'r') as f:
@@ -2348,7 +2349,7 @@ def pullRemoteBackup(params):
     if not os.path.exists(diskbackup_target_dir):
         os.makedirs(diskbackup_target_dir)
     remote_clouddisk_backup_dir = '/%s/clouddiskbackup' % params.domain
-    image_dir = '%s/image' % pool_info['path']
+    image_dir = '%s/vmbackup/image' % pool_info['path']
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
     vm_backup_dir = '/%s' % params.domain
