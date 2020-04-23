@@ -2373,7 +2373,7 @@ def pullRemoteBackup(params):
             image_file = '%s/%s' % (image_dir, remote_history[params.version]['image'])
             remote_image_file = '/image/%s' % remote_history[params.version]['image']
             if not os.path.exists(image_file):
-                ftp.download_file(remote_image_file, image_dir)
+                ftp.download_file(remote_image_file, '%s/%s' % (image_dir, os.path.basename(image_file)))
 
     else:
         vm_backup_record_dir = '%s/vmbackup/%s/%s' % (pool_info['path'], params.domain, params.version)
@@ -2396,7 +2396,7 @@ def pullRemoteBackup(params):
             image_file = '%s/%s' % (image_dir, remote_history['disks'][params.vol]['image'])
             remote_image_file = '/image/%s' % remote_history['disks'][params.vol]['image']
             if not os.path.exists(image_file):
-                ftp.download_file(remote_image_file, image_dir)
+                ftp.download_file(remote_image_file, '%s/%s' % (image_dir, os.path.basename(image_file)))
 
     # download from ftp server
     diskbackup_dir = '%s/diskbackup' % vm_backup_dir
@@ -2404,7 +2404,7 @@ def pullRemoteBackup(params):
     checksums = ftp.get_json_file_data(checksum_file)
     for checksum in checksum_to_pull:
         file_path = '%s/%s' % (diskbackup_dir, checksums[checksum])
-        ftp.download_file(file_path, diskbackup_target_dir)
+        ftp.download_file(file_path, '%s/%s' % (diskbackup_target_dir, os.path.basename(file_path)))
 
     if params.vol:
         remote_history_file = '%s/%s/history.json' % (remote_clouddisk_backup_dir, params.vol)
