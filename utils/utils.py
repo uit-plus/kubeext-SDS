@@ -855,9 +855,17 @@ def change_vol_current(vol, current):
     check_pool_active(pool_info)
 
     config_path = '%s/%s/config.json' % (pool_info['path'], vol)
-    with open(config_path, 'r') as f:
-        config = load(f)
-    config['current'] = current
+    config = {}
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            config = load(f)
+        config['current'] = current
+    else:
+        config['name'] = vol
+        config['pool'] = vol_info['pool']
+        config['poolname'] = vol_info['poolname']
+        config['dir'] = '%s/%s' % (pool_info['path'], vol)
+        config['current'] = current
     with open(config_path, 'w') as f:
         dump(config, f)
     helper = K8sHelper("VirtualMachineDisk")
