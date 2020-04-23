@@ -2344,7 +2344,7 @@ def pullRemoteBackup(params):
     check_pool_active(pool_info)
     if not os.path.exists(pool_info['path']):
         raise ExecuteException('', 'can not find pool path %s' % pool_info['path'])
-    diskbackup_target_dir = '%s/vmbackup/%s/diskbackup' % (pool_info['path'], pool_info['path'])
+    diskbackup_target_dir = '%s/vmbackup/%s/diskbackup' % (pool_info['path'], params.domain)
     if not os.path.exists(diskbackup_target_dir):
         os.makedirs(diskbackup_target_dir)
     remote_clouddisk_backup_dir = '/%s/clouddiskbackup' % params.domain
