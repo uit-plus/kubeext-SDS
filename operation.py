@@ -2354,6 +2354,8 @@ def pullRemoteBackup(params):
     vm_backup_dir = '/%s' % params.domain
     if params.vol:
         history_file = '%s/vmbackup/%s/clouddiskbackup/%s/history.json' % (pool_info['path'], params.domain, params.vol)
+        if not os.path.exists('%s/vmbackup/%s/clouddiskbackup' % (pool_info['path'], params.domain)):
+            os.makedirs('%s/vmbackup/%s/clouddiskbackup' % (pool_info['path'], params.domain))
         if os.path.exists(history_file):
             with open(history_file, 'r') as f:
                 history = load(f)
@@ -2375,6 +2377,8 @@ def pullRemoteBackup(params):
 
     else:
         vm_backup_record_dir = '%s/vmbackup/%s/%s' % (pool_info['path'], params.domain, params.version)
+        if not os.path.exists('%s/vmbackup' % (pool_info['path'])):
+            os.makedirs('%s/vmbackup' % (pool_info['path']))
         if os.path.exists(vm_backup_record_dir):
             raise ExecuteException('',
                                    'vm backup record %s has exist in pool %s' % (params.version, params.pool))

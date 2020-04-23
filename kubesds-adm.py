@@ -981,7 +981,7 @@ parser_delete_remote_backup.add_argument("--password", required=True, metavar="[
 parser_delete_remote_backup.set_defaults(func=deleteRemoteBackupParser)
 
 
-# -------------------- add deleteRemoteBackup cmd ----------------------------------
+# -------------------- add pullRemoteBackup cmd ----------------------------------
 parser_pull_remote_backup = subparsers.add_parser("pullRemoteBackup", help="pullRemoteBackup help")
 parser_pull_remote_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                             help="vm domain to export")
