@@ -157,9 +157,7 @@ class FtpHelper(object):
             self.ftp.cwd(download_path)
             files = self.listdir(download_path)
             for filename in files:
-                bufsize = 1024
-                file_handle = open('%s/%s' % (target_path, filename), "wb")
-                self.ftp.retrbinary("RETR %s" % filename, file_handle, bufsize)
+                self.download_file('%s/%s' % (download_path, filename), '%s/%s' % (target_path, filename))
         except error_perm:
             raise ExecuteException('', 'error while download file from ftp server. %s' % error_perm.message)
 
@@ -205,7 +203,7 @@ if __name__ == '__main__':
     # upload_file(ftp, '/tmp/123.json', '/vmbackuptest/clouddiskbackup/vmbackuptestdisk1')
     # print ftp.listdir('/vmbackuptest')
     # ftp.download_file('/vmbackuptest/clouddiskbackup/vmbackuptestdisk1/history.json', '/tmp/123.json')
-    print ftp.get_json_file_data('/vmbackuptest/clouddiskbackup/vmbackupdisktest1/history.json')
+    print ftp.get_json_file_data('/vmbackuptest/backup1/history.json')
     # ftp.makedirs('/test/test1/test2')
     # upload_dir(ftp, '/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackup', '/')
     # upload_file(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/vmtest')
