@@ -2139,14 +2139,15 @@ def deleteVMBackup(params):
                     if chain['checksum'] in checksum_to_deletes:
                         checksum_to_deletes.remove(chain['checksum'])
     clouddisk_backup_dir = '%s/clouddiskbackup' % vm_backup_path
-    for file in os.listdir(clouddisk_backup_dir):
-        history_file = '%s/%s/history.json' % (clouddisk_backup_dir, file)
-        with open(history_file, 'r') as f:
-            record_history = load(f)
-            for version in record_history.keys():
-                for chain in record_history[version]['chains']:
-                    if chain['checksum'] in checksum_to_deletes:
-                        checksum_to_deletes.remove(chain['checksum'])
+    if os.path.exists(clouddisk_backup_dir):
+        for file in os.listdir(clouddisk_backup_dir):
+            history_file = '%s/%s/history.json' % (clouddisk_backup_dir, file)
+            with open(history_file, 'r') as f:
+                record_history = load(f)
+                for version in record_history.keys():
+                    for chain in record_history[version]['chains']:
+                        if chain['checksum'] in checksum_to_deletes:
+                            checksum_to_deletes.remove(chain['checksum'])
 
     diskbackup_dir = '%s/diskbackup' % vm_backup_path
     checksum_file = '%s/checksum.json' % diskbackup_dir
