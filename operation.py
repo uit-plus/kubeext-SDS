@@ -2010,6 +2010,8 @@ def restoreVM(params):
                 uuid = randomUUID().replace('-', '')
             disk_back_dir = '%s/diskbackup' % vm_backup_path
             target_path = '%s/%s' % (target_pool_info['path'], uuid)
+            if os.path.exists(target_path):
+                os.makedirs(target_path)
             new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
             file_to_deletes.extend(file_to_delete)
             disk_currents[name] = new_current
@@ -2166,6 +2168,8 @@ def deleteVMBackup(params):
 
 
 def deleteVMDiskBackup(params):
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
     # default backup path
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
@@ -2337,6 +2341,167 @@ def deleteRemoteBackup(params):
 
     success_print("success deleteRemoteBackup.", {})
 
+def pushVMBackup(params):
+    if params.remote:
+        if not params.port or not params.username or not params.password:
+            raise ExecuteException('', 'ftp port, username, password must be set.')
+
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+
+    back_path = '%s/vmbackup' % pool_info['path']
+    vm_backup_path = '%s/%s/%s' % (back_path, params.domain, params.version)
+    if not os.path.exists(vm_backup_path):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+
+    vm_backup_record_version = params.version
+    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_version)
+    # history file
+    ftp = FtpHelper(params.remote, params.port, params.username, params.password)
+
+    ftp_history_dir = '/%s/%s' % (params.domain, params.version)
+    if ftp.is_exist_dir(ftp_history_dir):
+        raise ExecuteException('', 'domain %s has exist backup record %s on ftp server' % (
+            params.domain, params.version))
+    else:
+        ftp.upload_dir(vm_backup_record_dir, '/%s/%s' % (params.domain, params.version))
+
+    # modify checksum file
+    with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
+        checksum1 = load(f1)
+    ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
+    if ftp.is_exist_file(ftp_checksum_file):
+        ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
+        with open('/tmp/checksum.json', 'r') as f2:
+            checksum2 = load(f2)
+    else:
+        ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
+        checksum2 = {}
+
+    history_file = '%s/history.json' % vm_backup_path
+    xml_file = '%s/%s.xml' % (vm_backup_path, params.domain)
+    if not os.path.exists(history_file) or not os.path.exists(xml_file):
+        raise ExecuteException('', 'can not find vm backup file %s, %s.' % (history_file, xml_file))
+
+    with open(history_file, 'r') as f:
+        history = load(f)
+    disks = history['disks']
+    for name in disks.keys():
+        chain = disks[name]['chains']
+        for record in chain:
+            if record['checksum'] not in checksum2.keys():
+                checksum2[record['checksum']] = checksum1[record['checksum']]
+                # upload disk file
+                backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
+                ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
+        # image file
+        if disks[name]['image_path']:
+            if not ftp.is_exist_dir('/image'):
+                ftp.mkdir('/image')
+            image_files = ftp.listdir('/image')
+            if not os.path.basename(disks[name]['image_path']) in image_files:
+                ftp.upload_file(disks[name]['image_path'], '/image')
+    with open('/tmp/checksum.json', 'w') as f2:
+        dump(checksum2, f2)
+    ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
+
+    success_print("success pushVMBackup.", {})
+
+
+def pushVMDiskBackup(params):
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(params.vol)
+    if params.remote:
+        if not params.port or not params.username or not params.password:
+            raise ExecuteException('', 'ftp port, username, password must be set.')
+        target_dir = '/%s/clouddiskbackup/%s' % (params.domain, params.vol)
+        ftp = FtpHelper(params.remote, params.port, params.username, params.password)
+        if ftp.is_exist_dir(target_dir) and ftp.is_exist_file('%s/history.json' % target_dir):
+            remote_history = ftp.get_json_file_data('%s/history.json' % target_dir)
+            if params.version in remote_history.keys():
+                raise ExecuteException('', 'ftp server has exist vm %s backup record version %s. ' % (
+                    params.domain, params.version))
+        if not ftp.is_exist_dir('/image'):
+            ftp.mkdir('/image')
+
+    disk_pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(disk_pool_info)
+
+    if disk_pool_info['pooltype'] == 'uus':
+        raise ExecuteException('', 'disk %s is uus type, not support backup.' % params.vol)
+
+    # check backup pool path exist or not
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
+    if pool_info['pooltype'] == 'uus':
+        raise ExecuteException('', 'disk backup pool can not be uus.')
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+
+    vm_backup_path = '%s/vmbackup/%s/clouddiskbackup/%s' % (pool_info['path'], params.domain, params.vol)
+
+    # check backup version exist or not
+    disk_backup_dir = '%s/clouddiskbackup/%s' % (vm_backup_path, params.vol)
+    history_file_path = '%s/history.json' % disk_backup_dir
+
+    if os.path.exists(history_file_path):
+        with open(history_file_path, 'r') as f:
+            history = load(f)
+            if params.version not in history.keys():
+                raise ExecuteException('', 'disk %s backup version %s not exist, plz check it.' % (
+                    params.vol, params.version))
+    else:
+        raise ExecuteException('', 'disk %s backup history file %s not exist, plz check it.' % (
+            params.vol, params.version))
+
+    chain = history[params.version]
+    # history file
+    ftp = FtpHelper(params.remote, params.port, params.username, params.password)
+    ftp_history_dir = '/%s/clouddiskbackup/%s' % (params.domain, params.vol)
+    ftp_history_file = '%s/history.json' % ftp_history_dir
+    if ftp.is_exist_file(ftp_history_file):
+        ftp.download_file(ftp_history_file, '/tmp/history.json')
+        with open('/tmp/history.json', 'r') as f2:
+            ftp_history = load(f2)
+            if params.version not in ftp_history.keys():
+                ftp_history[params.version] = chain
+        with open('/tmp/history.json', 'w') as f2:
+            dump(ftp_history, f2)
+        ftp.upload_file('/tmp/history.json', ftp_history_dir)
+    else:
+        ftp.upload_file(history_file_path, ftp_history_dir)
+
+    # modify checksum file
+    ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
+    if ftp.is_exist_file(ftp_checksum_file):
+        ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
+
+        with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
+            checksum1 = load(f1)
+            with open('/tmp/checksum.json', 'r') as f2:
+                checksum2 = load(f2)
+            for record in chain['chains']:
+                if record['checksum'] not in checksum2.keys():
+                    checksum2[record['checksum']] = checksum1[record['checksum']]
+                    # upload disk file
+                    backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
+                    ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
+        with open('/tmp/checksum.json', 'w') as f2:
+            dump(checksum2, f2)
+        ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
+    else:
+        ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
+    # image file
+    if chain['image_path']:
+        image_files = ftp.listdir('/image')
+        if not os.path.basename(chain['image_path']) in image_files:
+            ftp.upload_file(chain['image_path'], '/image')
+
+    success_print("success pushVMDiskBackup.", {})
 
 def pullRemoteBackup(params):
     # default backup path
