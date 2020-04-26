@@ -1138,7 +1138,7 @@ def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
         name.text = newname
     uuidList = root.findall("uuid")
     for uuid in uuidList:
-        uuid.text = newname
+        uuid.text = randomUUID()
     captionList = root.findall("devices")
     for caption in captionList:
         disks = caption.findall("disk")
