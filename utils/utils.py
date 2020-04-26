@@ -1126,8 +1126,9 @@ def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
     if not xmlfile or not source_to_target:
         raise ExecuteException('', 'missing parameter: no vm xml file %s or source_to_target.' % xmlfile)
     uuid = randomUUID().replace('-', '')
-    runCmd('cp %s /tmp/%s.xml' % (xmlfile, uuid))
-    tree = ET.parse('/tmp/%s.xml' % uuid)
+    vm_file = '/tmp/%s.xml' % uuid
+    runCmd('cp %s %s' % (xmlfile, vm_file))
+    tree = ET.parse(vm_file)
 
     root = tree.getroot()
     # for child in root:
@@ -1151,9 +1152,9 @@ def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
                     disk_need_to_delete.append(disk)
         for disk in disk_need_to_delete:
             caption.remove(disk)
-    tree.write('/tmp/%s.xml' % uuid)
-    runCmd('virsh define /tmp/%s.xml' % uuid)
-    runCmd('rm /tmp/%s.xml' % uuid)
+    tree.write(vm_file)
+    runCmd('virsh define %s' % vm_file)
+    runCmd('rm %s' % vm_file)
 
 
 def change_vm_os_disk_file(vm, source, target):
