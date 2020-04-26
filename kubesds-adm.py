@@ -483,6 +483,12 @@ def deleteRemoteBackupParser(args):
 def pullRemoteBackupParser(args):
     execute('pullRemoteBackup', args)
 
+def pushBackupParser(args):
+    if args.vol:
+        execute('pushVMDiskBackup', args)
+    else:
+        execute('pushVMBackup', args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1001,6 +1007,27 @@ parser_pull_remote_backup.add_argument("--password", required=True, metavar="[PA
                             help="remote server password.")
 # set default func
 parser_pull_remote_backup.set_defaults(func=pullRemoteBackupParser)
+
+# -------------------- add pushBackup cmd ----------------------------------
+parser_push_backup = subparsers.add_parser("pushBackup", help="pushBackup help")
+parser_push_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_push_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_push_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_push_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_push_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_push_backup.add_argument("--port", required=True, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_push_backup.add_argument("--username", required=True, metavar="[USERNAME]", type=str,
+                            help="remote server username.")
+parser_push_backup.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
+                            help="remote server password.")
+# set default func
+parser_push_backup.set_defaults(func=pushBackupParser)
 
 
 try:
