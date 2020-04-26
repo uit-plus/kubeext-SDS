@@ -1951,10 +1951,11 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
                 if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
                     file_to_delete.append(ss_file)
 
-    if backup_disk['current'].find('snapshots') >= 0:
-        disk_current = '%s/snapshots/%s' % (disk_dir, os.path.basename(backup_disk['current']))
-    else:
-        disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
+    # if backup_disk['current'].find('snapshots') >= 0:
+    #     disk_current = '%s/snapshots/%s' % (disk_dir, os.path.basename(backup_disk['current']))
+    # else:
+    #     disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
+    disk_current = backup_disk['current']
     return old_to_new[disk_current], file_to_delete
 
 
