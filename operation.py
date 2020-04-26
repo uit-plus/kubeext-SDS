@@ -2010,7 +2010,7 @@ def restoreVM(params):
                 uuid = randomUUID().replace('-', '')
             disk_back_dir = '%s/diskbackup' % vm_backup_path
             target_path = '%s/%s' % (target_pool_info['path'], uuid)
-            if os.path.exists(target_path):
+            if not os.path.exists(target_path):
                 os.makedirs(target_path)
             new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
             file_to_deletes.extend(file_to_delete)
