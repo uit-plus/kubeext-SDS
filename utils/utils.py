@@ -1925,7 +1925,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         if chain['parent']:
             # parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))
             # print 'qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']])
-            runCmd('qemu-img rebase -f qcow2 -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']]))
+            runCmd('qemu-img rebase -f qcow2 -u -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']]))
 
     # if this disk has no snapshots, try to delete other file
     ss_dir = '%s/snapshots' % disk_dir

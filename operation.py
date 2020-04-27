@@ -1492,6 +1492,9 @@ def migrateVMDisk(params):
 
 
 def exportVM(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
+
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
 
@@ -1657,6 +1660,17 @@ def backupDisk(params):
                 dump(checksum2, f2)
             ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
         else:
+            with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
+                checksum1 = load(f1)
+                checksum2 = {}
+                for record in chain['chains']:
+                    if record['checksum'] not in checksum2.keys():
+                        checksum2[record['checksum']] = checksum1[record['checksum']]
+                        # upload disk file
+                        backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
+                        ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
+            with open('/tmp/checksum.json', 'w') as f2:
+                dump(checksum2, f2)
             ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
         # image file
         if chain['image_path']:
@@ -1767,6 +1781,8 @@ def restoreDisk(params):
 
 
 def backupVM(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
@@ -1890,7 +1906,6 @@ def backupVM(params):
             with open('/tmp/checksum.json', 'r') as f2:
                 checksum2 = load(f2)
         else:
-            ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
             checksum2 = {}
 
         for name in disks.keys():
@@ -1916,6 +1931,8 @@ def backupVM(params):
 
 
 def restoreVM(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     if is_vm_active(params.domain):
         raise ExecuteException('', 'vm %s is still active, plz stop it first.' % params.domain)
 
@@ -2104,6 +2121,8 @@ def restoreVM(params):
 
 
 def deleteVMBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     # default backup path
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
@@ -2239,6 +2258,8 @@ def deleteVMDiskBackup(params):
 
 
 def deleteRemoteBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     # default backup path
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
     checksum_to_deletes = []
@@ -2342,6 +2363,8 @@ def deleteRemoteBackup(params):
     success_print("success deleteRemoteBackup.", {})
 
 def pushVMBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
@@ -2353,12 +2376,11 @@ def pushVMBackup(params):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
     back_path = '%s/vmbackup' % pool_info['path']
-    vm_backup_path = '%s/%s/%s' % (back_path, params.domain, params.version)
-    if not os.path.exists(vm_backup_path):
-        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+    vm_backup_path = '%s/%s' % (back_path, params.domain)
 
-    vm_backup_record_version = params.version
-    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_version)
+    vm_backup_record_dir = '%s/%s' % (vm_backup_path, params.version)
+    if not os.path.exists(vm_backup_record_dir):
+        raise ExecuteException('', 'vm backup path %s not exist. plz check it.' % vm_backup_record_dir)
     # history file
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
@@ -2381,8 +2403,8 @@ def pushVMBackup(params):
         ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
         checksum2 = {}
 
-    history_file = '%s/history.json' % vm_backup_path
-    xml_file = '%s/%s.xml' % (vm_backup_path, params.domain)
+    history_file = '%s/%s/history.json' % (vm_backup_path, params.version)
+    xml_file = '%s/%s/%s.xml' % (vm_backup_path, params.version, params.domain)
     if not os.path.exists(history_file) or not os.path.exists(xml_file):
         raise ExecuteException('', 'can not find vm backup file %s, %s.' % (history_file, xml_file))
 
@@ -2412,8 +2434,8 @@ def pushVMBackup(params):
 
 
 def pushVMDiskBackup(params):
-    disk_heler = K8sHelper('VirtualMachineDisk')
-    disk_heler.delete_lifecycle(params.vol)
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
@@ -2442,7 +2464,7 @@ def pushVMDiskBackup(params):
     if not os.path.exists(pool_info['path']):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
-    vm_backup_path = '%s/vmbackup/%s/clouddiskbackup/%s' % (pool_info['path'], params.domain, params.vol)
+    vm_backup_path = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
 
     # check backup version exist or not
     disk_backup_dir = '%s/clouddiskbackup/%s' % (vm_backup_path, params.vol)
@@ -2456,7 +2478,7 @@ def pushVMDiskBackup(params):
                     params.vol, params.version))
     else:
         raise ExecuteException('', 'disk %s backup history file %s not exist, plz check it.' % (
-            params.vol, params.version))
+            params.vol, history_file_path))
 
     chain = history[params.version]
     # history file
@@ -2494,6 +2516,17 @@ def pushVMDiskBackup(params):
             dump(checksum2, f2)
         ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
     else:
+        with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
+            checksum1 = load(f1)
+            checksum2 = {}
+            for record in chain['chains']:
+                if record['checksum'] not in checksum2.keys():
+                    checksum2[record['checksum']] = checksum1[record['checksum']]
+                    # upload disk file
+                    backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
+                    ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
+        with open('/tmp/checksum.json', 'w') as f2:
+            dump(checksum2, f2)
         ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
     # image file
     if chain['image_path']:
@@ -2503,7 +2536,10 @@ def pushVMDiskBackup(params):
 
     success_print("success pushVMDiskBackup.", {})
 
+
 def pullRemoteBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     # default backup path
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
     checksum_to_pull = []
