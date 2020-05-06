@@ -1334,13 +1334,14 @@ def get_pools_by_node(node_name):
     output = runCmdAndGetOutput(
         'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
     pools = []
-    for line in output.splitlines():
-        pool = {}
-        if len(line.split()) < 3:
-            continue
-        pool['pool'] = line.split()[0]
-        pool['poolname'] = line.split()[1]
-        pools.append(pool)
+    if output:
+        for line in output.splitlines():
+            pool = {}
+            if len(line.split()) < 3:
+                continue
+            pool['pool'] = line.split()[0]
+            pool['poolname'] = line.split()[1]
+            pools.append(pool)
     return pools
 
 
