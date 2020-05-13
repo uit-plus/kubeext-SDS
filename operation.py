@@ -334,6 +334,48 @@ def createDisk(params):
     success_print("create disk %s successful." % params.vol, result)
 
 
+def createCloudInitUserDataImageParser(params):
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+    poolname = pool_info['poolname']
+
+    helper = K8sHelper("VirtualMachineDisk")
+
+    if helper.exist(params.vol):
+        raise ExecuteException('', 'disk %s has exists.' % params.vol)
+    if pool_info['type'] == 'uus':
+        raise ExecuteException('', 'uus pool %s not support.' % params.pool)
+
+    cfg = '/tmp/%s.cfg' % randomUUID()
+    with open(cfg, 'w') as f:
+        f.write(params.userData)
+
+    createInfo = cstor_create_disk(poolname, params.vol, 1000000)
+
+    disk_dir = '%s/%s' % (pool_info['path'], params.vol)
+    if not os.path.exists(disk_dir):
+      os.makedirs(disk_dir)
+
+
+    disk_path = '%s/%s' % (disk_dir, params.vol)
+    op = Operation('cloud-localds %s %s' % (disk_path, cfg), {})
+    op.execute()
+
+    cstor_disk_prepare(poolname, params.vol, disk_path)
+    write_config(params.vol, disk_dir, disk_path, params.pool, poolname)
+    result = get_disk_info_to_k8s(poolname, params.vol)
+
+    success_print("create CloudInitUserDataImage %s successful." % params.vol, result)
+
+def deleteCloudInitUserDataImageParser(params):
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+    params['type'] = pool_info['pooltype']
+
+    deleteDisk(params)
+
+    success_print("delete CloudInitUserDataImage %s successful." % params.vol, {})
+
 def cstor_delete_disk(poolname, vol):
     op = Operation('cstor-cli vdisk-remove ', {'poolname': poolname, 'name': vol},
                    with_result=True)

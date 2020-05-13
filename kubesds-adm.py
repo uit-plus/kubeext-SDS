@@ -489,6 +489,12 @@ def pushBackupParser(args):
     else:
         execute('pushVMBackup', args)
 
+def createCloudInitUserDataImageParser(args):
+    execute('createCloudInitUserDataImage', args)
+
+def deleteCloudInitUserDataImageParser(args):
+    execute('deleteCloudInitUserDataImage', args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1028,6 +1034,27 @@ parser_push_backup.add_argument("--password", required=True, metavar="[PASSWORD]
                             help="remote server password.")
 # set default func
 parser_push_backup.set_defaults(func=pushBackupParser)
+
+
+# -------------------- add createCloudInitUserDataImage cmd ----------------------------------
+parser_create_cloud_init = subparsers.add_parser("createCloudInitUserDataImage", help="createCloudInitUserDataImage help")
+parser_create_cloud_init.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_create_cloud_init.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                            help="vol")
+parser_create_cloud_init.add_argument("--userData", required=True, metavar="[USERDATA]", type=str,
+                            help="userData")
+# set default func
+parser_create_cloud_init.set_defaults(func=createCloudInitUserDataImageParser)
+
+# -------------------- add createCloudInitUserDataImage cmd ----------------------------------
+parser_delete_cloud_init = subparsers.add_parser("deleteCloudInitUserDataImage", help="deleteCloudInitUserDataImage help")
+parser_delete_cloud_init.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_delete_cloud_init.add_argument("--vol", required=True, metavar="[VOL]", type=str,
+                            help="vol")
+# set default func
+parser_delete_cloud_init.set_defaults(func=deleteCloudInitUserDataImageParser)
 
 
 try:
