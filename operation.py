@@ -348,7 +348,8 @@ def createCloudInitUserDataImageParser(params):
 
     cfg = '/tmp/%s.cfg' % randomUUID()
     with open(cfg, 'w') as f:
-        f.write(params.userData)
+        data = params.userData.replace(';;;', '\r\n').replace('+', '-')
+        f.write(data)
 
     createInfo = cstor_create_disk(poolname, params.vol, 1000000)
 
