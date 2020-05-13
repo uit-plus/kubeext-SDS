@@ -341,8 +341,6 @@ def createCloudInitUserDataImage(params):
 
     helper = K8sHelper("VirtualMachineDisk")
 
-    if helper.exist(params.vol):
-        raise ExecuteException('', 'disk %s has exists.' % params.vol)
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'uus pool %s not support.' % params.pool)
 
@@ -372,13 +370,57 @@ def createCloudInitUserDataImage(params):
 
     success_print("create CloudInitUserDataImage %s successful." % params.vol, result)
 
-def deleteCloudInitUserDataImageParser(params):
+def deleteCloudInitUserDataImage(params):
+    try:
+        helper = K8sHelper("VirtualMachineDisk")
+        disk_info = helper.get_data(params.vol, "volume")
+        if disk_info is None:
+            helper.delete(params.vol)
+            success_print("delete disk %s successful." % params.vol, {})
+    except ExecuteException, e:
+        error_print(400, e.message)
+
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
-    params['type'] = pool_info['pooltype']
 
-    deleteDisk(params)
+    disk_info = get_vol_info_from_k8s(params.vol)
+    poolname = disk_info['poolname']
+    kv = {"poolname": disk_info['poolname'], "name": params.vol, "uni": disk_info["uni"]}
+    op = Operation("cstor-cli vdisk-release", kv, True)
+    releaseInfo = op.execute()
+    if releaseInfo['result']['code'] != 0:
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            releaseInfo['result']['code'], releaseInfo['result']['msg'], releaseInfo['obj']))
 
+    op = Operation('cstor-cli vdisk-remove ', {'poolname': disk_info['poolname'], 'name': params.vol},
+                   with_result=True)
+    cstor = op.execute()
+    if cstor['result']['code'] != 0:
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+
+    if pool_info['pooltype'] != "uus":
+        pool_info = get_pool_info(poolname)
+        disk_dir = '%s/%s' % (pool_info['path'], params.vol)
+        snapshots_path = '%s/snapshots' % disk_dir
+        with open('%s/config.json' % disk_dir, "r") as f:
+            config = load(f)
+        if os.path.exists(snapshots_path):
+            for file in os.listdir(snapshots_path):
+                if '%s/%s' % (snapshots_path, file) == config['current']:
+                    continue
+                else:
+                    try:
+                        ss_info = get_snapshot_info_from_k8s(file)
+                    except:
+                        continue
+                    raise ExecuteException('', 'error: disk %s still has snapshot %s.' % (params.vol, file))
+
+        op = Operation("rm -rf %s" % disk_dir, {})
+        op.execute()
+
+    helper = K8sHelper("VirtualMachineDisk")
+    helper.delete(params.vol)
     success_print("delete CloudInitUserDataImage %s successful." % params.vol, {})
 
 def cstor_delete_disk(poolname, vol):

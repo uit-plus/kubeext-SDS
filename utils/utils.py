@@ -278,11 +278,14 @@ def runCmd(cmd):
             #                     msg = msg + str.strip(line) + ', '
             #             logger.debug(str.strip(msg))
             logger.debug(std_out)
+        p.wait()
+        logger.debug('p.returncode: %d' % p.returncode)
         if std_err:
             msg = ''
             for index, line in enumerate(std_err):
                 msg = msg + line
-            if msg.strip() != '':
+            logger.debug(msg)
+            if msg.strip() != '' and p.returncode != 0:
                 raise ExecuteException('RunCmdError', msg)
         return
     finally:
