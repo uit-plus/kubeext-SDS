@@ -1042,7 +1042,7 @@ parser_create_cloud_init.add_argument("--pool", required=True, metavar="[POOL]",
                             help="backup to store")
 parser_create_cloud_init.add_argument("--vol", required=True, metavar="[VOL]", type=str,
                             help="vol")
-parser_create_cloud_init.add_argument("--userData", required=True, metavar="[USERDATA]", type=str, nargs='+',
+parser_create_cloud_init.add_argument("--userData", required=False, metavar="[USERDATA]", type=str,
                             help="userData")
 # set default func
 parser_create_cloud_init.set_defaults(func=createCloudInitUserDataImageParser)

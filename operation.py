@@ -334,7 +334,7 @@ def createDisk(params):
     success_print("create disk %s successful." % params.vol, result)
 
 
-def createCloudInitUserDataImageParser(params):
+def createCloudInitUserDataImage(params):
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
     poolname = pool_info['poolname']
@@ -343,13 +343,17 @@ def createCloudInitUserDataImageParser(params):
 
     if helper.exist(params.vol):
         raise ExecuteException('', 'disk %s has exists.' % params.vol)
-    if pool_info['type'] == 'uus':
+    if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'uus pool %s not support.' % params.pool)
 
-    cfg = '/tmp/%s.cfg' % randomUUID()
-    with open(cfg, 'w') as f:
-        data = params.userData.replace(';;;', '\r\n').replace('+', '-')
-        f.write(data)
+    # cfg = '/tmp/%s.cfg' % randomUUID()
+    # logger.debug(params.userData)
+    # with open(cfg, 'w') as f:
+    #     data = ''
+    #     for line in params.userData:
+    #         data += line.replace(';;;', '\r\n').replace('+', '-')
+    #     logger.debug(data)
+    #     f.write(data)
 
     createInfo = cstor_create_disk(poolname, params.vol, 1000000)
 
@@ -359,7 +363,7 @@ def createCloudInitUserDataImageParser(params):
 
 
     disk_path = '%s/%s' % (disk_dir, params.vol)
-    op = Operation('cloud-localds %s %s' % (disk_path, cfg), {})
+    op = Operation('cloud-localds %s %s' % (disk_path, params.userData), {})
     op.execute()
 
     cstor_disk_prepare(poolname, params.vol, disk_path)
