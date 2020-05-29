@@ -1,3 +1,4 @@
+import random
 import shlex
 import subprocess
 import traceback
@@ -16,16 +17,14 @@ import traceback
 #
 # run_command('ping www.baidu.com -t')
 
-p = subprocess.Popen('ping www.baidu.com', shell=True, stdout=subprocess.PIPE)
-try:
-    while True:
-        output = p.stdout.readline()
-        if output == '' and p.poll() is not None:
-            break
-        if output:
-            # print output.strip()
-            p.terminate()
-except Exception:
-    traceback.print_exc()
-finally:
-    p.stdout.close()
+def randomUUID():
+    u = [random.randint(0, 255) for ignore in range(0, 16)]
+    u[6] = (u[6] & 0x0F) | (4 << 4)
+    u[8] = (u[8] & 0x3F) | (2 << 6)
+    return "-".join(["%02x" * 4, "%02x" * 2, "%02x" * 2, "%02x" * 2,
+                     "%02x" * 6]) % tuple(u)
+
+
+if __name__ == '__main__':
+    for i in range(100):
+        print randomUUID().replace('-', '')
