@@ -1689,6 +1689,9 @@ def backupDisk(params):
     disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
     ss_path = '%s/%s' % (disk_dir, uuid)
     cmd = '%s --diskspec %s,snapshot=external,file=%s,driver=qcow2' % (cmd, disk_specs[vm_disks[params.vol]], ss_path)
+    for disk_path in disk_specs.keys():
+        if disk_path != vm_disks[params.vol]:
+            cmd = '%s --diskspec %s,snapshot=no' % (cmd, disk_specs[disk_path])
     if not os.path.exists(disk_dir):
         raise ExecuteException('', 'vm disk %s dir %s not exist, plz check it.' % (params.vol, disk_dir))
 
@@ -1914,6 +1917,7 @@ def backupVM(params):
     cmd = 'virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata ' % (params.domain, uuid)
     for disk_path in disk_specs.keys():
         if not params.all and disk_specs[disk_path] != 'vda':
+            cmd = '%s --diskspec %s,snapshot=no' % (cmd, disk_specs[disk_path])
             continue
         if disk_path.find('snapshots') < 0:
             disk_mn = os.path.basename(os.path.dirname(disk_path))
