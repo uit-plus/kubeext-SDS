@@ -1688,7 +1688,7 @@ def backupDisk(params):
 
     disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
     ss_path = '%s/%s' % (disk_dir, uuid)
-    cmd = '%s --diskspec %s,snapshot=external,file=%s,driver=qcow2' % (cmd, vm_disks[params.vol], ss_path)
+    cmd = '%s --diskspec %s,snapshot=external,file=%s,driver=qcow2' % (cmd, disk_specs[vm_disks[params.vol]], ss_path)
     if not os.path.exists(disk_dir):
         raise ExecuteException('', 'vm disk %s dir %s not exist, plz check it.' % (params.vol, disk_dir))
 
