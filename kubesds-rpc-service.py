@@ -151,6 +151,18 @@ def run_server():
         except:
             pass
 
+    # 多线程服务器
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    # 实例化 计算len的类
+    servicer = CmdCallServicer()
+    # 注册本地服务,方法CmdCallServicer只有这个是变的
+    cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
+    # 监听端口
+    logger.debug("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
+    server.add_insecure_port("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
+    # 开始接收请求进行服务
+    server.start()
+
     # auto mount cstor pool
     node_name = get_hostname_in_lower_case()
     pools = get_pools_by_node(node_name)
@@ -168,17 +180,7 @@ def run_server():
         except ExecuteException, e:
             logger.debug('can not auto mount cstor pool %s' % pool['poolname'])
 
-    # 多线程服务器
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    # 实例化 计算len的类
-    servicer = CmdCallServicer()
-    # 注册本地服务,方法CmdCallServicer只有这个是变的
-    cmdcall_pb2_grpc.add_CmdCallServicer_to_server(servicer, server)
-    # 监听端口
-    logger.debug("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
-    server.add_insecure_port("%s:%s" % (get_docker0_IP(), DEFAULT_PORT))
-    # 开始接收请求进行服务
-    server.start()
+
     return server
     # 使用 ctrl+c 可以退出服务
     # try:
