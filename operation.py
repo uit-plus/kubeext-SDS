@@ -1219,7 +1219,7 @@ def migrateDiskFunc(sourceVol, targetPool):
             if pool_node_name == disk_node_name:
                 if disk_info['poolname'] != pool_info['poolname']:
                     # cp and rebase backing file and config, then update k8s
-                    op = Operation('cp -r %s %s/' % (source_dir, pool_info['path']), {})
+                    op = Operation('cp -rf %s %s/' % (source_dir, pool_info['path']), {})
                     op.execute()
                     rebase_snapshot_with_config(targetPool, sourceVol)
                     disk_info = get_vol_info_from_k8s(sourceVol)
