@@ -80,7 +80,7 @@ def check_pool(f_name, args):
                 if is_pool_exists(args.uuid):
                     raise ConditionException(201, "virsh pool %s has exist" % args.uuid)
             if is_cstor_pool_exist(args.uuid):
-                raise ConditionException(204, "cstor pool %s not exist" % args.uuid)
+                raise ConditionException(204, "cstor pool %s has exist" % args.uuid)
         else:
             if f_name == 'deletePool':
                 # if pool is not create successful, delete it from k8s.
