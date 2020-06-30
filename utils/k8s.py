@@ -6,6 +6,8 @@ from kubernetes import client, config
 import os, sys, ConfigParser
 from sys import exit
 
+import logging
+import logging.handlers
 
 from kubernetes.client import V1DeleteOptions
 from kubernetes.client.rest import ApiException
@@ -27,6 +29,29 @@ config_raw = parser()
 config_raw.read(cfg)
 
 config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+
+LOG = '/var/log/kubesds.log'
+
+
+def set_logger(header, fn):
+    logger = logging.getLogger(header)
+
+    handler1 = logging.StreamHandler()
+    handler2 = logging.handlers.RotatingFileHandler(filename=fn, maxBytes=10000000, backupCount=10)
+
+    logger.setLevel(logging.DEBUG)
+    handler1.setLevel(logging.ERROR)
+    handler2.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("%(asctime)s %(name)s %(lineno)s %(levelname)s %(message)s")
+    handler1.setFormatter(formatter)
+    handler2.setFormatter(formatter)
+
+    logger.addHandler(handler1)
+    logger.addHandler(handler2)
+    return logger
+
+k8s_logger = set_logger(os.path.basename(__file__), LOG)
 
 resources = {}
 for kind in ['VirtualMachine', 'VirtualMahcinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
@@ -66,6 +91,7 @@ def update(name, data, kind):
 
 
 def delete(name, data, kind):
+    k8s_logger.debug('delete %s' % name)
     return client.CustomObjectsApi().delete_namespaced_custom_object(
         group=resources[kind]['group'], version=resources[kind]['version'], namespace='default',
         plural=resources[kind]['plural'], name=name, body=data)
@@ -251,6 +277,7 @@ class K8sHelper(object):
 
     def delete(self, name):
         try:
+            k8s_logger.debug('delete %s' % name)
             return client.CustomObjectsApi().delete_namespaced_custom_object(
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
