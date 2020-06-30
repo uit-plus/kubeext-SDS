@@ -1942,8 +1942,8 @@ def restoreDisk(params):
 
 
 def backupVM(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    # vm_heler = K8sHelper('VirtualMachine')
+    # vm_heler.delete_lifecycle(params.domain)
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
