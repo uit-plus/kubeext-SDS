@@ -394,7 +394,7 @@ def updateOS(params):
         except:
             pass
     change_vol_current(vol, new_path)
-    change_vm_os_disk_file(params.source, new_path)
+    change_vm_os_disk_file(params.domain, params.source, new_path)
     modifyVMOnNode(params.domain)
     ss_helper = K8sHelper("VirtualMachineDiskSnapshot")
     for ss in snapshots_need_to_delete:
