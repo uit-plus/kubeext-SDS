@@ -91,7 +91,7 @@ def update(name, data, kind):
 
 
 def delete(name, data, kind):
-    k8s_logger.debug('delete %s' % name)
+    k8s_logger.debug('deleteVMBackupdebug %s' % name)
     return client.CustomObjectsApi().delete_namespaced_custom_object(
         group=resources[kind]['group'], version=resources[kind]['version'], namespace='default',
         plural=resources[kind]['plural'], name=name, body=data)
@@ -277,7 +277,7 @@ class K8sHelper(object):
 
     def delete(self, name):
         try:
-            k8s_logger.debug('delete %s' % name)
+            k8s_logger.debug('deleteVMBackupdebug %s' % name)
             return client.CustomObjectsApi().delete_namespaced_custom_object(
                 group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                 plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
