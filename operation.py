@@ -1947,6 +1947,7 @@ def backupVM(params):
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
+        ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
