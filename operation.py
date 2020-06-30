@@ -334,12 +334,73 @@ def createDisk(params):
     success_print("create disk %s successful." % params.vol, result)
 
 
+def updateOS(params):
+    if not is_vm_exist(params.domain):
+        raise ExecuteException('', 'not exist domain %s.' % params.domain)
+
+    prepare_disk_by_path(params.source)
+    prepare_disk_by_path(params.target)
+
+    disks = get_disks_spec(params.domain)
+    if params.source not in disks.keys() or disks[params.source] != 'vda':
+        raise ExecuteException('', '%s is not in domain %s disks.' % (params.source, params.domain))
+
+    if not os.path.exists(params.source):
+        raise ExecuteException('', 'source file %s not exist.' % params.source)
+    if not os.path.exists(params.target):
+        raise ExecuteException('', 'target file %s not exist.' % params.target)
+
+    info = get_disk_prepare_info_by_path(params.source)
+
+    vol = info['disk']
+    pool = info['pool']
+    vol_info = get_vol_info_from_k8s(vol)
+    pool_info = get_pool_info_from_k8s(pool)
+
+    # disk_file_need_delete = []
+    snapshots_need_to_delete = []
+
+    disk_dir = '%s/%s' % (pool_info['path'], vol)
+
+    snapshots_dir = '%s/snapshots' % disk_dir
+    if os.path.exists(snapshots_dir):
+        for df in os.listdir(snapshots_dir):
+            try:
+                ss_info = get_snapshot_info_from_k8s(df)
+                snapshots_need_to_delete.append(df)
+            except:
+                pass
+
+    new_path = '%s/%s/%s' % (pool_info['path'], vol, vol)
+    op = Operation('cp -f %s %s' % (params.target, new_path), {})
+    op.execute()
+
+    # write_config(vol, '%s/%s' % (pool_info['path'], vol), new_path, pool, pool_info['poolname'])
+
+    for df in os.listdir(disk_dir):
+        if os.path.isdir(df):
+            op = Operation('rm -rf %s/%s' % (disk_dir, df), {})
+            op.execute()
+        else:
+            if df == 'config.json' or df == vol:
+                continue
+            else:
+                op = Operation('rm -f %s/%s' % (disk_dir, df), {})
+                op.execute()
+    change_vol_current(vol, new_path)
+    ss_helper = K8sHelper("VirtualMachineDiskSnapshot")
+    for ss in snapshots_need_to_delete:
+        if ss_helper.exist(ss):
+            ss_helper.delete(ss)
+
+    success_print("updateOS %s successful." % params.domain, {})
+
+
 def createCloudInitUserDataImage(params):
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
     poolname = pool_info['poolname']
 
-    helper = K8sHelper("VirtualMachineDisk")
 
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'uus pool %s not support.' % params.pool)
@@ -2214,8 +2275,8 @@ def restoreVM(params):
 
 
 def deleteVMBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    # vm_heler = K8sHelper('VirtualMachine')
+    # vm_heler.delete_lifecycle(params.domain)
     # default backup path
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)

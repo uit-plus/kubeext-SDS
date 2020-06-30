@@ -495,6 +495,10 @@ def createCloudInitUserDataImageParser(args):
 def deleteCloudInitUserDataImageParser(args):
     execute('deleteCloudInitUserDataImage', args)
 
+def updateOSParser(args):
+    execute('updateOS', args)
+
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1055,6 +1059,17 @@ parser_delete_cloud_init.add_argument("--vol", required=True, metavar="[VOL]", t
                             help="vol")
 # set default func
 parser_delete_cloud_init.set_defaults(func=deleteCloudInitUserDataImageParser)
+
+# -------------------- add createCloudInitUserDataImage cmd ----------------------------------
+parser_update_os = subparsers.add_parser("updateOS", help="deleteCloudInitUserDataImage help")
+parser_update_os.add_argument("--domain", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_update_os.add_argument("--source", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_update_os.add_argument("--target", required=True, metavar="[VOL]", type=str,
+                            help="vol")
+# set default func
+parser_update_os.set_defaults(func=updateOSParser)
 
 
 try:
