@@ -382,7 +382,7 @@ def updateOS(params):
 
     for df in os.listdir(disk_dir):
         try:
-            if os.path.isdir(df):
+            if os.path.isdir('%s/%s' % (disk_dir, df)):
                 op = Operation('rm -rf %s/%s' % (disk_dir, df), {})
                 op.execute()
             else:
