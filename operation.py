@@ -338,6 +338,9 @@ def updateOS(params):
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'not exist domain %s.' % params.domain)
 
+    if not is_vm_active(params.domain):
+        raise ExecuteException('', 'domain %s is still running, plz stop it first.' % params.domain)
+
     prepare_disk_by_path(params.source)
     prepare_disk_by_path(params.target)
 
@@ -378,16 +381,21 @@ def updateOS(params):
     # write_config(vol, '%s/%s' % (pool_info['path'], vol), new_path, pool, pool_info['poolname'])
 
     for df in os.listdir(disk_dir):
-        if os.path.isdir(df):
-            op = Operation('rm -rf %s/%s' % (disk_dir, df), {})
-            op.execute()
-        else:
-            if df == 'config.json' or df == vol:
-                continue
-            else:
-                op = Operation('rm -f %s/%s' % (disk_dir, df), {})
+        try:
+            if os.path.isdir(df):
+                op = Operation('rm -rf %s/%s' % (disk_dir, df), {})
                 op.execute()
+            else:
+                if df == 'config.json' or df == vol:
+                    continue
+                else:
+                    op = Operation('rm -f %s/%s' % (disk_dir, df), {})
+                    op.execute()
+        except:
+            pass
     change_vol_current(vol, new_path)
+    change_vm_os_disk_file(params.source, new_path)
+    modifyVMOnNode(params.domain)
     ss_helper = K8sHelper("VirtualMachineDiskSnapshot")
     for ss in snapshots_need_to_delete:
         if ss_helper.exist(ss):
