@@ -338,7 +338,7 @@ def updateOS(params):
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'not exist domain %s.' % params.domain)
 
-    if not is_vm_active(params.domain):
+    if is_vm_active(params.domain):
         raise ExecuteException('', 'domain %s is still running, plz stop it first.' % params.domain)
 
     prepare_disk_by_path(params.source)
