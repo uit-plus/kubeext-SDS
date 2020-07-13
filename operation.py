@@ -2185,9 +2185,12 @@ def restoreVM(params):
             disk = disks[name]
             if not params.all and disk['tag'] != 'vda':
                 continue
-            uuid = randomUUID().replace('-', '')
-            while disk_heler.exist(uuid):
+            if disk['tag'] != 'vda':
                 uuid = randomUUID().replace('-', '')
+                while disk_heler.exist(uuid):
+                    uuid = randomUUID().replace('-', '')
+            else:
+                uuid = params.newname
             disk_back_dir = '%s/diskbackup' % vm_backup_path
             target_path = '%s/%s' % (target_pool_info['path'], uuid)
             if not os.path.exists(target_path):
@@ -2208,9 +2211,10 @@ def restoreVM(params):
         define_and_restore_vm_disks(vm_xml_file, params.newname, source_to_target)
         # register to k8s
         for name in disk_currents:
-            write_config(name, os.path.dirname(disk_currents[name]), disk_currents[name], params.target,
+            uuid = os.path.basename(os.path.dirname(disk_currents[name]))
+            write_config(uuid, os.path.dirname(disk_currents[name]), disk_currents[name], params.target,
                          target_pool_info['poolname'])
-            disk_heler.create(name, "volume", get_disk_info(disk_currents[name]))
+            disk_heler.create(uuid, "volume", get_disk_info(disk_currents[name]))
 
     for file in file_to_deletes:
         runCmd('rm -f %s' % file)
@@ -2421,8 +2425,8 @@ def deleteVMDiskBackup(params):
 
 
 def deleteRemoteBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    # vm_heler = K8sHelper('VirtualMachine')
+    # vm_heler.delete_lifecycle(params.domain)
     # default backup path
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
     checksum_to_deletes = []
@@ -2526,8 +2530,8 @@ def deleteRemoteBackup(params):
     success_print("success deleteRemoteBackup.", {})
 
 def pushVMBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    # vm_heler = K8sHelper('VirtualMachine')
+    # vm_heler.delete_lifecycle(params.domain)
     if params.remote:
         if not params.port or not params.username or not params.password:
             raise ExecuteException('', 'ftp port, username, password must be set.')
