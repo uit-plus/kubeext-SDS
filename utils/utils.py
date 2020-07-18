@@ -165,6 +165,7 @@ def runCmdAndTransferXmlToJson(cmd):
 
 
 def runCmdAndSplitKvToJson(cmd):
+    logger.debug(cmd)
     if not cmd:
         #         logger.debug('No CMD to execute.')
         return
@@ -199,6 +200,7 @@ def runCmdAndSplitKvToJson(cmd):
 
 
 def runCmdAndGetOutput(cmd):
+    logger.debug(cmd)
     if not cmd:
         return
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -232,6 +234,7 @@ def runCmdAndGetOutput(cmd):
 
 
 def remoteRunCmd(ip, cmd):
+    logger.debug(cmd)
     if not cmd:
         logger.debug('No CMD to execute.')
         return

@@ -2214,7 +2214,7 @@ def restoreVM(params):
             uuid = os.path.basename(os.path.dirname(disk_currents[name]))
             write_config(uuid, os.path.dirname(disk_currents[name]), disk_currents[name], params.target,
                          target_pool_info['poolname'])
-            disk_heler.create(uuid, "volume", get_disk_info(disk_currents[name]))
+            disk_heler.create(uuid, "volume", get_disk_info_to_k8s(target_pool_info['poolname'], disk_currents[name]))
 
     for file in file_to_deletes:
         runCmd('rm -f %s' % file)
