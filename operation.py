@@ -2288,7 +2288,6 @@ def restoreVM(params):
 
 
 def deleteVMBackup(params):
-    raise ExecuteException('', 'not execute deleteVMBackup')
     # vm_heler = K8sHelper('VirtualMachine')
     # vm_heler.delete_lifecycle(params.domain)
     # default backup path
