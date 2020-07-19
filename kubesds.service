@@ -21,7 +21,7 @@ After=docker.service
 
 [Service]
 Type=simple
-Restart=on-failure
+Restart=always
 Environment=KUBECONFIG=/etc/kubernetes/admin.conf
 ExecStart=/usr/bin/kubesds-ctl.sh start
 ExecStop=/usr/bin/kubesds-ctl.sh stop
