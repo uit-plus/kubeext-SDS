@@ -2287,8 +2287,8 @@ def restoreVM(params):
 
 
 def deleteVMBackup(params):
-    # vm_heler = K8sHelper('VirtualMachine')
-    # vm_heler.delete_lifecycle(params.domain)
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
     # default backup path
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
