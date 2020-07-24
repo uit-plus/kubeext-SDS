@@ -217,7 +217,7 @@ def showPool(params):
     cstor = get_cstor_pool_info(poolname)
     if params.type != 'uus':
         result = get_pool_info(poolname)
-        if is_pool_started(poolname) and cstor['data']['status'] == 'active':
+        if is_pool_started(poolname) and cstor['status'] == 'active':
             result['state'] = "active"
         else:
             result['state'] = "inactive"
@@ -226,15 +226,14 @@ def showPool(params):
         result["pool"] = params.pool
         result["poolname"] = pool_info["poolname"]
     else:
-        cstor = get_cstor_pool_info(poolname)
         result = {
             "pooltype": params.type,
             "pool": params.pool,
             "poolname": poolname,
-            "capacity": cstor["data"]["total"],
+            "capacity": cstor["total"],
             "autostart": "no",
-            "path": cstor["data"]["url"],
-            "state": cstor["data"]["status"],
+            "path": cstor["url"],
+            "state": cstor["status"],
             "uuid": randomUUID(),
             "content": 'vmd'
         }
