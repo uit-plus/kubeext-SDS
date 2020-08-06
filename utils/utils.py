@@ -885,6 +885,7 @@ def get_pool_info_to_k8s(type, pool, poolname, content):
     result['content'] = content
     result["pooltype"] = type
     result["pool"] = pool
+    result["free"] = cstor['data']['free']
     result["poolname"] = poolname
     if is_pool_started(poolname) and cstor['data']['status'] == 'active':
         result["state"] = "active"

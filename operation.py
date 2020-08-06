@@ -92,6 +92,7 @@ def createPool(params):
             "pool": params.pool,
             "poolname": params.uuid,
             "capacity": cstor["data"]["total"],
+            "free": cstor["data"]["free"],
             "autostart": "no",
             "path": cstor["data"]["url"],
             "state": cstor["data"]["status"],
@@ -224,6 +225,7 @@ def showPool(params):
         result['content'] = pool_info["content"]
         result["pooltype"] = pool_info["pooltype"]
         result["pool"] = params.pool
+        result["free"] = cstor["free"]
         result["poolname"] = pool_info["poolname"]
     else:
         result = {
@@ -231,6 +233,7 @@ def showPool(params):
             "pool": params.pool,
             "poolname": poolname,
             "capacity": cstor["total"],
+            "free": cstor["free"],
             "autostart": "no",
             "path": cstor["url"],
             "state": cstor["status"],
