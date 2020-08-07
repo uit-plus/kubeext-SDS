@@ -54,7 +54,7 @@ def set_logger(header, fn):
 k8s_logger = set_logger(os.path.basename(__file__), LOG)
 
 resources = {}
-for kind in ['VirtualMachine', 'VirtualMahcinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
+for kind in ['VirtualMachine', 'VirtualMachinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
     resource = {}
     for key in ['version', 'group', 'plural']:
         resource[key] = config_raw.get(kind, key)

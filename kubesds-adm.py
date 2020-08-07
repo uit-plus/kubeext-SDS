@@ -84,7 +84,7 @@ def check_pool(f_name, args):
         else:
             if f_name == 'deletePool':
                 # if pool is not create successful, delete it from k8s.
-                helper = K8sHelper("VirtualMahcinePool")
+                helper = K8sHelper("VirtualMachinePool")
                 pool_info = helper.get_data(args.pool, "pool")
                 if pool_info is None:
                     helper.delete(args.pool)

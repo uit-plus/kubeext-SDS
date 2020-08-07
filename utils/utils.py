@@ -777,7 +777,7 @@ def get_pool_info_from_k8s(pool):
     if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
         pool_info = result['spec']['pool']
         # # try make pool active
-        # pool_helper = K8sHelper('VirtualMahcinePool')
+        # pool_helper = K8sHelper('VirtualMachinePool')
         # this_node_name = get_hostname_in_lower_case()
         # pool_node_name = get_node_name(pool_helper.get(pool))
         # if this_node_name == pool_node_name and pool_info['state'] == 'active':
@@ -1280,7 +1280,7 @@ def poolActive(poolname):
     pool_path = '%s/%s' % (cstor['data']['mountpath'], poolname)
     pools = get_pools_by_path(pool_path)
     node_name = get_hostname_in_lower_case()
-    poolHelper = K8sHelper('VirtualMahcinePool')
+    poolHelper = K8sHelper('VirtualMachinePool')
     for pool in pools:
         if pool['host'] != node_name:
             pool_info = get_pool_info_from_k8s(pool['pool'])
@@ -1420,7 +1420,7 @@ def get_spec(jsondict):
 # def get_migrate_disk_jsondict(disk, targetPool):
 #     jsondicts = []
 #     # two case: 1. pool has same path 2. pool has different path
-#     pool_helper = K8sHelper('VirtualMahcinePool')
+#     pool_helper = K8sHelper('VirtualMachinePool')
 #     pool_metadata = pool_helper.get(targetPool)['metadata']
 #     pool_info = pool_helper.get_data(targetPool, 'pool')
 #
@@ -1467,7 +1467,7 @@ def get_spec(jsondict):
 
 def get_disk_jsondict(pool, disk):
     jsondicts = []
-    pool_helper = K8sHelper('VirtualMahcinePool')
+    pool_helper = K8sHelper('VirtualMachinePool')
     pool_jsondict = pool_helper.get(pool)
     pool_node_name = pool_jsondict['metadata']['labels']['host']
     pool_info = get_pool_info_from_k8s(pool)
@@ -1975,7 +1975,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
 
 
 def check_pool_active(info):
-    pool_helper = K8sHelper('VirtualMahcinePool')
+    pool_helper = K8sHelper('VirtualMachinePool')
     this_node_name = get_hostname_in_lower_case()
     pool_node_name = get_node_name(pool_helper.get(info['pool']))
     if this_node_name != pool_node_name:
@@ -2019,7 +2019,7 @@ def check_pool_active(info):
 
     # update pool
     if cmp(info, result) != 0:
-        k8s = K8sHelper('VirtualMahcinePool')
+        k8s = K8sHelper('VirtualMachinePool')
         try:
             k8s.update(info['pool'], 'pool', result)
         except:
@@ -2030,7 +2030,7 @@ def check_pool_active(info):
 
 
 def change_k8s_pool_state(pool, state):
-    helper = K8sHelper("VirtualMahcinePool")
+    helper = K8sHelper("VirtualMachinePool")
     pool_info = helper.get_data(pool, "pool")
     pool_info['state'] = state
     helper.update(pool, 'pool', pool_info)

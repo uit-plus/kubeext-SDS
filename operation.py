@@ -136,7 +136,7 @@ def createPool(params):
             pool_path = '%s/%s' % (cstor['data']['mountpath'], params.uuid)
             pools = get_pools_by_path(pool_path)
             node_name = get_hostname_in_lower_case()
-            poolHelper = K8sHelper('VirtualMahcinePool')
+            poolHelper = K8sHelper('VirtualMachinePool')
             for pool in pools:
                 if pool['host'] != node_name:
                     pool_info = get_pool_info_from_k8s(pool['pool'])
@@ -162,7 +162,7 @@ def deletePool(params):
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
 
-    helper = K8sHelper("VirtualMahcinePool")
+    helper = K8sHelper("VirtualMachinePool")
     helper.delete(params.pool)
     success_print("delete pool %s successful." % params.pool, {})
 
@@ -242,7 +242,7 @@ def showPool(params):
         }
     # update pool
     if cmp(pool_info, result) != 0:
-        k8s = K8sHelper('VirtualMahcinePool')
+        k8s = K8sHelper('VirtualMachinePool')
         k8s.update(pool_info['pool'], 'pool', result)
 
     success_print("show pool %s successful." % poolname, result)
@@ -585,7 +585,7 @@ def cloneDisk(params):
     result = None
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
-    pool_helper = K8sHelper('VirtualMahcinePool')
+    pool_helper = K8sHelper('VirtualMachinePool')
     disk_node_name = get_node_name(disk_heler.get(params.vol))
     pool_node_name = get_node_name(pool_helper.get(params.pool))
 
@@ -1278,7 +1278,7 @@ def migrateDiskFunc(sourceVol, targetPool):
         raise ExecuteException('RunCmdError', 'can not migrate disk to its pool.')
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(sourceVol)
-    pool_helper = K8sHelper('VirtualMahcinePool')
+    pool_helper = K8sHelper('VirtualMachinePool')
     pool_node_name = get_node_name(pool_helper.get(targetPool))
     disk_node_name = get_node_name(disk_heler.get(sourceVol))
     if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
@@ -2814,6 +2814,53 @@ def pullRemoteBackup(params):
             os.makedirs(vm_backup_record_dir)
             ftp.download_dir(remote_vm_backup_record_dir, vm_backup_record_dir)
     success_print("success pullRemoteBackup.", {})
+
+
+# def rsync_backup(params):
+#     source = ''
+#     target = ''
+#     op = Operation('rsync -azc --delete %s %s' % (source, target), {})
+#     op.execute()
+#
+#
+#     history = {
+#         'current': '',
+#         'vmbackup': {
+#             'version': {
+#                 'disks': ['disk1', 'disk2'],
+#                 'increase': {
+#                     1: 'version1',
+#                     2: 'version2',
+#                 }
+#             }
+#         },
+#         'disks': {
+#             'disk1': {
+#                 'current': '',
+#                 'version': {
+#                     'single': False,
+#                     'increase': {
+#                         1: 'version1',
+#                         2: 'version2',
+#                     }
+#                 }
+#             },
+#             'disk2': {
+#                 'current': '',
+#                 'version': {
+#                     'single': False,
+#                     'increase': {
+#                         1: 'version1',
+#                         2: 'version2',
+#                     }
+#                 }
+#             }
+#         }
+#     }
+#     op = Operation('rsync -azc --delete %s %s' % (source, target), {})
+#     op.execute()
+#     op = Operation('tar -g snapshot -zcf %s.tar.gz %s' % (source, target), {})
+#     op.execute(
 
 
 def showDiskPool(params):
