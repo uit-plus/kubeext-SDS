@@ -514,18 +514,44 @@ def get_volume_size(pool, vol):
     return int(disk_info['virtual_size'])
 
 
-def get_disks_spec(domain):
-    if domain is None:
-        raise ExecuteException('RunCmdError', 'domin is not set. Can not get domain disk spec.')
-    output = runCmdAndGetOutput('virsh domblklist %s' % domain)
-    lines = output.splitlines()
-    spec = {}
-    for i in range(2, len(lines)):
-        kv = lines[i].split()
-        if len(kv) == 2:
-            spec[kv[1]] = kv[0]
-    return spec
+# def get_disks_spec(domain):
+#     if domain is None:
+#         raise ExecuteException('RunCmdError', 'domin is not set. Can not get domain disk spec.')
+#     output = runCmdAndGetOutput('virsh domblklist %s' % domain)
+#     lines = output.splitlines()
+#     spec = {}
+#     for i in range(2, len(lines)):
+#         kv = lines[i].split()
+#         if len(kv) == 2:
+#             spec[kv[1]] = kv[0]
+#     return spec
 
+
+def get_disks_spec(domain):
+    if not domain:
+        raise ExecuteException('', 'missing parameter: no vm name(%s).' % domain)
+    runCmd('virsh dumpxml %s > /tmp/%s.xml' % (domain, domain))
+    xmlfile = '/tmp/%s.xml' % domain
+    if xmlfile is None:
+        raise ExecuteException('RunCmdError', 'domin xml file is not set. Can not get domain disk spec.')
+
+    tree = ET.parse(xmlfile)
+
+    root = tree.getroot()
+    # for child in root:
+    #     print(child.tag, "----", child.attrib)
+    spec = {}
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element is not None:
+                    target_element = disk.find("target")
+                    spec[source_element.get("file")] = target_element.get('dev')
+    runCmd('rm -f %s' % xmlfile)
+    return spec
 
 def get_disks_spec_by_xml(xmlfile):
     if xmlfile is None:
