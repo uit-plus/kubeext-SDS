@@ -2049,7 +2049,7 @@ def backupVM(params):
 
     # modify disk current
     for disk_dir in disk_current.keys():
-        op = Operation('virsh blockcommit %s %s --active --verbose --pivot' % (params.domain, disk_tags[disk_dir]))
+        op = Operation('virsh blockcommit %s %s --active --verbose --pivot' % (params.domain, disk_tags[disk_dir]), {})
         op.execute()
         # change_vol_current(os.path.basename(disk_dir), disk_current[disk_dir])
 
