@@ -522,7 +522,7 @@ def get_disks_spec(domain):
     spec = {}
     for i in range(2, len(lines)):
         kv = lines[i].split()
-        if len(kv) == 2 and kv[0].find('hd') < 0:
+        if len(kv) == 2:
             spec[kv[1]] = kv[0]
     return spec
 
