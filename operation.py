@@ -2290,7 +2290,6 @@ def restoreVM(params):
     # # delete tmp xml file
     # op = Operation('rm -f %s' % tmp_xml_file, {})
     # op.execute()
-
     success_print("success restoreVM.", {})
 
 
