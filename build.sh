@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+git pull
 pyinstaller -F kubesds-adm.py
 pyinstaller -F kubesds-rpc.py
 #pyinstaller -F kubesds-rpc-service.py
