@@ -1792,75 +1792,70 @@ def checksum(path, block_size=8192):
         return file_hash.hexdigest()
 
 
-def backup_snapshots_chain(domain, disk_dir, current, backup_path):
+def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
+
+    # record = {
+    #     'diskname': {
+    #         'current': '',
+    #         'version': {
+    #             '1': 'version'
+    #         }
+    #     }
+    # }
+    if not os.path.exists(current):
+        raise ExecuteException('', 'not exist disk dir need to backup: %s' % current)
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_dir = '%s/vmbackup/%s/diskbackup' % (pool_info['path'], domain)
     if not os.path.exists(disk_dir):
-        raise ExecuteException('', 'not exist disk dir need to backup: %s' % disk_dir)
-    result = {}
-    result['current'] = get_disk_info(current)['full_backing_filename']
+        os.makedirs(disk_dir)
+    record_file = '%s/record.json' % disk_dir
+    if os.path.exists(record_file):
+        with open(record_file, 'r') as f:
+            record = load(f)
+    else:
+        record = {}
+
     backup_files = set()
-    image_file = None
-    chains = []
-    checksums = {}
-
-    # only backup the current chain
-    old_current = result['current']
-    backup_files.add(old_current)
     # back up disk image
-    disk_info = get_disk_info(old_current)
-    while 'full_backing_filename' in disk_info.keys():
-        backup_files.add(disk_info['full_backing_filename'])
-        if disk_info['full_backing_filename'].find(disk_dir) < 0:  # not in disk dir, use image
-            try:
-                image = os.path.basename(disk_info['full_backing_filename'])
-                image_info = get_image_info_from_k8s(image)
-                image_file = disk_info['full_backing_filename']
-            except:
-                pass
-
-        disk_info = get_disk_info(disk_info['full_backing_filename'])
-
-    # backup image
-    if image_file:
-        image_backup_path = '%s/image' % backup_path
-        if not os.path.exists(image_backup_path):
-            os.makedirs(image_backup_path)
-        image = os.path.basename(image_file)
-        if not os.path.exists('%s/%s' % (image_backup_path, image)):
-            runCmd('cp -f %s %s' % (image_file, image_backup_path))
-        backup_files.remove(image_file)
+    chains = get_sn_chain(current)
+    for chain in chains:
+        if 'full-backing-filename' in chain.keys():
+            backup_files.add(chain['full-backing-filename'])
 
     # record snapshot chain
-    disk_backup_dir = '%s/%s/diskbackup' % (backup_path, domain)
-    for bf in backup_files:
-        disk_checksum = backup_file(bf, disk_backup_dir)
-        checksums[bf] = disk_checksum
-    for bf in backup_files:
-        disk_info = get_disk_info(bf)
-        record = {}
-        record['path'] = bf
-        record['checksum'] = checksums[bf]
-        if 'full_backing_filename' in disk_info.keys():
-            record['parent'] = disk_info['full_backing_filename']
-        else:
-            record['parent'] = ''
-        chains.append(record)
-
-    if image_file:
-        result['image'] = os.path.basename(image_file)
-        result['image_path'] = image_file
+    if is_full:
+        backup_dir = '%s/%s/%s' % (disk_dir, version, disk)
+        if os.path.exists(backup_dir):
+            raise ExecuteException('RunCmdError', 'full backup version %s has exist, dir: %s.' % (version, backup_dir))
     else:
-        result['image'] = ''
-        result['image_path'] = ''
-    result['chains'] = chains
-    return result
+        if disk not in record.keys():
+            raise ExecuteException('RunCmdError', 'not exist disk %s full backup, can not make increase backup.' % disk)
 
+        backup_dir = '%s/%s/%s' % (disk_dir, record[disk]['current'], disk)
+        if not os.path.exists(backup_dir):
+            raise ExecuteException('RunCmdError', 'can not find full backup dir %s.' % backup_dir)
+
+    # backup disk
+    for bf in backup_files:
+        backup_file(bf, backup_dir)
+
+    runCmd('tar -g snapshot -zcf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), version, backup_dir))
+
+    if is_full:
+        record[disk]['current'] = version
+        record[disk][version] = {}
+        record[disk][version][version] = 1
+    else:
+        disk_current = record[disk]['current']
+        record[disk][disk_current][version] = len(record[disk][disk_current].keys()) + 1
+    return record[disk]['current']
 
 def backup_file(file, target_dir):
     # print file
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
     file_checksum = checksum(file)
-    history_file = '%s/checksum.json' % target_dir
+    history_file = '%s/checksum.json' % os.path.dirname(target_dir)
     backupRecord = None
     if not os.path.exists(history_file):
         history = {}
@@ -1882,7 +1877,6 @@ def backup_file(file, target_dir):
         history[file_checksum] = os.path.basename(target)
         with open(history_file, 'w') as f:
             dump(history, f)
-    return file_checksum
 
 
 def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):

@@ -1965,16 +1965,17 @@ def backupVM(params):
     if not os.path.exists(vm_backup_path):
         os.makedirs(vm_backup_path)
 
-    vm_backup_record_version = params.version
-    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_version)
-    if not os.path.exists(vm_backup_record_dir):
-        os.mkdir(vm_backup_record_dir)
-    else:
-        raise ExecuteException('', 'vm %s backup version %s has exist, plz use another version.' % (
-        params.domain, params.version))
+    history_file = '%s/history.json' % vm_backup_path
+    history = None
+    if os.path.exists(history_file):
+       with open(history_file, 'r') as f:
+            history = load(f)
+            if params.version in history.keys():
+                raise ExecuteException('', 'vm %s backup version %s has exist, plz use another version.' % (
+                params.domain, params.version))
 
     # save vm xml file
-    xml_file_backup = '%s/%s.xml' % (vm_backup_record_dir, params.domain)
+    xml_file_backup = '%s/%s.xml' % (vm_backup_path, params.version)
     op = Operation('virsh dumpxml %s > %s' % (params.domain, xml_file_backup), {})
     op.execute()
     delete_vm_cdrom_file_in_xml(xml_file_backup)
@@ -2025,27 +2026,27 @@ def backupVM(params):
     for disk_dir in backup_dirs:
         disk = os.path.basename(disk_dir)
         tag = disk_tags[disk_dir]
-        chain = backup_snapshots_chain(params.domain, disk_dir, disk_current[disk_dir], back_path)
-        chain['tag'] = tag
-        disks[disk] = chain
+        version = randomUUID()
+        current_version = backup_snapshots_chain(params.domain, params.pool, disk, disk_current[disk_dir], version, params.all)
+        if params.all:
+            disks[disk] = {
+                'full': current_version,
+                'tag': tag
+            }
+        else:
+            disks[disk] = {
+                'full': current_version,
+                'increase': version,
+                'tag': tag
+            }
+    if history is not None:
+        history[params.version] = disks
+    else:
+        history = {}
+        history[params.version] = disks
+    with open(history_file, 'w') as f:
+        dump(history, f)
 
-    vm_backup_record = {}
-    vm_backup_record['dir'] = vm_backup_record_dir
-    vm_backup_record['xml'] = xml_file_backup
-    vm_backup_record['disks'] = disks
-
-    history_file_path = '%s/history.json' % vm_backup_record_dir
-    # history = {}
-    # if not os.path.exists(history_file_path):
-    #     history[vm_backup_record_version] = vm_backup_record
-    # else:
-    #     with open(history_file_path, 'r') as f:
-    #         history = load(f)
-    #         history[vm_backup_record_version] = vm_backup_record
-    # with open(history_file_path, 'w') as f:
-    #     dump(history, f)
-    with open(history_file_path, 'w') as f:
-        dump(vm_backup_record, f)
 
     # modify disk current
     for disk_dir in disk_current.keys():
@@ -2056,46 +2057,46 @@ def backupVM(params):
         op.execute()
         # change_vol_current(os.path.basename(disk_dir), disk_current[disk_dir])
 
-    if params.remote:
-        # history file
-        ftp = FtpHelper(params.remote, params.port, params.username, params.password)
-
-        ftp_history_dir = '/%s/%s' % (params.domain, params.version)
-        if ftp.is_exist_dir(ftp_history_dir):
-            raise ExecuteException('', 'domain %s has exist backup record %s on ftp server' % (
-                params.domain, params.version))
-        else:
-            ftp.upload_dir(vm_backup_record_dir, '/%s/%s' % (params.domain, params.version))
-
-        # modify checksum file
-        with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
-            checksum1 = load(f1)
-        ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
-        if ftp.is_exist_file(ftp_checksum_file):
-            ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
-            with open('/tmp/checksum.json', 'r') as f2:
-                checksum2 = load(f2)
-        else:
-            checksum2 = {}
-
-        for name in disks.keys():
-            chain = disks[name]['chains']
-            for record in chain:
-                if record['checksum'] not in checksum2.keys():
-                    checksum2[record['checksum']] = checksum1[record['checksum']]
-                    # upload disk file
-                    backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
-                    ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
-            # image file
-            if disks[name]['image_path']:
-                if not ftp.is_exist_dir('/image'):
-                    ftp.mkdir('/image')
-                image_files = ftp.listdir('/image')
-                if not os.path.basename(disks[name]['image_path']) in image_files:
-                    ftp.upload_file(disks[name]['image_path'], '/image')
-        with open('/tmp/checksum.json', 'w') as f2:
-            dump(checksum2, f2)
-        ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
+    # if params.remote:
+    #     # history file
+    #     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
+    #
+    #     ftp_history_dir = '/%s/%s' % (params.domain, params.version)
+    #     if ftp.is_exist_dir(ftp_history_dir):
+    #         raise ExecuteException('', 'domain %s has exist backup record %s on ftp server' % (
+    #             params.domain, params.version))
+    #     else:
+    #         ftp.upload_dir(vm_backup_record_dir, '/%s/%s' % (params.domain, params.version))
+    #
+    #     # modify checksum file
+    #     with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
+    #         checksum1 = load(f1)
+    #     ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
+    #     if ftp.is_exist_file(ftp_checksum_file):
+    #         ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
+    #         with open('/tmp/checksum.json', 'r') as f2:
+    #             checksum2 = load(f2)
+    #     else:
+    #         checksum2 = {}
+    #
+    #     for name in disks.keys():
+    #         chain = disks[name]['chains']
+    #         for record in chain:
+    #             if record['checksum'] not in checksum2.keys():
+    #                 checksum2[record['checksum']] = checksum1[record['checksum']]
+    #                 # upload disk file
+    #                 backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
+    #                 ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
+    #         # image file
+    #         if disks[name]['image_path']:
+    #             if not ftp.is_exist_dir('/image'):
+    #                 ftp.mkdir('/image')
+    #             image_files = ftp.listdir('/image')
+    #             if not os.path.basename(disks[name]['image_path']) in image_files:
+    #                 ftp.upload_file(disks[name]['image_path'], '/image')
+    #     with open('/tmp/checksum.json', 'w') as f2:
+    #         dump(checksum2, f2)
+    #     ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
 
     success_print("success backupVM.", {})
 
