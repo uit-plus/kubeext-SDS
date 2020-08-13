@@ -1849,6 +1849,9 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
     else:
         disk_current = record[disk]['current']
         record[disk][disk_current][version] = len(record[disk][disk_current].keys()) + 1
+
+    with open(record_file, 'w') as f:
+        dump(record, f)
     return record[disk]['current']
 
 def backup_file(file, target_dir):
