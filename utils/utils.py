@@ -1842,6 +1842,7 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
     runCmd('tar -g snapshot -zcf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), version, backup_dir))
 
     if is_full:
+        record[disk] = {}
         record[disk]['current'] = version
         record[disk][version] = {}
         record[disk][version][version] = 1
