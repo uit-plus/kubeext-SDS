@@ -1853,7 +1853,7 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
 def backup_file(file, target_dir):
     # print file
     if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
+        os.mkdirs(target_dir)
     file_checksum = checksum(file)
     history_file = '%s/checksum.json' % os.path.dirname(target_dir)
     backupRecord = None

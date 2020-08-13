@@ -2026,7 +2026,7 @@ def backupVM(params):
     for disk_dir in backup_dirs:
         disk = os.path.basename(disk_dir)
         tag = disk_tags[disk_dir]
-        version = randomUUID()
+        version = randomUUID().replace('-', '')
         current_version = backup_snapshots_chain(params.domain, params.pool, disk, disk_current[disk_dir], version, params.all)
         if params.all:
             disks[disk] = {
