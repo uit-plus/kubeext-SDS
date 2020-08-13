@@ -1839,7 +1839,7 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
     for bf in backup_files:
         backup_file(bf, backup_dir)
 
-    runCmd('tar -g snapshot -zcf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), version, backup_dir))
+    runCmd('tar -g snapshot -cf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), version, backup_dir))
 
     if is_full:
         record[disk] = {}
