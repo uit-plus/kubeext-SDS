@@ -1841,12 +1841,13 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full, full_v
     for bf in backup_files:
         backup_file(bf, backup_dir)
 
-    runCmd('tar -g snapshot -cf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), version, backup_dir))
+    runCmd('tar -g %s/snapshot -cf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), os.path.dirname(backup_dir), version, backup_dir))
     last_full_version = None
     if is_full:
         if disk in record.keys() and 'current' in record[disk].keys():
             last_full_version = record[disk]['current']
-        record[disk] = {}
+        if disk not in record.keys():
+            record[disk] = {}
         record[disk]['current'] = version
         record[disk][version] = {}
         record[disk][version][version] = 1
