@@ -2066,6 +2066,8 @@ def backupVM(params):
     # modify disk current
     for disk_dir in disk_current.keys():
         base = DiskImageHelper.get_backing_file(disk_current[disk_dir])
+        logger.debug('!!!!!!!!!!!!!!!!!!!!!')
+        logger.debug(base)
         op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (params.domain, disk_tags[disk_dir], base), {})
         op.execute()
         op = Operation('rm -f %s' % disk_current[disk_dir], {})
