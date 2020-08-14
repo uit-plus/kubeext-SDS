@@ -1858,7 +1858,7 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full, full_v
     with open(record_file, 'w') as f:
         dump(record, f)
     if is_full and last_full_version:
-        runCmd('rm -rf %s/%s' % (os.path.dirname(disk_dir), disk))
+        runCmd('rm -rf %s/%s/%s' % (os.path.dirname(backup_dir), last_full_version, disk))
 
     return record[disk]['current']
 
