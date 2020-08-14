@@ -2017,6 +2017,11 @@ def backupVM(params):
             raise ExecuteException('', 'vm disk dir %s not exist, plz check it.' % disk_dir)
         backup_dirs.add(disk_dir)
         disk_tags[disk_dir] = disk_specs[disk_path]
+    if history:
+        for tag in disk_specs.values():
+            if tag not in history.keys() and not params.all:
+                raise ExecuteException('RunCmdError',
+                                       'not exist disk %s full backup, can not make increase backup.' % tag)
 
     op = Operation(cmd, {})
     op.execute()
@@ -2027,13 +2032,20 @@ def backupVM(params):
         disk = os.path.basename(disk_dir)
         tag = disk_tags[disk_dir]
         version = randomUUID().replace('-', '')
-        current_version = backup_snapshots_chain(params.domain, params.pool, disk, disk_current[disk_dir], version, params.all)
         if params.all:
+            current_version = backup_snapshots_chain(params.domain, params.pool, disk, disk_current[disk_dir], version,
+                                                     params.all, None)
             disks[disk] = {
                 'full': current_version,
                 'tag': tag
             }
         else:
+            if history is None:
+                raise ExecuteException('RunCmdError',
+                                       'not exist disk %s full backup, can not make increase backup.' % disk)
+            current_version = history[disk]
+            current_version = backup_snapshots_chain(params.domain, params.pool, disk, disk_current[disk_dir], version,
+                                                     params.all, current_version)
             disks[disk] = {
                 'full': current_version,
                 'increase': version,
@@ -2044,6 +2056,8 @@ def backupVM(params):
     else:
         history = {}
         history[params.version] = disks
+    for disk in disks.keys():
+        history[disk] = disks[disk]['full']
     with open(history_file, 'w') as f:
         dump(history, f)
 

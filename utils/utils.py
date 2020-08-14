@@ -1792,8 +1792,7 @@ def checksum(path, block_size=8192):
         return file_hash.hexdigest()
 
 
-def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
-
+def backup_snapshots_chain(domain, pool, disk, current, version, is_full, full_version):
     # record = {
     #     'diskname': {
     #         'current': '',
@@ -1831,18 +1830,22 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
         if disk not in record.keys():
             raise ExecuteException('RunCmdError', 'not exist disk %s full backup, can not make increase backup.' % disk)
 
-        backup_dir = '%s/%s/%s' % (disk_dir, record[disk]['current'], disk)
-        if not os.path.exists(backup_dir):
-            raise ExecuteException('RunCmdError', 'can not find full backup dir %s.' % backup_dir)
+        if full_version:  # backup vm
+            backup_dir = '%s/%s/%s' % (disk_dir, full_version, disk)
+        else:   # backup disk
+            backup_dir = '%s/%s/%s' % (disk_dir, record[disk]['current'], disk)
+            if not os.path.exists(backup_dir):
+                raise ExecuteException('RunCmdError', 'can not find full backup dir %s.' % backup_dir)
 
     # backup disk
     for bf in backup_files:
         backup_file(bf, backup_dir)
 
     runCmd('tar -g snapshot -cf %s/%s.tar.gz %s' % (os.path.dirname(backup_dir), version, backup_dir))
-
+    last_full_version = None
     if is_full:
         record[disk] = {}
+        last_full_version = record[disk]['current']
         record[disk]['current'] = version
         record[disk][version] = {}
         record[disk][version][version] = 1
@@ -1852,6 +1855,9 @@ def backup_snapshots_chain(domain, pool, disk, current, version, is_full):
 
     with open(record_file, 'w') as f:
         dump(record, f)
+    if is_full and last_full_version:
+        runCmd('rm -rf %s/%s' % (os.path.dirname(disk_dir), disk))
+
     return record[disk]['current']
 
 def backup_file(file, target_dir):
