@@ -2018,8 +2018,9 @@ def backupVM(params):
         backup_dirs.add(disk_dir)
         disk_tags[disk_dir] = disk_specs[disk_path]
     if history:
-        for tag in disk_specs.values():
-            if tag not in history.keys() and not params.all:
+        for disk_dir in backup_dirs:
+            disk = os.path.basename(disk_dir)
+            if disk not in history.keys() and not params.all:
                 raise ExecuteException('RunCmdError',
                                        'not exist disk %s full backup, can not make increase backup.' % tag)
 
