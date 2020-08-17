@@ -1860,6 +1860,7 @@ def backup_file(file, target_dir):
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
     file_checksum = checksum(file)
+    logger.debug('%s checksum: %s' % (file, file_checksum))
     history_file = '%s/checksum.json' % target_dir
     backupRecord = None
     if not os.path.exists(history_file):
