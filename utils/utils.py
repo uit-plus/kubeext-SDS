@@ -1933,7 +1933,8 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
 
     # cp all file and make a chain
     logger.debug(dumps(record))
-    for chain in record['chains']:
+    chains = record['chains']
+    for chain in chains:
         # print chain['path']
         if chain['checksum'] not in checksums.keys():
             raise ExecuteException('', 'can not find disk file backup checksum.')
@@ -1972,7 +1973,7 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                 old_to_new[chain['path']] = base_file
 
     # reconnect snapshot chain
-    for chain in record['chains']:
+    for chain in chains:
         # print dumps(chain)
         if chain['parent']:
             # parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))

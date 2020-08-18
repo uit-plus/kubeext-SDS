@@ -1873,6 +1873,7 @@ def backup_vm_disk(domain, pool, disk, version, is_full):
 
         history[disk][current_full_version][version] = {
             'index': count + 1,
+            'current': DiskImageHelper.get_backing_file(ss_path),
             'chains': chain
         }
         if 'current' not in history.keys():
