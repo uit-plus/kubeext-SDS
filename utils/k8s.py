@@ -54,7 +54,7 @@ def set_logger(header, fn):
 k8s_logger = set_logger(os.path.basename(__file__), LOG)
 
 resources = {}
-for kind in ['VirtualMachine', 'VirtualMachinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot']:
+for kind in ['VirtualMachine', 'VirtualMachinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot', 'VirtualMachineBackup']:
     resource = {}
     for key in ['version', 'group', 'plural']:
         resource[key] = config_raw.get(kind, key)
@@ -322,7 +322,15 @@ def error_print(code, msg, data=None):
         print dumps({"result": {"code": code, "msg": msg}, "data": data})
         exit(1)
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
+    data = {
+        'domain': 'cloudinit',
+        'pool': 'migratepoolnodepool22'
+    }
+    backup_helper = K8sHelper('VirtualMachineBackup')
+    backup_helper.create('backup1', 'backup', data)
+    print backup_helper.get('backup1')
+
 #     print get_all_node_ip()
 #     get_pools_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev')
     # k8s = K8sHelper('VirtualMachineDisk')

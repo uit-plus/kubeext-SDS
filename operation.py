@@ -2092,6 +2092,14 @@ def backupVM(params):
             dump(checksum2, f2)
         ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
 
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    data = {
+        'domain': params.domain,
+        'pool': params.pool
+    }
+    backup_helper.create(params.version, 'backup', data)
+
     success_print("success backupVM.", {})
 
 
