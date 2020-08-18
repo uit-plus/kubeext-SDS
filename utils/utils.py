@@ -1877,7 +1877,7 @@ def backup_snapshots_chain(current, backup_path):
 def backup_file(file, target_dir):
     # print file
     if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
+        os.makedirs(target_dir)
     file_checksum = checksum(file)
     logger.debug('%s checksum: %s' % (file, file_checksum))
     history_file = '%s/checksum.json' % target_dir
