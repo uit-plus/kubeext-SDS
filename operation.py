@@ -1852,11 +1852,12 @@ def backup_vm_disk(domain, pool, disk, version, is_full):
         current_full_version = version
     else:
         current_full_version = get_disk_backup_current(domain, pool, disk)
+    if not os.path.exists(disk_backup_dir):
+        os.makedirs(disk_backup_dir)
     backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
     chain = backup_snapshots_chain(ss_path, backup_dir)
 
-    if not os.path.exists(disk_backup_dir):
-        os.makedirs(disk_backup_dir)
+
 
     # write backup record
     if not os.path.exists(history_file_path):
@@ -1885,8 +1886,14 @@ def backup_vm_disk(domain, pool, disk, version, is_full):
     # change disk current
     # change_vol_current(disk, ss_path)
     base = DiskImageHelper.get_backing_file(ss_path)
-    op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base), {})
-    op.execute()
+    if is_vm_active(domain):
+        op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
+                       {})
+        op.execute()
+    else:
+        op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
+        op.execute()
+        change_vm_os_disk_file(domain, ss_path, base)
     op = Operation('rm -f %s' % ss_path, {})
     op.execute()
 
