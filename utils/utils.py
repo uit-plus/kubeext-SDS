@@ -28,6 +28,7 @@ from kubernetes.client.rest import ApiException
 
 from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle, get_hostname_in_lower_case, get_node_name
 from arraylist import vmArray
+from ftp import FtpHelper
 
 try:
     import xml.etree.CElementTree as ET
@@ -1792,9 +1793,52 @@ def checksum(path, block_size=8192):
         return file_hash.hexdigest()
 
 
-def backup_snapshots_chain(domain, disk_dir, current, backup_path):
-    if not os.path.exists(disk_dir):
-        raise ExecuteException('', 'not exist disk dir need to backup: %s' % disk_dir)
+def get_disk_backup_current(domain, pool, disk):
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    history_file_path = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file_path):
+        raise ExecuteException('', 'can not find disk %s current full backup version in %s' % (
+            disk, history_file_path))
+    with open(history_file_path, 'r') as f:
+        history = load(f)
+        if 'current' not in history.keys() and disk not in history['current'].keys():
+            raise ExecuteException('', 'disk %s backup version not exist current full backup version. plz check %s' % (
+                disk, history_file_path))
+        return history['current'][disk]
+
+
+def is_disk_backup_exist(domain, pool, disk, version):
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    history_file_path = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file_path):
+        return False
+    with open(history_file_path, 'r') as f:
+        history = load(f)
+        if disk not in history.keys():
+            return False
+        for full_version in history[disk].keys():
+            if version in history[disk][full_version].keys():
+                return True
+    return False
+
+def is_remote_disk_backup_exist(domain, pool, disk, version, remote, port, username, password):
+    target_dir = '/%s/diskbackup/%s' % (domain, disk)
+    ftp = FtpHelper(remote, port, username, password)
+    if ftp.is_exist_dir(target_dir) and ftp.is_exist_file('%s/history.json' % target_dir):
+        history = ftp.get_json_file_data('%s/history.json' % target_dir)
+        if disk not in history.keys():
+            return False
+        for full_version in history[disk].keys():
+            if version in history[disk][full_version].keys():
+                return True
+    return False
+
+
+def backup_snapshots_chain(current, backup_path):
+    if not os.path.exists(current):
+        raise ExecuteException('', 'not exist disk dir need to backup: %s' % current)
     result = {}
     result['current'] = get_disk_info(current)['full_backing_filename']
     backup_files = set()
@@ -1809,28 +1853,10 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
     disk_info = get_disk_info(old_current)
     while 'full_backing_filename' in disk_info.keys():
         backup_files.add(disk_info['full_backing_filename'])
-        if disk_info['full_backing_filename'].find(disk_dir) < 0:  # not in disk dir, use image
-            try:
-                image = os.path.basename(disk_info['full_backing_filename'])
-                image_info = get_image_info_from_k8s(image)
-                image_file = disk_info['full_backing_filename']
-            except:
-                pass
-
         disk_info = get_disk_info(disk_info['full_backing_filename'])
 
-    # backup image
-    if image_file:
-        image_backup_path = '%s/image' % backup_path
-        if not os.path.exists(image_backup_path):
-            os.makedirs(image_backup_path)
-        image = os.path.basename(image_file)
-        if not os.path.exists('%s/%s' % (image_backup_path, image)):
-            runCmd('cp -f %s %s' % (image_file, image_backup_path))
-        backup_files.remove(image_file)
-
     # record snapshot chain
-    disk_backup_dir = '%s/%s/diskbackup' % (backup_path, domain)
+    disk_backup_dir = '%s/diskbackup' % backup_path
     for bf in backup_files:
         disk_checksum = backup_file(bf, disk_backup_dir)
         checksums[bf] = disk_checksum
@@ -1844,13 +1870,6 @@ def backup_snapshots_chain(domain, disk_dir, current, backup_path):
         else:
             record['parent'] = ''
         chains.append(record)
-
-    if image_file:
-        result['image'] = os.path.basename(image_file)
-        result['image_path'] = image_file
-    else:
-        result['image'] = ''
-        result['image_path'] = ''
     result['chains'] = chains
     return result
 

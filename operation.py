@@ -411,7 +411,6 @@ def createCloudInitUserDataImage(params):
     check_pool_active(pool_info)
     poolname = pool_info['poolname']
 
-
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'uus pool %s not support.' % params.pool)
 
@@ -428,8 +427,7 @@ def createCloudInitUserDataImage(params):
 
     disk_dir = '%s/%s' % (pool_info['path'], params.vol)
     if not os.path.exists(disk_dir):
-      os.makedirs(disk_dir)
-
+        os.makedirs(disk_dir)
 
     disk_path = '%s/%s' % (disk_dir, params.vol)
     op = Operation('cloud-localds %s %s' % (disk_path, params.userData), {})
@@ -440,6 +438,7 @@ def createCloudInitUserDataImage(params):
     result = get_disk_info_to_k8s(poolname, params.vol)
 
     success_print("create CloudInitUserDataImage %s successful." % params.vol, result)
+
 
 def deleteCloudInitUserDataImage(params):
     try:
@@ -493,6 +492,7 @@ def deleteCloudInitUserDataImage(params):
     helper = K8sHelper("VirtualMachineDisk")
     helper.delete(params.vol)
     success_print("delete CloudInitUserDataImage %s successful." % params.vol, {})
+
 
 def cstor_delete_disk(poolname, vol):
     op = Operation('cstor-cli vdisk-remove ', {'poolname': poolname, 'name': vol},
@@ -1691,86 +1691,169 @@ def exportVM(params):
 def backupDisk(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
+
+    backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full)
     if params.remote:
-        if not params.port or not params.username or not params.password:
-            raise ExecuteException('', 'ftp port, username, password must be set.')
-        target_dir = '/%s/clouddiskbackup/%s' % (params.domain, params.vol)
-        ftp = FtpHelper(params.remote, params.port, params.username, params.password)
-        if ftp.is_exist_dir(target_dir) and ftp.is_exist_file('%s/history.json' % target_dir):
-            remote_history = ftp.get_json_file_data('%s/history.json' % target_dir)
-            if params.version in remote_history.keys():
-                raise ExecuteException('', 'ftp server has exist vm %s backup record version %s. ' % (
-                    params.domain, params.version))
-        if not ftp.is_exist_dir('/image'):
-            ftp.mkdir('/image')
+        upload_disk_backup(params.domain, params.pool, params.vol, params.version, params.remote, params.port, params.username, params.password)
+    success_print("success backupDisk.", {})
+
+
+def upload_disk_backup(domain, pool, disk, version, remote, port, username, password):
+    if not port or not username or not password:
+        raise ExecuteException('', 'ftp port, username, password must be set.')
+    ftp = FtpHelper(remote, port, username, password)
+    if is_remote_disk_backup_exist(domain, pool, disk, version, remote, port, username, password):
+        raise ExecuteException('', 'ftp server has exist vm %s backup record version %s. ' % (
+            domain, version))
+
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    if not os.path.exists(disk_backup_dir):
+        os.makedirs(disk_backup_dir)
+    history_file_path = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file_path) or not is_disk_backup_exist(domain, pool, disk, version):
+        raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
+            domain, version, history_file_path))
+    full_version = None
+    record = None
+    with open(history_file_path, 'r') as f:
+        history = load(f)
+        for fv in history[disk].keys():
+            for v in history[disk][fv].keys():
+                if v == version:
+                    full_version = fv
+                    record = history[disk][fv][version]
+    if full_version is None or record is None:
+        raise ExecuteException('', 'can not get domain %s right backup record version %s in %s. ' % (
+            domain, version, history_file_path))
+
+    # history file
+    disk_dir = '/%s/diskbackup/%s' % (domain, disk)
+    ftp_history_file = '%s/history.json' % disk_dir
+    ftp_history = {}
+    if ftp.is_exist_file(ftp_history_file):
+        ftp.download_file(ftp_history_file, '/tmp/history.json')
+        with open('/tmp/history.json', 'r') as f:
+            ftp_history = load(f)
+            if disk not in ftp_history.keys():
+                ftp_history[disk] = {}
+            if full_version not in ftp_history[disk].keys():
+                ftp_history[disk][full_version] = {}
+            ftp_history[disk][full_version][version] = record
+    else:
+        ftp_history[disk] = {}
+        ftp_history[disk][full_version] = {}
+        ftp_history[disk][full_version][version] = record
+    with open('/tmp/history.json', 'w') as f:
+        dump(ftp_history, f)
+    ftp.upload_file('/tmp/history.json', disk_dir)
+
+    # modify checksum file
+    ftp_checksum_file = '%s/%s/diskbackup/checksum.json' % (disk_dir, full_version)
+    local_checksum_file = '%s/%s/diskbackup/checksum.json' % (disk_backup_dir, full_version)
+    if ftp.is_exist_file(ftp_checksum_file):
+        ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
+
+        with open(local_checksum_file, 'r') as f1:
+            checksum1 = load(f1)
+            with open('/tmp/checksum.json', 'r') as f:
+                checksum2 = load(f)
+            for record in record['chains']:
+                if record['checksum'] not in checksum2.keys():
+                    checksum2[record['checksum']] = checksum1[record['checksum']]
+                    # upload disk file
+                    backup_file = '%s/%s/diskbackup/%s' % (disk_backup_dir, full_version, checksum1[record['checksum']])
+                    ftp.upload_file(backup_file, '%s/%s/diskbackup' % (disk_dir, full_version))
+        with open('/tmp/checksum.json', 'w') as f:
+            dump(checksum2, f)
+        ftp.upload_file('/tmp/checksum.json', '%s/%s/diskbackup' % (disk_dir, full_version))
+    else:
+        with open(local_checksum_file, 'r') as f1:
+            checksum1 = load(f1)
+            checksum2 = {}
+            for record in record['chains']:
+                if record['checksum'] not in checksum2.keys():
+                    checksum2[record['checksum']] = checksum1[record['checksum']]
+                    # upload disk file
+                    backup_file = '%s/%s/diskbackup/%s' % (disk_backup_dir, full_version, checksum1[record['checksum']])
+                    ftp.upload_file(backup_file, '%s/%s/diskbackup' % (disk_dir, full_version))
+        with open('/tmp/checksum.json', 'w') as f:
+            dump(checksum2, f)
+        ftp.upload_file('/tmp/checksum.json', '%s/%s/diskbackup' % (disk_dir, full_version))
+
+
+def backup_vm_disk(domain, pool, disk, version, is_full):
+    disk_heler = K8sHelper('VirtualMachineDisk')
+    disk_heler.delete_lifecycle(disk)
 
     # check vm exist or not
-    if not is_vm_exist(params.domain):
-        raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
+    if not is_vm_exist(domain):
+        raise ExecuteException('', 'domain %s is not exist. plz check it.' % domain)
 
-    disk_info = get_vol_info_from_k8s(params.vol)
+    disk_info = get_vol_info_from_k8s(disk)
     disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
     check_pool_active(disk_pool_info)
 
     if disk_pool_info['pooltype'] == 'uus':
-        raise ExecuteException('', 'disk %s is uus type, not support backup.' % params.vol)
+        raise ExecuteException('', 'disk %s is uus type, not support backup.' % disk)
 
     # check backup pool path exist or not
-    pool_info = get_pool_info_from_k8s(params.pool)
+    pool_info = get_pool_info_from_k8s(pool)
     check_pool_active(pool_info)
 
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'disk backup pool can not be uus.')
     if not os.path.exists(pool_info['path']):
-        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (pool, pool_info['path']))
 
-    disk_specs = get_disks_spec(params.domain)
+    disk_specs = get_disks_spec(domain)
     vm_disks = {}
+    disk_tag = {}
     for disk_path in disk_specs.keys():
         if disk_path.find('snapshots') < 0:
             disk_mn = os.path.basename(os.path.dirname(disk_path))
         else:
             disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
         vm_disks[disk_mn] = disk_path
-    if params.vol not in vm_disks.keys():
+        disk_tag[disk_mn] = disk_specs[disk_path]
+    if disk not in vm_disks.keys():
         raise ExecuteException('', 'domain not attach diak %s, can find disk %s used by domain %s xml.' % (
-        params.vol, params.vol, params.domain))
-
-    back_path = '%s/vmbackup' % pool_info['path']
-    vm_backup_path = '%s/%s' % (back_path, params.domain)
-    if not os.path.exists(vm_backup_path):
-        os.makedirs(vm_backup_path)
+            disk, disk, domain))
 
     # check backup version exist or not
-    disk_backup_dir = '%s/clouddiskbackup/%s' % (vm_backup_path, params.vol)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    if not os.path.exists(disk_backup_dir):
+        os.makedirs(disk_backup_dir)
     history_file_path = '%s/history.json' % disk_backup_dir
-    if os.path.exists(history_file_path):
-        with open(history_file_path, 'r') as f:
-            history = load(f)
-            if params.version in history.keys():
-                raise ExecuteException('', 'disk %s backup version %s has exist, plz use another version.' % (
-                    params.vol, params.version))
+    if is_disk_backup_exist(domain, pool, disk, version):
+        raise ExecuteException('', 'disk %s backup version %s has exist, plz use another version.' % (
+            disk, version))
 
     # do vm snapshots
     uuid = randomUUID().replace('-', '')
-    cmd = 'virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata ' % (params.domain, uuid)
+    cmd = 'virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata ' % (domain, uuid)
 
     cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
 
     disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
     ss_path = '%s/%s' % (disk_dir, uuid)
-    cmd = '%s --diskspec %s,snapshot=external,file=%s,driver=qcow2' % (cmd, disk_specs[vm_disks[params.vol]], ss_path)
+    cmd = '%s --diskspec %s,snapshot=external,file=%s,driver=qcow2' % (cmd, disk_specs[vm_disks[disk]], ss_path)
     for disk_path in disk_specs.keys():
-        if disk_path != vm_disks[params.vol]:
+        if disk_path != vm_disks[disk]:
             cmd = '%s --diskspec %s,snapshot=no' % (cmd, disk_specs[disk_path])
     if not os.path.exists(disk_dir):
-        raise ExecuteException('', 'vm disk %s dir %s not exist, plz check it.' % (params.vol, disk_dir))
+        raise ExecuteException('', 'vm disk %s dir %s not exist, plz check it.' % (disk, disk_dir))
 
     op = Operation(cmd, {})
     op.execute()
 
     # backup disk dir
-    chain = backup_snapshots_chain(params.domain, disk_dir, ss_path, back_path)
+    if is_full:
+        current_full_version = version
+    else:
+        current_full_version = get_disk_backup_current(domain, pool, disk)
+    backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
+    chain = backup_snapshots_chain(ss_path, backup_dir)
 
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
@@ -1781,66 +1864,31 @@ def backupDisk(params):
     else:
         with open(history_file_path, 'r') as f:
             history = load(f)
-    history[params.version] = chain
+    if disk not in history.keys():
+        history[disk] = {}
+    if current_full_version not in history[disk].keys():
+        history[disk][current_full_version] = {}
+
+    count = len(history[disk][current_full_version].keys())
+
+    history[disk][current_full_version][version] = {
+        'index': count + 1,
+        'chains': chain
+    }
+    if 'current' not in history.keys():
+        history['current'] = {}
+    history['current'][disk] = current_full_version
+
     with open(history_file_path, 'w') as f:
         dump(history, f)
 
     # change disk current
-    change_vol_current(params.vol, ss_path)
-    if params.remote:
-        # history file
-        ftp = FtpHelper(params.remote, params.port, params.username, params.password)
-        ftp_history_dir = '/%s/clouddiskbackup/%s' % (params.domain, params.vol)
-        ftp_history_file = '%s/history.json' % ftp_history_dir
-        if ftp.is_exist_file(ftp_history_file):
-            ftp.download_file(ftp_history_file, '/tmp/history.json')
-            with open('/tmp/history.json', 'r') as f2:
-                ftp_history = load(f2)
-                if params.version not in ftp_history.keys():
-                    ftp_history[params.version] = chain
-            with open('/tmp/history.json', 'w') as f2:
-                dump(ftp_history, f2)
-            ftp.upload_file('/tmp/history.json', ftp_history_dir)
-        else:
-            ftp.upload_file(history_file_path, ftp_history_dir)
-
-        # modify checksum file
-        ftp_checksum_file = '/%s/diskbackup/checksum.json' % params.domain
-        if ftp.is_exist_file(ftp_checksum_file):
-            ftp.download_file(ftp_checksum_file, '/tmp/checksum.json')
-
-            with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
-                checksum1 = load(f1)
-                with open('/tmp/checksum.json', 'r') as f2:
-                    checksum2 = load(f2)
-                for record in chain['chains']:
-                    if record['checksum'] not in checksum2.keys():
-                        checksum2[record['checksum']] = checksum1[record['checksum']]
-                        # upload disk file
-                        backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
-                        ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
-            with open('/tmp/checksum.json', 'w') as f2:
-                dump(checksum2, f2)
-            ftp.upload_file('/tmp/checksum.json', '/%s/diskbackup' % params.domain)
-        else:
-            with open('%s/diskbackup/checksum.json' % vm_backup_path, 'r') as f1:
-                checksum1 = load(f1)
-                checksum2 = {}
-                for record in chain['chains']:
-                    if record['checksum'] not in checksum2.keys():
-                        checksum2[record['checksum']] = checksum1[record['checksum']]
-                        # upload disk file
-                        backup_file = '%s/diskbackup/%s' % (vm_backup_path, checksum1[record['checksum']])
-                        ftp.upload_file(backup_file, '/%s/diskbackup' % params.domain)
-            with open('/tmp/checksum.json', 'w') as f2:
-                dump(checksum2, f2)
-            ftp.upload_file('%s/diskbackup/checksum.json' % vm_backup_path, '/%s/diskbackup' % params.domain)
-        # image file
-        if chain['image_path']:
-            image_files = ftp.listdir('/image')
-            if not os.path.basename(chain['image_path']) in image_files:
-                ftp.upload_file(chain['image_path'], '/image')
-    success_print("success backupDisk.", {})
+    # change_vol_current(disk, ss_path)
+    base = DiskImageHelper.get_backing_file(ss_path)
+    op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base), {})
+    op.execute()
+    op = Operation('rm -f %s' % ss_path, {})
+    op.execute()
 
 
 def restoreDisk(params):
@@ -1971,7 +2019,7 @@ def backupVM(params):
         os.mkdir(vm_backup_record_dir)
     else:
         raise ExecuteException('', 'vm %s backup version %s has exist, plz use another version.' % (
-        params.domain, params.version))
+            params.domain, params.version))
 
     # save vm xml file
     xml_file_backup = '%s/%s.xml' % (vm_backup_record_dir, params.domain)
@@ -2002,7 +2050,7 @@ def backupVM(params):
         if pool_info['pooltype'] == 'uus':
             if disk_specs[disk_path] == 'vda':
                 raise ExecuteException('', 'uus disk %s is vm os disk, not support backup vm %s' % (
-                disk_path, params.domain))
+                    disk_path, params.domain))
             else:
                 continue
         cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
@@ -2050,7 +2098,9 @@ def backupVM(params):
     # modify disk current
     for disk_dir in disk_current.keys():
         base = DiskImageHelper.get_backing_file(disk_current[disk_dir])
-        op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (params.domain, disk_tags[disk_dir], base), {})
+        op = Operation(
+            'virsh blockcommit --domain %s %s --base %s --pivot --active' % (params.domain, disk_tags[disk_dir], base),
+            {})
         op.execute()
         op = Operation('rm -f %s' % disk_current[disk_dir], {})
         op.execute()
@@ -2127,7 +2177,7 @@ def restoreVM(params):
     vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_id)
     if not os.path.exists(vm_backup_record_dir):
         raise ExecuteException('', 'domain %s not has backup %s, location: %s.' % (
-        params.domain, params.version, vm_backup_record_dir))
+            params.domain, params.version, vm_backup_record_dir))
 
     disks = None
     history_file = '%s/history.json' % vm_backup_record_dir
@@ -2316,7 +2366,7 @@ def deleteVMBackup(params):
     vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_id)
     if not os.path.exists(vm_backup_record_dir):
         raise ExecuteException('', 'domain %s not has backup %s, location: %s.' % (
-        params.domain, params.version, vm_backup_record_dir))
+            params.domain, params.version, vm_backup_record_dir))
 
     disks = None
     history_file = '%s/history.json' % vm_backup_record_dir
@@ -2382,7 +2432,7 @@ def deleteVMDiskBackup(params):
 
     if not os.path.exists(clouddisk_backup_dir):
         raise ExecuteException('', 'disk %s not has backup %s, location: %s.' % (
-        params.vol, params.version, clouddisk_backup_dir))
+            params.vol, params.version, clouddisk_backup_dir))
 
     history_file = '%s/%s/history.json' % (clouddisk_backup_dir, params.vol)
     if not os.path.exists(history_file):
@@ -2542,6 +2592,7 @@ def deleteRemoteBackup(params):
         ftp.delete_dir(vm_backup_record_dir)
 
     success_print("success deleteRemoteBackup.", {})
+
 
 def pushVMBackup(params):
     # vm_heler = K8sHelper('VirtualMachine')
@@ -2774,7 +2825,8 @@ def pullRemoteBackup(params):
         remote_history = ftp.get_json_file_data(remote_history_file)
         if not remote_history:
             raise ExecuteException('',
-                                   'can not find disk %s backup history file %s in ftp server' % (params.vol, remote_history))
+                                   'can not find disk %s backup history file %s in ftp server' % (
+                                   params.vol, remote_history))
         for disk in remote_history['disks'].keys():
             for chain in remote_history['disks'][disk]['chains']:
                 checksum_to_pull.append(chain['checksum'])
