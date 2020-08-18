@@ -1823,6 +1823,21 @@ def is_disk_backup_exist(domain, pool, disk, version):
                 return True
     return False
 
+def get_full_version(domain, pool, disk, version):
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    history_file_path = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file_path):
+        raise ExecuteException('', 'not exist history file %s' % history_file_path)
+    with open(history_file_path, 'r') as f:
+        history = load(f)
+        if version in history[disk].keys():
+            return version
+        for full_version in history[disk].keys():
+            if version in history[disk][full_version].keys():
+                return full_version
+    raise ExecuteException('', 'not exist disk %s backup version %s in history file %s.' % (disk, version, history_file_path))
+
 def is_remote_disk_backup_exist(domain, pool, disk, version, remote, port, username, password):
     target_dir = '/%s/diskbackup/%s' % (domain, disk)
     ftp = FtpHelper(remote, port, username, password)
@@ -1914,43 +1929,9 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     with open(checksum_file, 'r') as f:
         checksums = load(f)
 
-    disk_dir = target_dir
-
     old_to_new = {}
 
     # cp all file and make a chain
-    if backup_disk['image']:
-        image_backup_path = '%s/image/%s' % (backup_path, backup_disk['image'])
-        if not os.path.exists(image_backup_path):
-            raise ExecuteException('', 'can not find image backup file.')
-
-        # check image source can use or not
-        image_info = None
-        try:
-            image_info = get_image_info_from_k8s(backup_disk['image'])
-        except:
-            pass
-
-        backup_checksum = checksum(image_backup_path)
-        if image_info and os.path.exists(image_info['filename']) and checksum(
-                image_info['filename']) == backup_checksum:  # image still can be used
-            old_to_new[backup_disk['image_path']] = backup_disk['image_path']
-        else:
-            if os.path.exists('%s/%s' % (disk_dir, backup_disk['image'])):
-                disk_dir_image_file = '%s/%s' % (disk_dir, backup_disk['image'])
-                disk_dir_image_checksum = checksum(disk_dir_image_file)
-                if disk_dir_image_checksum != backup_checksum:
-                    uuid = randomUUID().replace('-', '')
-                    new_image_path = '%s/%s' % (disk_dir, uuid)
-                    runCmd('cp  %s %s' % (image_backup_path, new_image_path))
-                    old_to_new[backup_disk['image_path']] = disk_dir_image_file
-                else:
-                    old_to_new[backup_disk['image_path']] = image_backup_path
-            else:
-                new_image_path = '%s/%s' % (disk_dir, backup_disk['image'])
-                runCmd('cp  %s %s' % (image_backup_path, new_image_path))
-                old_to_new[backup_disk['image_path']] = new_image_path
-
     for chain in backup_disk['chains']:
         # print chain['path']
         if chain['checksum'] not in checksums.keys():
@@ -1959,26 +1940,36 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
         if not os.path.exists(backup_file):
             raise ExecuteException('', 'can not find disk backup file %s.' % backup_file)
         if chain['parent']:
-            new_disk_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
-            if os.path.exists('%s/%s' % (disk_dir, os.path.basename(chain['path']))):
+            new_disk_file = '%s/%s' % (target_dir, os.path.basename(chain['path']))
+            if os.path.exists('%s/%s' % (target_dir, os.path.basename(chain['path']))):
                 uuid = randomUUID().replace('-', '')
-                new_disk_file = '%s/%s' % (disk_dir, uuid)
+                new_disk_file = '%s/%s' % (target_dir, uuid)
             runCmd('cp -f %s %s' % (backup_file, new_disk_file))
             old_to_new[chain['path']] = new_disk_file
         else:
             # base image
+
+            # if image exist, not cp
+            di_helper = K8sHelper('VirtualMachineDiskImage')
+            image = os.path.basename(chain['path'])
+            if di_helper.exist(image):
+                volume = di_helper.get_data(image, 'volume')
+                if os.path.exists(volume['current']) and checksums(volume['current']) == chain['checksum']:
+                    old_to_new[chain['path']] = volume['current']
+                    continue
+
+            # cp base image
             if chain['path'].find('snapshots') >= 0:
-                base_file = '%s/snapshots/%s' % (disk_dir, os.path.basename(chain['path']))
+                base_file = '%s/snapshots/%s' % (target_dir, os.path.basename(chain['path']))
             else:
-                base_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
-            new_disk_file = '%s/%s' % (disk_dir, os.path.basename(chain['path']))
+                base_file = '%s/%s' % (target_dir, os.path.basename(chain['path']))
+            new_disk_file = '%s/%s' % (target_dir, os.path.basename(chain['path']))
             if not os.path.exists(base_file):
                 runCmd('cp -f %s %s' % (backup_file, new_disk_file))
                 old_to_new[chain['path']] = new_disk_file
             else:
                 old_to_new[chain['path']] = base_file
-    # print dumps(old_to_new)
-    # print dumps(backup_disk['chains'])
+
     # reconnect snapshot chain
     for chain in backup_disk['chains']:
         # print dumps(chain)
@@ -1988,7 +1979,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
             runCmd('qemu-img rebase -f qcow2 -u -b %s %s' % (old_to_new[chain['parent']], old_to_new[chain['path']]))
 
     # if this disk has no snapshots, try to delete other file
-    ss_dir = '%s/snapshots' % disk_dir
+    ss_dir = '%s/snapshots' % target_dir
     exist_ss = False
     if os.path.exists(ss_dir):
         for ss in os.listdir(ss_dir):
@@ -2004,11 +1995,11 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
                 ss_file = '%s/%s' % (ss_dir, ss)
                 if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
                     file_to_delete.append(ss_file)
-        if os.path.exists(disk_dir):
-            for ss in os.listdir(disk_dir):
+        if os.path.exists(target_dir):
+            for ss in os.listdir(target_dir):
                 if ss == 'config.json':
                     continue
-                ss_file = '%s/%s' % (disk_dir, ss)
+                ss_file = '%s/%s' % (target_dir, ss)
                 if os.path.isfile(ss_file) and ss_file not in old_to_new.values():
                     file_to_delete.append(ss_file)
 

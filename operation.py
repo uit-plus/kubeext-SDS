@@ -1855,48 +1855,141 @@ def backup_vm_disk(domain, pool, disk, version, is_full):
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
     backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
-    chain = backup_snapshots_chain(ss_path, backup_dir)
+    try:
+        chain = backup_snapshots_chain(ss_path, backup_dir)
 
+        # write backup record
+        if not os.path.exists(history_file_path):
+            history = {}
+        else:
+            with open(history_file_path, 'r') as f:
+                history = load(f)
+        if disk not in history.keys():
+            history[disk] = {}
+        if current_full_version not in history[disk].keys():
+            history[disk][current_full_version] = {}
 
+        count = len(history[disk][current_full_version].keys())
 
-    # write backup record
-    if not os.path.exists(history_file_path):
-        history = {}
-    else:
-        with open(history_file_path, 'r') as f:
-            history = load(f)
-    if disk not in history.keys():
-        history[disk] = {}
-    if current_full_version not in history[disk].keys():
-        history[disk][current_full_version] = {}
+        history[disk][current_full_version][version] = {
+            'index': count + 1,
+            'chains': chain
+        }
+        if 'current' not in history.keys():
+            history['current'] = {}
+        history['current'][disk] = current_full_version
 
-    count = len(history[disk][current_full_version].keys())
+        with open(history_file_path, 'w') as f:
+            dump(history, f)
+    finally:
+        # change disk current
+        # change_vol_current(disk, ss_path)
+        base = DiskImageHelper.get_backing_file(ss_path)
+        if is_vm_active(domain):
+            op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
+                           {})
+            op.execute()
+        else:
+            op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
+            op.execute()
+            change_vm_os_disk_file(domain, ss_path, base)
+        op = Operation('rm -f %s' % ss_path, {})
+        op.execute()
 
-    history[disk][current_full_version][version] = {
-        'index': count + 1,
-        'chains': chain
-    }
-    if 'current' not in history.keys():
-        history['current'] = {}
-    history['current'][disk] = current_full_version
+def restore_vm_disk(domain, pool, disk, version, newname, target, targetDomain):
+    # check vm exist or not
+    if not is_vm_exist(domain):
+        raise ExecuteException('', 'domain %s is not exist. plz check it.' % domain)
 
-    with open(history_file_path, 'w') as f:
-        dump(history, f)
-
-    # change disk current
-    # change_vol_current(disk, ss_path)
-    base = DiskImageHelper.get_backing_file(ss_path)
     if is_vm_active(domain):
-        op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
-                       {})
-        op.execute()
-    else:
-        op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
-        op.execute()
-        change_vm_os_disk_file(domain, ss_path, base)
-    op = Operation('rm -f %s' % ss_path, {})
-    op.execute()
+        raise ExecuteException('', 'domain %s is still running. plz stop it first.' % domain)
 
+    # check backup pool path exist or not
+    pool_info = get_pool_info_from_k8s(pool)
+    check_pool_active(pool_info)
+
+    if pool_info['pooltype'] == 'uus':
+        raise ExecuteException('', 'disk backup pool can not be uus.')
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (pool, pool_info['path']))
+
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    if not os.path.exists(disk_backup_dir):
+        raise ExecuteException('', 'not exist disk %s backup dir %s' % (disk, disk_backup_dir))
+
+    # check backup version exist or not
+    history_file_path = '%s/history.json' % disk_backup_dir
+    if not is_disk_backup_exist(domain, pool, disk, version):
+        raise ExecuteException('', 'not exist disk %s backup version in history file %s' % (disk, history_file_path))
+
+    with open(history_file_path, 'r') as f:
+        history = load(f)
+
+    full_version = get_full_version(domain, pool, disk, version)
+    if newname:
+        if newname is None or target is None:
+            raise ExecuteException('', 'new disk name or target pool must be set.')
+        if targetDomain:
+            if not is_vm_exist(targetDomain):
+                raise ExecuteException('', 'target domain %s will be attached new disk not set.')
+        else:
+            raise ExecuteException('', 'target domain %s will be attached new disk not set.')
+        disk_heler = K8sHelper('VirtualMachineDisk')
+        if disk_heler.exist(newname):
+            raise ExecuteException('', 'new disk %s has exist' % newname)
+
+        disk_pool_info = get_pool_info_from_k8s(target)
+        check_pool_active(disk_pool_info)
+
+        new_disk_dir = '%s/%s' % (disk_pool_info['path'], newname)
+        if not os.path.exists(new_disk_dir):
+            os.mkdir(new_disk_dir)
+
+        disk_back_dir = '%s/%s/diskbackup' % (disk_backup_dir, full_version)
+        backupRecord = history[disk][full_version][version]
+        current, file_to_delete = restore_snapshots_chain(disk_back_dir, backupRecord, new_disk_dir)
+
+        # attach vm disk
+        attach_vm_disk(targetDomain, current)
+        write_config(newname, os.path.dirname(current), current, target, disk_pool_info['poolname'])
+        disk_heler.create(newname, "volume", get_disk_info(current))
+    else:
+        disk_info = get_vol_info_from_k8s(disk)
+        disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        check_pool_active(disk_pool_info)
+
+        cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
+
+        disk_specs = get_disks_spec(domain)
+        vm_disks = {}
+        for disk_path in disk_specs.keys():
+            if disk_path.find('snapshots') < 0:
+                disk_mn = os.path.basename(os.path.dirname(disk_path))
+            else:
+                disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
+            vm_disks[disk_mn] = disk_path
+        if disk not in vm_disks.keys():
+            raise ExecuteException('', 'domain not attach diak %s, can find disk %s used by domain %s xml.' % (
+                disk, disk, domain))
+
+        # do vm snapshots
+
+        disk_back_dir = '%s/%s/diskbackup' % (disk_backup_dir, full_version)
+
+        disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
+        # restore disk dir
+        backupRecord = history[disk][full_version][version]
+        current, file_to_delete = restore_snapshots_chain(disk_back_dir, backupRecord, disk_dir)
+        # change vm disk
+        modofy_vm_disks(domain, {vm_disks[disk]: current})
+
+        # change disk current
+        change_vol_current(disk, current)
+
+    for file in file_to_delete:
+        runCmd('rm -f %s' % file)
+
+    success_print("success restoreDisk.", {})
 
 def restoreDisk(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
