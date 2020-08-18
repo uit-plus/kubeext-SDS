@@ -1920,7 +1920,7 @@ def backup_file(file, target_dir):
     return file_checksum
 
 
-def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
+def restore_snapshots_chain(disk_back_dir, record, target_dir):
     vm_backup_path = os.path.dirname(disk_back_dir)
     backup_path = os.path.dirname(vm_backup_path)
     # disk_back_dir = '%s/diskbackup' % vm_backup_path
@@ -1932,7 +1932,8 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     old_to_new = {}
 
     # cp all file and make a chain
-    for chain in backup_disk['chains']:
+    logger.debug(dumps(record))
+    for chain in record['chains']:
         # print chain['path']
         if chain['checksum'] not in checksums.keys():
             raise ExecuteException('', 'can not find disk file backup checksum.')
@@ -1971,7 +1972,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
                 old_to_new[chain['path']] = base_file
 
     # reconnect snapshot chain
-    for chain in backup_disk['chains']:
+    for chain in record['chains']:
         # print dumps(chain)
         if chain['parent']:
             # parent = '%s/%s' % (disk_dir, os.path.basename(chain['parent']))
@@ -2007,7 +2008,7 @@ def restore_snapshots_chain(disk_back_dir, backup_disk, target_dir):
     #     disk_current = '%s/snapshots/%s' % (disk_dir, os.path.basename(backup_disk['current']))
     # else:
     #     disk_current = '%s/%s' % (disk_dir, os.path.basename(backup_disk['current']))
-    disk_current = backup_disk['current']
+    disk_current = record['current']
     return old_to_new[disk_current], file_to_delete
 
 
