@@ -1956,7 +1956,7 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                 raise ExecuteException('', 'can not find disk backup file %s.' % backup_file)
             if chain['parent']:
                 new_disk_file = '%s/%s' % (target_dir, os.path.basename(chain['path']))
-                if os.path.exists('%s/%s' % (target_dir, os.path.basename(chain['path']))):
+                if chain['path'].find(target_dir) < 0 or os.path.exists('%s/%s' % (target_dir, os.path.basename(chain['path']))):
                     uuid = randomUUID().replace('-', '')
                     new_disk_file = '%s/%s' % (target_dir, uuid)
                 old_to_new[chain['path']] = new_disk_file
