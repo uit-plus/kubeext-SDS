@@ -1782,7 +1782,7 @@ def upload_disk_backup(domain, pool, disk, version, remote, port, username, pass
         ftp.upload_file('/tmp/checksum.json', '%s/%s/diskbackup' % (disk_dir, full_version))
 
 
-def backup_vm_disk(domain, pool, disk, version, is_full):
+def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(disk)
 
@@ -1848,10 +1848,13 @@ def backup_vm_disk(domain, pool, disk, version, is_full):
     op.execute()
 
     # backup disk dir
-    if is_full:
+    if full_version:    # vm backup, use vm full version
         current_full_version = version
     else:
-        current_full_version = get_disk_backup_current(domain, pool, disk)
+        if is_full:
+            current_full_version = version
+        else:
+            current_full_version = get_disk_backup_current(domain, pool, disk)
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
     backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
@@ -2017,6 +2020,7 @@ def backupVM(params):
     if os.path.exists(history_file_path):
         with open(history_file_path, 'r') as f:
             history = load(f)
+    disk_full_version = None
     if not params.full:
         if 'current' not in history.keys():
             raise ExecuteException('', 'domain %s not exist full version in %s. plz check it.' % (params.domain, history_file_path))
@@ -2024,14 +2028,13 @@ def backupVM(params):
             raise ExecuteException('', 'domain %s not exist full version in %s. plz check it.' % (
             params.domain, history_file_path))
         full_version = history['current'][params.domain]
+        disk_full_version = {}
+        for disk in history[params.domain][full_version].keys():
+            if disk in ['full', 'time']:
+                continue
+            disk_full_version[disk] = history[params.domain][full_version][disk]['version']
     else:
         full_version = params.version
-
-    # save vm xml file
-    xml_file = '%s/%s.xml' % (backup_dir, params.version)
-    op = Operation('virsh dumpxml %s > %s' % (params.domain, xml_file), {})
-    op.execute()
-    delete_vm_cdrom_file_in_xml(xml_file)
 
     disk_tags = {}
     disk_specs = get_disks_spec(params.domain)
@@ -2060,11 +2063,27 @@ def backupVM(params):
             raise ExecuteException('', 'vm disk dir %s not exist, plz check it.' % disk_dir)
         disk_tags[disk_mn] = disk_specs[disk_path]
 
+    # check domain all disk has full backup
+    if not params.full:
+        for disk in disk_full_version.keys():
+            if disk not in disk_tags.keys():
+                raise ExecuteException('', 'vm %s disk %s may be first attach, plz make full backup firstly.' % (params.domain, disk))
+
+    # save vm xml file
+    xml_file = '%s/%s.xml' % (backup_dir, params.version)
+    op = Operation('virsh dumpxml %s > %s' % (params.domain, xml_file), {})
+    op.execute()
+    delete_vm_cdrom_file_in_xml(xml_file)
+
+    # backup disk
     disk_version = {}
     for disk in disk_tags.keys():
         uuid = randomUUID().replace('-', '')
         disk_version[disk] = uuid
-        backup_vm_disk(params.domain, params.pool, disk, uuid, params.full)
+        if disk_full_version:
+            backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, disk_full_version[disk])
+        else:
+            backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, None)
 
     if 'current' not in history.keys():
         history['current'] = {}

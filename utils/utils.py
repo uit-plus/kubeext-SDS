@@ -1846,8 +1846,6 @@ def get_full_version(domain, pool, disk, version):
         raise ExecuteException('', 'not exist history file %s' % history_file_path)
     with open(history_file_path, 'r') as f:
         history = load(f)
-        if version in history[disk].keys():
-            return version
         for full_version in history[disk].keys():
             if version in history[disk][full_version].keys():
                 return full_version
