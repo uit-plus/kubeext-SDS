@@ -2325,6 +2325,9 @@ def deleteVMBackup(params):
     op = Operation('rm -f %s.xml' % params.version, {})
     op.execute()
     del history[params.version]
+
+    with open(history_file_path, 'w') as f:
+        dump(history, f)
     success_print("success deleteVMBackup.", {})
 
 
