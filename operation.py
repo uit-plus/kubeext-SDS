@@ -1898,7 +1898,8 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
         op = Operation('rm -f %s' % ss_path, {})
         op.execute()
 
-def restore_vm_disk(domain, pool, disk, version, newname, target, targetDomain):
+
+def restore_vm_disk(domain, pool, disk, version, newname, target):
     # check vm exist or not
     if not is_vm_exist(domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % domain)
@@ -1931,17 +1932,19 @@ def restore_vm_disk(domain, pool, disk, version, newname, target, targetDomain):
     if newname:
         if newname is None or target is None:
             raise ExecuteException('', 'new disk name or target pool must be set.')
-        if targetDomain:
-            if not is_vm_exist(targetDomain):
-                raise ExecuteException('', 'target domain %s will be attached new disk not set.')
-        else:
-            raise ExecuteException('', 'target domain %s will be attached new disk not set.')
+
         disk_heler = K8sHelper('VirtualMachineDisk')
         if disk_heler.exist(newname):
             raise ExecuteException('', 'new disk %s has exist' % newname)
 
         disk_pool_info = get_pool_info_from_k8s(target)
         check_pool_active(disk_pool_info)
+
+        if disk_pool_info['pooltype'] == 'uus':
+            raise ExecuteException('', 'target pooltype must be localfs, nfs, glusterfs or vdiskfs.')
+
+        if not os.path.exists(disk_pool_info['path']):
+            raise ExecuteException('', 'not exist pool %s mount path %s.' % (target, disk_pool_info['path']))
 
         new_disk_dir = '%s/%s' % (disk_pool_info['path'], newname)
         if not os.path.exists(new_disk_dir):
@@ -1951,8 +1954,6 @@ def restore_vm_disk(domain, pool, disk, version, newname, target, targetDomain):
         backupRecord = history[disk][full_version][version]
         current, file_to_delete = restore_snapshots_chain(disk_back_dir, backupRecord, new_disk_dir)
 
-        # attach vm disk
-        attach_vm_disk(targetDomain, current)
         write_config(newname, os.path.dirname(current), current, target, disk_pool_info['poolname'])
         disk_heler.create(newname, "volume", get_disk_info_to_k8s(target, newname))
     else:
@@ -1991,13 +1992,22 @@ def restore_vm_disk(domain, pool, disk, version, newname, target, targetDomain):
     for file in file_to_delete:
         runCmd('rm -f %s' % file)
 
-    success_print("success restoreDisk.", {})
+    return current
 
 def restoreDisk(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
-    restore_vm_disk(params.domain, params.pool, params.vol, params.version, params.newname, params.target, params.targetDomain)
 
+    if params.targetDomain:
+        if not is_vm_exist(params.targetDomain):
+            raise ExecuteException('', 'target domain %s will be attached new disk not set.')
+    else:
+        raise ExecuteException('', 'target domain %s will be attached new disk not set.')
+
+    current = restore_vm_disk(params.domain, params.pool, params.vol, params.version, params.newname, params.target)
+
+    # attach vm disk
+    attach_vm_disk(params.targetDomain, current)
     success_print("success restoreDisk.", {})
 
 
@@ -2169,183 +2179,65 @@ def restoreVM(params):
     if not os.path.exists(pool_info['path']):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
-    backup_path = '%s/vmbackup' % pool_info['path']
-    vm_backup_path = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
-    vm_backup_record_id = params.version
-    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_id)
-    if not os.path.exists(vm_backup_record_dir):
+    backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
+    history_file = '%s/history.json' % backup_dir
+    if not is_vm_backup_exist(params.domain, params.pool, params.version):
         raise ExecuteException('', 'domain %s not has backup %s, location: %s.' % (
-            params.domain, params.version, vm_backup_record_dir))
+            params.domain, params.version, history_file))
 
-    disks = None
-    history_file = '%s/history.json' % vm_backup_record_dir
+    disk_version = {}
     with open(history_file, 'r') as f:
         history = load(f)
-        disks = history['disks']
-
-    file_to_deletes = []
-    if not params.newname:
-        # be sure vm still use the disks in the backup record.
-        disk_specs = get_disks_spec(params.domain)
-        vm_disks = {}
-        for disk_path in disk_specs.keys():
-            if disk_path.find('snapshots') >= 0:
-                vm_disk = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
-            else:
-                vm_disk = os.path.basename(os.path.dirname(disk_path))
-            if vm_disk in disks.keys():
-                vm_disks[vm_disk] = disk_path
-
-        if params.all and len(disks.keys()) != len(vm_disks.keys()):
-            raise ExecuteException('', 'some disk in backup %s has not been attached in domain %s.' % (
-                dumps(disks), params.domain))
-
-        # restore vm disk snapshot chain
-        for name in disks.keys():
-            disk = disks[name]
-            if not params.all and disk['tag'] != 'vda':
+        record = history[params.domain][params.version]
+        for disk in record.keys():
+            if disk in ['full', 'time']:
                 continue
-            disk_info = get_vol_info_from_k8s(name)
-            cstor_disk_prepare(disk_info['poolname'], name, disk_info['uni'])
+            disk_version[disk] = record[disk]['version']
 
-        # restore vm disk snapshot chain
-        restore_disk_current = {}
-        for name in disks.keys():
-            disk = disks[name]
-            if not params.all and disk['tag'] != 'vda':
-                continue
-            disk_back_dir = '%s/diskbackup' % vm_backup_path
-            target_pool_info = get_pool_info_from_k8s(get_vol_info_from_k8s(name)['pool'])
-            target_path = '%s/%s' % (target_pool_info['path'], name)
-            new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
-            file_to_deletes.extend(file_to_delete)
-            restore_disk_current[name] = new_current
-        # restore vm disk
-        # xml_file = '%s/%s.xml' % (vm_backup_record_dir, params.domain)
-        source_to_target = {}
-        for vm_disk in vm_disks:
-            source_to_target[vm_disks[vm_disk]] = restore_disk_current[vm_disk]
-        modofy_vm_disks(params.domain, source_to_target)
+    disk_specs = get_disks_spec(params.domain)
 
-        for vm_disk in vm_disks.keys():
-            change_vol_current(vm_disk, restore_disk_current[vm_disk])
-    else:
-        if params.target is None:
-            raise ExecuteException('', 'arg target must be set.')
-        # create disk in target pool
-        target_pool_info = get_pool_info_from_k8s(params.target)
-        check_pool_active(target_pool_info)
+    # be sure vm still use the disks in the backup record.
+    vm_disks = []
+    for disk_path in disk_specs.keys():
+        if disk_path.find('snapshots') >= 0:
+            vm_disk = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
+        else:
+            vm_disk = os.path.basename(os.path.dirname(disk_path))
+        vm_disks.append(vm_disk)
 
-        if target_pool_info['pooltype'] == 'uus':
-            raise ExecuteException('', 'target pooltype must be localfs, nfs, glusterfs or vdiskfs.')
+    if params.all:
+        for disk in disk_version.keys():
+            if disk not in vm_disks:
+                raise ExecuteException('', 'some disk in backup %s has not been attached in domain %s.' % (
+                    dumps(disk_version), params.domain))
 
-        if not os.path.exists(target_pool_info['path']):
-            raise ExecuteException('', 'not exist pool %s mount path %s.' % (params.target, target_pool_info['path']))
+    # restore vm disk snapshot chain
+    for disk in vm_disks:
+        if not params.all and record[disk]['tag'] != 'vda':
+            continue
+        disk_info = get_vol_info_from_k8s(disk)
+        cstor_disk_prepare(disk_info['poolname'], disk, disk_info['uni'])
 
-        disk_currents = {}
-        disk_heler = K8sHelper('VirtualMachineDisk')
-        for name in disks.keys():
-            disk = disks[name]
-            if not params.all and disk['tag'] != 'vda':
-                continue
-            if disk['tag'] != 'vda':
-                uuid = randomUUID().replace('-', '')
-                while disk_heler.exist(uuid):
-                    uuid = randomUUID().replace('-', '')
-            else:
-                uuid = params.newname
-            disk_back_dir = '%s/diskbackup' % vm_backup_path
-            target_path = '%s/%s' % (target_pool_info['path'], uuid)
-            if not os.path.exists(target_path):
-                os.makedirs(target_path)
-            new_current, file_to_delete = restore_snapshots_chain(disk_back_dir, disk, target_path)
-            file_to_deletes.extend(file_to_delete)
-            disk_currents[name] = new_current
-
-        # TODO delete all uus disk in xml
-        vm_xml_file = '%s/%s.xml' % (vm_backup_record_dir, params.domain)
+    # restore vm disk snapshot chain
+    disk_currents = {}
+    for disk in disk_version.keys():
+        if not params.all and record[disk]['tag'] != 'vda':
+            continue
+        newdisk = randomUUID().replace('-', '')
+        current = restore_vm_disk(params.domain, params.pool, disk, disk_version[disk], newdisk, params.target)
+        disk_currents[disk] = current
+    if params.newname:
+        # current.
+        vm_xml_file = '%s/%s.xml' % (backup_dir, params.version)
         source_to_target = {}
         disk_specs = get_disks_spec_by_xml(vm_xml_file)
-        for name in disks.keys():
+        for name in disk_version.keys():
             for disk_path in disk_specs.keys():
                 if disk_path.find(name) >= 0:
                     source_to_target[disk_path] = disk_currents[name]
                     break
         define_and_restore_vm_disks(vm_xml_file, params.newname, source_to_target)
-        # register to k8s
-        for name in disk_currents:
-            uuid = os.path.basename(os.path.dirname(disk_currents[name]))
-            write_config(uuid, os.path.dirname(disk_currents[name]), disk_currents[name], params.target,
-                         target_pool_info['poolname'])
-            disk_heler.create(uuid, "volume", get_disk_info_to_k8s(target_pool_info['poolname'], uuid))
 
-    for file in file_to_deletes:
-        runCmd('rm -f %s' % file)
-    # vm_disk_files_need_modify = {}  # TODO
-    #
-    # disks_need_copy = {}
-    # # check disk pool on this machine.
-    # for disk in disks:
-    #     if disk.find('snapshots') >= 0:
-    #         poolname = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(disk))))
-    #     else:
-    #         poolname = os.path.basename(os.path.dirname(os.path.dirname(disk)))
-    #     cstor_pool_info = get_cstor_pool_info(poolname)
-    #
-    #     pool_path = "%s/%s" % (cstor_pool_info['mountpath'], poolname)
-    #     if not os.path.exists(pool_path):
-    #         raise ExecuteException('', 'not exist cstor pool %s' % poolname)
-    #
-    #     # if disk file is localfs, copy file.
-    #     node_name = get_hostname_in_lower_case()
-    #     pools = get_pools_by_path(pool_path)
-    #
-    #     poolInfo = None
-    #
-    #     for pool in pools:
-    #         if pool['host'] == node_name:
-    #             poolInfo = get_pool_info_from_k8s(pool['pool'])
-    #             disks_need_copy[pool['pool']] = disk
-    #     if poolInfo is None:
-    #         raise ExecuteException('',
-    #                                'can not find localfs pool by path %s on this machine while copy disk file to this pool.' % (
-    #                                    pool_path))
-    #
-    # for pool in disks_need_copy.keys():
-    #     poolInfo = get_pool_info_from_k8s(pool)
-    #     disk = disks_need_copy[pool]
-    #     real_path = '%s/%s' % (backup_path, os.path.basename(disk))
-    #     if not os.path.exists(real_path):
-    #         raise ExecuteException('', 'can not find vm disk file %s in backup dir %s' % (real_path, backup_path))
-    #
-    #     diskDir = '%s/%s' % (poolInfo['path'], os.path.basename(disk))
-    #     dest = '%s/%s' % (diskDir, os.path.basename(disk))
-    #     vm_disk_files_need_modify[disk] = dest
-    #     if not os.path.exists(diskDir):
-    #         os.makedirs(diskDir)
-    #     op = Operation('cp -f %s %s' % (real_path, dest), {})
-    #     op.execute()
-    #     write_config(os.path.basename(disk), diskDir, dest, poolInfo['pool'], poolInfo['poolname'])
-    #     # register it to k8s
-    #     helper = K8sHelper("VirtualMachineDisk")
-    #     helper.create(os.path.basename(disk), "volume",
-    #                   get_disk_info_to_k8s(poolInfo['poolname'], os.path.basename(disk)))
-    #
-    # # modify disk file in xml file.
-    # tmp_xml_file = '/tmp/%s.xml' % params.domain
-    # op = Operation('cp -f %s %s' % (xml_file, tmp_xml_file), {})
-    # op.execute()
-    # for oldDisk in vm_disk_files_need_modify.keys():
-    #     if not modofy_vm_disk_file(tmp_xml_file, oldDisk, vm_disk_files_need_modify[oldDisk]):
-    #         raise ExecuteException('', 'can not modify vm disk file in xml while restore vm.')
-    #
-    # # define vm
-    # op = Operation('virsh define %s' % tmp_xml_file, {})
-    # op.execute()
-    #
-    # # delete tmp xml file
-    # op = Operation('rm -f %s' % tmp_xml_file, {})
-    # op.execute()
     success_print("success restoreVM.", {})
 
 
