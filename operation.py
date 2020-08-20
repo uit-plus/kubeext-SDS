@@ -2295,7 +2295,6 @@ def delete_disk_backup(domain, pool, disk, version):
     with open(history_file, 'w') as f:
         dump(history, f)
 
-
 def deleteVMBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)

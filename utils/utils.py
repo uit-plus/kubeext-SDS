@@ -1832,9 +1832,7 @@ def is_vm_backup_exist(domain, pool, version):
         return False
     with open(history_file_path, 'r') as f:
         history = load(f)
-        if domain not in history.keys():
-            return False
-        if version in history[domain].keys():
+        if version in history.keys():
             return True
     return False
 
