@@ -1955,7 +1955,7 @@ def restore_vm_disk(domain, pool, disk, version, newname, target):
         current, file_to_delete = restore_snapshots_chain(disk_back_dir, backupRecord, new_disk_dir)
 
         write_config(newname, os.path.dirname(current), current, target, disk_pool_info['poolname'])
-        disk_heler.create(newname, "volume", get_disk_info_to_k8s(target, newname))
+        disk_heler.create(newname, "volume", get_disk_info_to_k8s(disk_pool_info['poolname'], newname))
     else:
         disk_info = get_vol_info_from_k8s(disk)
         disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
