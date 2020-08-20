@@ -2102,11 +2102,18 @@ def backupVM(params):
     history[params.version] = {}
     history[params.version]['time'] = time.time()
     for disk in disk_version.keys():
-        history[params.version][disk] = {
-            'tag': disk_tags[disk],
-            'version': disk_version[disk],
-            'full': disk_full_version[disk]
-        }
+        if disk_full_version:
+            history[params.version][disk] = {
+                'tag': disk_tags[disk],
+                'version': disk_version[disk],
+                'full': disk_full_version[disk]
+            }
+        else:
+            history[params.version][disk] = {
+                'tag': disk_tags[disk],
+                'version': disk_version[disk],
+                'full': disk_version[disk]
+            }
     with open(history_file_path, 'w') as f:
         dump(history, f)
 
