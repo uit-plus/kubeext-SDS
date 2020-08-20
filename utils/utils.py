@@ -1989,6 +1989,9 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
             runCmd('rm -f %s' % file)
         raise e
 
+    for df in old_to_new.values():
+        runCmd('chmod 777 df')
+
     # reconnect snapshot chain
     for chain in chains:
         # print dumps(chain)
