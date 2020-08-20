@@ -2024,7 +2024,8 @@ def backupVM(params):
     backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
     history_file_path = '%s/history.json' % backup_dir
     if is_vm_backup_exist(params.domain, params.pool, params.version):
-        raise ExecuteException('', 'domain %s has exist backup version %s in %s. plz check it.' % (params.domain, params.version, history_file_path))
+        raise ExecuteException('', 'domain %s has exist backup version %s in %s. plz check it.' % (
+        params.domain, params.version, history_file_path))
 
     history = {}
     if os.path.exists(history_file_path):
@@ -2032,16 +2033,20 @@ def backupVM(params):
             history = load(f)
     disk_full_version = None
     if not params.full:
-        if 'current' not in history.keys():
-            raise ExecuteException('', 'domain %s not exist full version in %s. plz check it.' % (params.domain, history_file_path))
-        full_version = history['current']
+        if len(history.keys()) == 0:
+            raise ExecuteException('', 'domain %s not exist full backup version %s in %s. plz check it.' % (
+            params.domain, params.version, history_file_path))
+        btime = 0.0
+        newestV = None
+        for v in history.keys():
+            if history[v]['time'] > btime:
+                btime = history[v]['time']
+                newestV = v
         disk_full_version = {}
-        for disk in history[full_version].keys():
+        for disk in history[newestV].keys():
             if disk in ['full', 'time']:
                 continue
-            disk_full_version[disk] = history[full_version][disk]['version']
-    else:
-        full_version = params.version
+            disk_full_version[disk] = history[newestV][disk]['full']
 
     disk_tags = {}
     disk_specs = get_disks_spec(params.domain)
@@ -2094,17 +2099,13 @@ def backupVM(params):
         else:
             backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, None)
 
-    if 'current' not in history.keys():
-        history['current'] = {}
-
-    history['current'] = full_version
     history[params.version] = {}
-    history[params.version]['full'] = full_version
     history[params.version]['time'] = time.time()
     for disk in disk_version.keys():
         history[params.version][disk] = {
             'tag': disk_tags[disk],
             'version': disk_version[disk],
+            'full': disk_full_version[disk]
         }
     with open(history_file_path, 'w') as f:
         dump(history, f)
@@ -2187,7 +2188,7 @@ def restoreVM(params):
         history = load(f)
         record = history[params.version]
         for disk in record.keys():
-            if disk in ['full', 'time']:
+            if disk in ['time']:
                 continue
             disk_version[disk] = record[disk]['version']
 
@@ -2295,6 +2296,7 @@ def delete_disk_backup(domain, pool, disk, version):
     with open(history_file, 'w') as f:
         dump(history, f)
 
+
 def deleteVMBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)
@@ -2324,6 +2326,8 @@ def deleteVMBackup(params):
 
     op = Operation('rm -f %s.xml' % params.version, {})
     op.execute()
+    if history['current'] == params.version:
+        del history['current']
     del history[params.version]
 
     with open(history_file_path, 'w') as f:
