@@ -2322,6 +2322,9 @@ def deleteVMBackup(params):
     for disk in disk_version.keys():
         delete_disk_backup(params.domain, params.pool, disk, disk_version[disk])
 
+    op = Operation('rm -f %s.xml' % params.version, {})
+    op.execute()
+    del history[params.version]
     success_print("success deleteVMBackup.", {})
 
 
