@@ -2078,6 +2078,8 @@ def backupVM(params):
 
     # save vm xml file
     xml_file = '%s/%s.xml' % (backup_dir, params.version)
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
     op = Operation('virsh dumpxml %s > %s' % (params.domain, xml_file), {})
     op.execute()
     delete_vm_cdrom_file_in_xml(xml_file)
