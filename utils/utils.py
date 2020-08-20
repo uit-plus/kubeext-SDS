@@ -1985,7 +1985,7 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                 else:
                     old_to_new[chain['path']] = base_file
         for df in old_to_new.values():
-            runCmd('chmod 777 %s' % df)
+            runCmd('chmod 666 %s' % df)
     except ExecuteException, e:
         for file in old_to_new.values():
             runCmd('rm -f %s' % file)
