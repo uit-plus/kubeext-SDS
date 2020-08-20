@@ -1984,13 +1984,14 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                     runCmd('cp -f %s %s' % (backup_file, new_disk_file))
                 else:
                     old_to_new[chain['path']] = base_file
+        for df in old_to_new.values():
+            runCmd('chmod 777 %s' % df)
     except ExecuteException, e:
         for file in old_to_new.values():
             runCmd('rm -f %s' % file)
         raise e
 
-    for df in old_to_new.values():
-        runCmd('chmod 777 df')
+
 
     # reconnect snapshot chain
     for chain in chains:
