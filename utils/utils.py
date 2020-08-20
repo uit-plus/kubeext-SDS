@@ -1991,8 +1991,6 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
             runCmd('rm -f %s' % file)
         raise e
 
-
-
     # reconnect snapshot chain
     for chain in chains:
         # print dumps(chain)

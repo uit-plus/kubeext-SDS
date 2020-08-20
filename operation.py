@@ -2034,15 +2034,12 @@ def backupVM(params):
     if not params.full:
         if 'current' not in history.keys():
             raise ExecuteException('', 'domain %s not exist full version in %s. plz check it.' % (params.domain, history_file_path))
-        if params.domain not in history['current'].keys():
-            raise ExecuteException('', 'domain %s not exist full version in %s. plz check it.' % (
-            params.domain, history_file_path))
-        full_version = history['current'][params.domain]
+        full_version = history['current']
         disk_full_version = {}
-        for disk in history[params.domain][full_version].keys():
+        for disk in history[full_version].keys():
             if disk in ['full', 'time']:
                 continue
-            disk_full_version[disk] = history[params.domain][full_version][disk]['version']
+            disk_full_version[disk] = history[full_version][disk]['version']
     else:
         full_version = params.version
 
@@ -2098,14 +2095,12 @@ def backupVM(params):
     if 'current' not in history.keys():
         history['current'] = {}
 
-    history['current'][params.domain] = full_version
-    if params.domain not in history.keys():
-        history[params.domain] = {}
-    history[params.domain][params.version] = {}
-    history[params.domain][params.version]['full'] = full_version
-    history[params.domain][params.version]['time'] = time.time()
+    history['current'] = full_version
+    history[params.version] = {}
+    history[params.version]['full'] = full_version
+    history[params.version]['time'] = time.time()
     for disk in disk_version.keys():
-        history[params.domain][params.version][disk] = {
+        history[params.version][disk] = {
             'tag': disk_tags[disk],
             'version': disk_version[disk],
         }
@@ -2188,7 +2183,7 @@ def restoreVM(params):
     disk_version = {}
     with open(history_file, 'r') as f:
         history = load(f)
-        record = history[params.domain][params.version]
+        record = history[params.version]
         for disk in record.keys():
             if disk in ['full', 'time']:
                 continue
@@ -2244,7 +2239,7 @@ def restoreVM(params):
     success_print("success restoreVM.", {})
 
 
-def delete_vm_backup(domain, pool, disk, version):
+def delete_disk_backup(domain, pool, disk, version):
     # default backup path
     pool_info = get_pool_info_from_k8s(pool)
     check_pool_active(pool_info)
@@ -2309,130 +2304,30 @@ def deleteVMBackup(params):
     if not os.path.exists(pool_info['path']):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
-    vm_backup_path = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
-    vm_backup_record_id = params.version
-    vm_backup_record_dir = '%s/%s' % (vm_backup_path, vm_backup_record_id)
-    if not os.path.exists(vm_backup_record_dir):
-        raise ExecuteException('', 'domain %s not has backup %s, location: %s.' % (
-            params.domain, params.version, vm_backup_record_dir))
+    backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
+    history_file_path = '%s/history.json' % backup_dir
+    if not is_vm_backup_exist(params.domain, params.pool, params.version):
+        raise ExecuteException('', 'domain %s not exist backup version %s in %s. plz check it.' % (
+        params.domain, params.version, history_file_path))
 
-    disks = None
-    history_file = '%s/history.json' % vm_backup_record_dir
-    with open(history_file, 'r') as f:
+    disk_version = {}
+    with open(history_file_path, 'r') as f:
         history = load(f)
-        disks = history['disks']
+        record = history[params.version]
+        for disk in record.keys():
+            if disk in ['full', 'time']:
+                continue
+            disk_version[disk] = record[disk]['version']
+    for disk in disk_version.keys():
+        delete_disk_backup(params.domain, params.pool, disk, disk_version[disk])
 
-    checksum_to_deletes = []
-    for disk in disks.keys():
-        for chain in disks[disk]['chains']:
-            checksum_to_deletes.append(chain['checksum'])
-
-    # be sure disk backup not used by other backup record.
-    for file in os.listdir(vm_backup_path):
-        if file == 'diskbackup' or file == params.version or file == 'clouddiskbackup':
-            continue
-        history_file = '%s/%s/history.json' % (vm_backup_path, file)
-        with open(history_file, 'r') as f:
-            record_history = load(f)
-            for disk in record_history['disks'].keys():
-                for chain in record_history['disks'][disk]['chains']:
-                    if chain['checksum'] in checksum_to_deletes:
-                        checksum_to_deletes.remove(chain['checksum'])
-    clouddisk_backup_dir = '%s/clouddiskbackup' % vm_backup_path
-    if os.path.exists(clouddisk_backup_dir):
-        for file in os.listdir(clouddisk_backup_dir):
-            history_file = '%s/%s/history.json' % (clouddisk_backup_dir, file)
-            with open(history_file, 'r') as f:
-                record_history = load(f)
-                for version in record_history.keys():
-                    for chain in record_history[version]['chains']:
-                        if chain['checksum'] in checksum_to_deletes:
-                            checksum_to_deletes.remove(chain['checksum'])
-
-    diskbackup_dir = '%s/diskbackup' % vm_backup_path
-    checksum_file = '%s/checksum.json' % diskbackup_dir
-    with open(checksum_file, 'r') as f:
-        checksums = load(f)
-        for checksum in checksum_to_deletes:
-            file_path = '%s/%s' % (diskbackup_dir, checksums[checksum])
-            runCmd('rm -f %s' % file_path)
-            del checksums[checksum]
-    with open(checksum_file, 'w') as f:
-        dump(checksums, f)
-
-    op = Operation('rm -rf %s' % vm_backup_record_dir, {})
-    op.execute()
     success_print("success deleteVMBackup.", {})
 
 
 def deleteVMDiskBackup(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
-    # default backup path
-    pool_info = get_pool_info_from_k8s(params.pool)
-    check_pool_active(pool_info)
-
-    if not os.path.exists(pool_info['path']):
-        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
-
-    vm_backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
-    clouddisk_backup_dir = '%s/vmbackup/%s/clouddiskbackup' % (pool_info['path'], params.domain)
-
-    if not os.path.exists(clouddisk_backup_dir):
-        raise ExecuteException('', 'disk %s not has backup %s, location: %s.' % (
-            params.vol, params.version, clouddisk_backup_dir))
-
-    history_file = '%s/%s/history.json' % (clouddisk_backup_dir, params.vol)
-    if not os.path.exists(history_file):
-        raise ExecuteException('', 'can not find disk %s backup record %s' % (params.vol, params.version))
-
-    checksum_to_deletes = []
-    with open(history_file, 'r') as f:
-        history = load(f)
-        for chain in history[params.version]['chains']:
-            checksum_to_deletes.append(chain['checksum'])
-
-    # be sure disk backup not used by other backup record.
-    for file in os.listdir(vm_backup_dir):
-        if file == 'diskbackup' or file == 'clouddiskbackup':
-            continue
-        history_file = '%s/%s/history.json' % (vm_backup_dir, file)
-        with open(history_file, 'r') as f:
-            record_history = load(f)
-            for disk in record_history['disks'].keys():
-                for chain in record_history['disks'][disk]['chains']:
-                    if chain['checksum'] in checksum_to_deletes:
-                        checksum_to_deletes.remove(chain['checksum'])
-    clouddisk_backup_dir = '%s/clouddiskbackup' % vm_backup_dir
-    for disk in os.listdir(clouddisk_backup_dir):
-        history_file = '%s/%s/history.json' % (clouddisk_backup_dir, disk)
-        with open(history_file, 'r') as f:
-            record_history = load(f)
-            for version in record_history.keys():
-                if params.version == version and disk == params.vol:
-                    continue
-                for chain in record_history[version]['chains']:
-                    if chain['checksum'] in checksum_to_deletes:
-                        checksum_to_deletes.remove(chain['checksum'])
-
-    diskbackup_dir = '%s/diskbackup' % vm_backup_dir
-    checksum_file = '%s/checksum.json' % diskbackup_dir
-    if os.path.exists(checksum_file):
-        with open(checksum_file, 'r') as f:
-            checksums = load(f)
-            for checksum in checksum_to_deletes:
-                file_path = '%s/%s' % (diskbackup_dir, checksums[checksum])
-                runCmd('rm -f %s' % file_path)
-                del checksums[checksum]
-        with open(checksum_file, 'w') as f:
-            dump(checksums, f)
-
-    history_file = '%s/%s/history.json' % (clouddisk_backup_dir, params.vol)
-    with open(history_file, 'r') as f:
-        history = load(f)
-        del history[params.version]
-    with open(history_file, 'w') as f:
-        dump(history, f)
+    delete_disk_backup(params.domain, params.pool, params.vol, params.version)
     success_print("success deleteVMDiskBackup.", {})
 
 
