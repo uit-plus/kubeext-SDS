@@ -2291,7 +2291,7 @@ def delete_disk_backup(domain, pool, disk, version):
         history = load(f)
         del history[disk][full_version][version]
         if len(history[disk][full_version].keys()) == 0:
-            runCmd('rm -f %s/%s' % (backup_dir, full_version))
+            runCmd('rm -rf %s/%s' % (backup_dir, full_version))
     with open(history_file, 'w') as f:
         dump(history, f)
 
