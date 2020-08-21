@@ -1819,6 +1819,8 @@ def is_disk_backup_exist(domain, pool, disk, version):
         if disk not in history.keys():
             return False
         for full_version in history.keys():
+            if full_version == 'current':
+                continue
             if version in history[full_version].keys():
                 return True
     return False
@@ -1858,6 +1860,8 @@ def get_full_version(domain, pool, disk, version):
         history = load(f)
         logger.debug(dumps(history))
         for full_version in history.keys():
+            if full_version == 'current':
+                continue
             if version in history[full_version].keys():
                 return full_version
     raise ExecuteException('', 'not exist disk %s backup version %s in history file %s.' % (disk, version, history_file))
@@ -1865,6 +1869,8 @@ def get_full_version(domain, pool, disk, version):
 
 def get_full_version_by_history(disk, version, history):
     for full_version in history.keys():
+        if full_version == 'current':
+            continue
         if version in history[full_version].keys():
             return full_version
     raise ExecuteException('', 'not exist disk %s backup version %s in history %s.' % (disk, version, dumps(history)))
@@ -1877,6 +1883,8 @@ def is_remote_disk_backup_exist(domain, disk, version, remote, port, username, p
         if disk not in history.keys():
             return False
         for full_version in history.keys():
+            if full_version == 'current':
+                continue
             if version in history[full_version].keys():
                 return True
     return False
