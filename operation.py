@@ -1962,13 +1962,12 @@ def backupVM(params):
         btime = 0.0
         newestV = None
         for v in history.keys():
-            if history[v]['time'] > btime:
-                btime = history[v]['time']
-                newestV = v
+            for disk in history[v].keys():
+                if history[v][disk]['time'] > btime:
+                    btime = history[v][disk]['time']
+                    newestV = v
         disk_full_version = {}
         for disk in history[newestV].keys():
-            if disk in ['full', 'time']:
-                continue
             disk_full_version[disk] = history[newestV][disk]['full']
 
     disk_tags = {}
@@ -2023,16 +2022,17 @@ def backupVM(params):
             backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, None)
 
     history[params.version] = {}
-    history[params.version]['time'] = time.time()
     for disk in disk_version.keys():
         if disk_full_version:
             history[params.version][disk] = {
+                'time': time.time(),
                 'tag': disk_tags[disk],
                 'version': disk_version[disk],
                 'full': disk_full_version[disk]
             }
         else:
             history[params.version][disk] = {
+                'time': time.time(),
                 'tag': disk_tags[disk],
                 'version': disk_version[disk],
                 'full': disk_version[disk]
@@ -2065,8 +2065,6 @@ def backupVM(params):
         record = history[params.version]
         try:
             for disk in record.keys():
-                if disk in ['time']:
-                    continue
                 push_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote,
                                  params.port, params.username, params.password)
                 fin.append(disk)
@@ -2075,8 +2073,6 @@ def backupVM(params):
                 delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
                                           params.username, params.password)
             for disk in record.keys():
-                if disk in ['time']:
-                    continue
                 delete_disk_backup(params.domain, params.pool, disk, record[disk]['version'])
 
             del history[params.version]
@@ -2125,8 +2121,6 @@ def restoreVM(params):
         history = load(f)
         record = history[params.version]
         for disk in record.keys():
-            if disk in ['time']:
-                continue
             disk_version[disk] = record[disk]['version']
 
     disk_specs = get_disks_spec(params.domain)
@@ -2255,8 +2249,6 @@ def deleteVMBackup(params):
         history = load(f)
         record = history[params.version]
         for disk in record.keys():
-            if disk in ['full', 'time']:
-                continue
             disk_version[disk] = record[disk]['version']
     for disk in disk_version.keys():
         delete_disk_backup(params.domain, params.pool, disk, disk_version[disk])
@@ -2405,8 +2397,6 @@ def pushVMBackup(params):
         record = history[params.version]
         try:
             for disk in record.keys():
-                if disk in ['time']:
-                    continue
                 push_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote,
                                  params.port, params.username, params.password)
                 fin.append(disk)
@@ -2539,8 +2529,6 @@ def pullRemoteBackup(params):
         fin = []
         try:
             for disk in record.keys():
-                if disk in ['time']:
-                    continue
                 pull_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote, params.port,
                                  params.username, params.password)
                 fin.append(disk)
