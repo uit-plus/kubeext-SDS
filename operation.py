@@ -2284,12 +2284,19 @@ def deleteRemoteBackup(params):
     vm_heler.delete_lifecycle(params.domain)
     # default backup path
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
-    checksum_to_deletes = []
     if params.vol:
         delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port, params.username, params.password)
     else:
-
-        delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port,
+        history_file = '/%s/history.json'
+        history = ftp.get_json_file_data(history_file)
+        if params.verison not in history.keys():
+            raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
+                params.domain, params.version, history_file))
+        record = history[params.version]
+        for disk in record.keys():
+            if disk == 'current':
+                continue
+            delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
                                   params.username, params.password)
 
     if params.vol:
