@@ -1862,7 +1862,7 @@ def get_full_version(domain, pool, disk, version):
     raise ExecuteException('', 'not exist disk %s backup version %s in history file %s.' % (disk, version, history_file_path))
 
 
-def get_full_version(disk, version, history):
+def get_full_version_by_history(disk, version, history):
     for full_version in history.keys():
         if version in history[full_version].keys():
             return full_version
