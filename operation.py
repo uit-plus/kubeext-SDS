@@ -2079,6 +2079,10 @@ def backupVM(params):
                     continue
                 delete_disk_backup(params.domain, params.pool, disk, record[disk]['version'])
 
+            del history[params.version]
+            with open(history_file_path, 'w') as f:
+                dump(history, f)
+
             raise ExecuteException('', 'can not upload backup record to ftp server.')
 
         ftp_history[params.version] = history[params.version]
