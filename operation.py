@@ -2451,6 +2451,8 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
     with open(history_file, 'r') as f:
         history = load(f)
         for fv in history.keys():
+            if fv == 'current':
+                continue
             for v in history[fv].keys():
                 if v == version:
                     full_version = fv
