@@ -484,10 +484,11 @@ def pullRemoteBackupParser(args):
     execute('pullRemoteBackup', args)
 
 def pushBackupParser(args):
-    if args.vol:
-        execute('pushVMDiskBackup', args)
-    else:
-        execute('pushVMBackup', args)
+    # if args.vol:
+    #     execute('pushVMDiskBackup', args)
+    # else:
+    #     execute('pushVMBackup', args)
+    execute('pushVMBackup', args)
 
 def createCloudInitUserDataImageParser(args):
     execute('createCloudInitUserDataImage', args)

@@ -1818,8 +1818,8 @@ def is_disk_backup_exist(domain, pool, disk, version):
         history = load(f)
         if disk not in history.keys():
             return False
-        for full_version in history[disk].keys():
-            if version in history[disk][full_version].keys():
+        for full_version in history.keys():
+            if version in history[full_version].keys():
                 return True
     return False
 
@@ -1836,6 +1836,18 @@ def is_vm_backup_exist(domain, pool, version):
             return True
     return False
 
+
+def is_remote_vm_backup_exist(domain, version, remote, port, username, password):
+    target_dir = '/%s' % domain
+    ftp = FtpHelper(remote, port, username, password)
+    history_file = '%s/history.json' % target_dir
+    if ftp.is_exist_dir(target_dir) and ftp.is_exist_file(history_file):
+        history = ftp.get_json_file_data(history_file)
+        if version in history.keys():
+            return True
+    return False
+
+
 def get_full_version(domain, pool, disk, version):
     pool_info = get_pool_info_from_k8s(pool)
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
@@ -1844,20 +1856,27 @@ def get_full_version(domain, pool, disk, version):
         raise ExecuteException('', 'not exist history file %s' % history_file_path)
     with open(history_file_path, 'r') as f:
         history = load(f)
-        for full_version in history[disk].keys():
-            if version in history[disk][full_version].keys():
+        for full_version in history.keys():
+            if version in history[full_version].keys():
                 return full_version
     raise ExecuteException('', 'not exist disk %s backup version %s in history file %s.' % (disk, version, history_file_path))
 
-def is_remote_disk_backup_exist(domain, pool, disk, version, remote, port, username, password):
+
+def get_full_version(disk, version, history):
+    for full_version in history.keys():
+        if version in history[full_version].keys():
+            return full_version
+    raise ExecuteException('', 'not exist disk %s backup version %s in history %s.' % (disk, version, dumps(history)))
+
+def is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
     target_dir = '/%s/diskbackup/%s' % (domain, disk)
     ftp = FtpHelper(remote, port, username, password)
     if ftp.is_exist_dir(target_dir) and ftp.is_exist_file('%s/history.json' % target_dir):
         history = ftp.get_json_file_data('%s/history.json' % target_dir)
         if disk not in history.keys():
             return False
-        for full_version in history[disk].keys():
-            if version in history[disk][full_version].keys():
+        for full_version in history.keys():
+            if version in history[full_version].keys():
                 return True
     return False
 
