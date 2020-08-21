@@ -2441,13 +2441,13 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
-    history_file_path = '%s/history.json' % disk_backup_dir
-    if not os.path.exists(history_file_path) or not is_disk_backup_exist(domain, pool, disk, version):
+    history_file = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file) or not is_disk_backup_exist(domain, pool, disk, version):
         raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
-            domain, version, history_file_path))
+            domain, version, history_file))
     full_version = None
     record = None
-    with open(history_file_path, 'r') as f:
+    with open(history_file, 'r') as f:
         history = load(f)
         for fv in history.keys():
             for v in history[fv].keys():
@@ -2456,7 +2456,7 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
                     record = history[fv][version]
     if full_version is None or record is None:
         raise ExecuteException('', 'can not get domain %s right backup record version %s in %s. ' % (
-            domain, version, history_file_path))
+            domain, version, history_file))
 
     remote_disk_dir = '/%s/diskbackup/%s' % (domain, disk)
 

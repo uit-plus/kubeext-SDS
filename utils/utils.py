@@ -1811,13 +1811,11 @@ def get_disk_backup_current(domain, pool, disk):
 def is_disk_backup_exist(domain, pool, disk, version):
     pool_info = get_pool_info_from_k8s(pool)
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
-    history_file_path = '%s/history.json' % disk_backup_dir
-    if not os.path.exists(history_file_path):
+    history_file = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file):
         return False
-    with open(history_file_path, 'r') as f:
+    with open(history_file, 'r') as f:
         history = load(f)
-        if disk not in history.keys():
-            return False
         for full_version in history.keys():
             if full_version == 'current':
                 continue
