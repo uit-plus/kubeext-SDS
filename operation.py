@@ -2316,6 +2316,7 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
 
     backup_dir = '/%s/diskbackup/%s' % (domain, disk)
     history_file = '%s/history.json' % backup_dir
+    logger.debug('history_file: ' + history_file)
     if not ftp.is_exist_file(history_file):
         raise ExecuteException('',
                                'can not find disk %s backup record %s in ftp server' % (disk, version))
