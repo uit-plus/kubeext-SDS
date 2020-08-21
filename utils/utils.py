@@ -1851,15 +1851,16 @@ def is_remote_vm_backup_exist(domain, version, remote, port, username, password)
 def get_full_version(domain, pool, disk, version):
     pool_info = get_pool_info_from_k8s(pool)
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
-    history_file_path = '%s/history.json' % disk_backup_dir
-    if not os.path.exists(history_file_path):
-        raise ExecuteException('', 'not exist history file %s' % history_file_path)
-    with open(history_file_path, 'r') as f:
+    history_file = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file):
+        raise ExecuteException('', 'not exist history file %s' % history_file)
+    with open(history_file, 'r') as f:
         history = load(f)
+        logger.debug(dumps(history))
         for full_version in history.keys():
             if version in history[full_version].keys():
                 return full_version
-    raise ExecuteException('', 'not exist disk %s backup version %s in history file %s.' % (disk, version, history_file_path))
+    raise ExecuteException('', 'not exist disk %s backup version %s in history file %s.' % (disk, version, history_file))
 
 
 def get_full_version_by_history(disk, version, history):
