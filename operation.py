@@ -2070,7 +2070,7 @@ def backupVM(params):
                 push_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote,
                                  params.port, params.username, params.password)
                 fin.append(disk)
-        except ExecuteException, e:
+        except Exception, e:
             for disk in fin:
                 delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
                                           params.username, params.password)
@@ -2082,8 +2082,6 @@ def backupVM(params):
             del history[params.version]
             with open(history_file_path, 'w') as f:
                 dump(history, f)
-            raise e
-        except Exception, e:
             logger.debug(traceback.format_exc())
             raise ExecuteException('', 'can not upload backup record to ftp server.')
 
