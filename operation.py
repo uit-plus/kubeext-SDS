@@ -2084,6 +2084,7 @@ def backupVM(params):
                 dump(history, f)
             raise e
         except Exception, e:
+            logger.debug(traceback.format_exc())
             raise ExecuteException('', 'can not upload backup record to ftp server.')
 
         ftp_history[params.version] = history[params.version]
