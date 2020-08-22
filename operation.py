@@ -2279,9 +2279,10 @@ def deleteRemoteBackup(params):
     if params.vol:
         delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port, params.username, params.password)
     else:
-        history_file = '/%s/history.json'
+        history_file = '/%s/history.json' % params.domain
         history = ftp.get_json_file_data(history_file)
-        if params.version not in history.keys():
+
+        if not history or params.version not in history.keys():
             raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
                 params.domain, params.version, history_file))
         record = history[params.version]
