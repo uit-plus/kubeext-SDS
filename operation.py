@@ -2342,6 +2342,8 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
     disk_backup_dir = '%s/%s/diskbackup' % (backup_dir, full_version)
     checksum_file = '%s/checksum.json' % disk_backup_dir
     checksums = ftp.get_json_file_data(checksum_file)
+    logger.debug(checksums)
+    logger.debug(checksum_to_deletes)
     for checksum in checksum_to_deletes:
         file_path = '%s/%s' % (disk_backup_dir, checksums[checksum])
         ftp.delete_file(file_path)
