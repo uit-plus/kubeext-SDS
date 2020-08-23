@@ -1697,7 +1697,7 @@ def backupDisk(params):
         full_version = params.full
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
     else:
-        full_version = get_full_version(params.domain, params.pool, params.vol, params.version)
+        full_version = get_disk_backup_current(params.domain, params.pool, params.vol)
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, full_version)
 
     backup_helper = K8sHelper('VirtualMachineBackup')
@@ -2777,7 +2777,7 @@ def cleanRemoteBackup(params):
 
     versions = params.version.split(',')
     if params.vol:
-        clean_disk_remote_backup(params.domain, params.pool, params.vol, versions, params.remote, params.port, params.username, params.password)
+        clean_disk_remote_backup(params.domain, params.vol, versions, params.remote, params.port, params.username, params.password)
     else:
         clean_vm_remote_backup(params.domain, versions, params.remote, params.port, params.username, params.password)
 
