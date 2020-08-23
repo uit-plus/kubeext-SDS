@@ -1782,16 +1782,9 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
     op.execute()
 
     # backup disk dir
-    if full_version:    # vm backup, use vm full version
-        current_full_version = version
-    else:
-        if is_full:
-            current_full_version = version
-        else:
-            current_full_version = get_disk_backup_current(domain, pool, disk)
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
-    backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
+    backup_dir = '%s/%s' % (disk_backup_dir, full_version)
     try:
         chain = backup_snapshots_chain(ss_path, backup_dir)
 
@@ -1802,15 +1795,15 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
             with open(history_file_path, 'r') as f:
                 history = load(f)
 
-        if current_full_version not in history.keys():
-            history[current_full_version] = {}
+        if full_version not in history.keys():
+            history[full_version] = {}
 
-        count = len(history[current_full_version].keys())
+        count = len(history[full_version].keys())
 
         chain['index'] = count + 1
         chain['time'] = time.time()
-        history[current_full_version][version] = chain
-        history['current'] = current_full_version
+        history[full_version][version] = chain
+        history['current'] = full_version
 
         with open(history_file_path, 'w') as f:
             dump(history, f)
