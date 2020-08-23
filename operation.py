@@ -2121,7 +2121,7 @@ def backupVM(params):
     if newestV:
         data['full'] = newestV
     else:
-        data['full'] = params.full
+        data['full'] = params.version
     backup_helper.create(params.version, 'backup', data)
     backup_helper.add_label(params.version, params.domain)
     success_print("success backupVM.", {})
