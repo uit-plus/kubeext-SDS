@@ -105,7 +105,10 @@ class FtpHelper(object):
             return
         self.ftp.cwd(target)
         for file in self.listdir(target):
-            self.ftp.delete(file)
+            if self.is_exist_dir('%s/%s' % (target, file)):
+                self.delete_dir('%s/%s' % (target, file))
+            else:
+                self.ftp.delete(file)
         self.ftp.cwd(os.path.dirname(target))
         self.ftp.rmd(target)
 
