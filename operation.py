@@ -2250,6 +2250,7 @@ def delete_disk_backup(domain, pool, disk, version):
         history = load(f)
         del history[full_version][version]
         if len(history[full_version].keys()) == 0:
+            del history[full_version]
             runCmd('rm -rf %s/%s' % (backup_dir, full_version))
     with open(history_file, 'w') as f:
         dump(history, f)
@@ -2725,6 +2726,8 @@ def cleanBackup(params):
     vm_heler.delete_lifecycle(params.domain)
 
     versions = params.version.split(',')
+    logger.debug('versions')
+    logger.debug(versions)
     if params.vol:
         clean_disk_backup(params.domain, params.pool, params.vol, versions)
     else:
