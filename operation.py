@@ -1691,6 +1691,7 @@ def exportVM(params):
 def backupDisk(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
+    ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
     if params.full:
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
@@ -1924,8 +1925,6 @@ def restoreDisk(params):
     if params.targetDomain:
         if not is_vm_exist(params.targetDomain):
             raise ExecuteException('', 'target domain %s will be attached new disk not set.')
-    else:
-        raise ExecuteException('', 'target domain %s will be attached new disk not set.')
 
     current = restore_vm_disk(params.domain, params.pool, params.vol, params.version, params.newname, params.target)
 
