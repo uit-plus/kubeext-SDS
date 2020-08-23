@@ -1718,9 +1718,6 @@ def backupDisk(params):
 
 
 def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
-    disk_heler = K8sHelper('VirtualMachineDisk')
-    disk_heler.delete_lifecycle(disk)
-
     # check vm exist or not
     if not is_vm_exist(domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % domain)
