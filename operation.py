@@ -1697,12 +1697,11 @@ def backupDisk(params):
 
     if params.full:
         full_version = params.version
-        logger.debug(full_version)
-        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, full_version)
+        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
     else:
         full_version = get_disk_backup_current(params.domain, params.pool, params.vol)
         logger.debug(full_version)
-        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, full_version)
+        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
     backup_helper = K8sHelper('VirtualMachineBackup')
     data = {
         'domain': params.domain,
@@ -1782,9 +1781,16 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
     op.execute()
 
     # backup disk dir
+    if full_version:    # vm backup, use vm full version
+        current_full_version = version
+    else:
+        if is_full:
+            current_full_version = version
+        else:
+            current_full_version = get_disk_backup_current(domain, pool, disk)
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
-    backup_dir = '%s/%s' % (disk_backup_dir, full_version)
+    backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
     try:
         chain = backup_snapshots_chain(ss_path, backup_dir)
 
