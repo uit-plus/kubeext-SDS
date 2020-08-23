@@ -2328,10 +2328,11 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
         raise ExecuteException('',
                                'can not find disk %s backup record %s in ftp server' % (disk, version))
     history = ftp.get_json_file_data(history_file)
-    if version not in history.keys():
+    full_version = get_full_version_by_history(disk, version, history)
+    if full_version not in history.keys() or version not in history[full_version].keys():
         raise ExecuteException('',
                                'can not find disk %s backup record %s in ftp server' % (disk, version))
-    full_version = get_full_version_by_history(disk, version, history)
+
     record = history[full_version][version]
     chains = record['chains']
     checksum_to_deletes = []
