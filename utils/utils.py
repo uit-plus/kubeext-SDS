@@ -1805,8 +1805,27 @@ def get_disk_backup_current(domain, pool, disk):
         if 'current' not in history.keys():
             raise ExecuteException('', 'disk %s backup version not exist current full backup version. plz check %s' % (
                 disk, history_file_path))
-        return history['current']
-
+        if history['current'] in history.keys():
+            return history['current']
+        else:
+            disk_versions = get_disk_backup_full_version(domain, pool, disk)
+            if len(disk_versions) == 0:
+                raise ExecuteException('',
+                                       'disk %s backup version not exist full backup version. plz check %s' % (
+                                           disk, history_file_path))
+            time = 0.0
+            newestV = None
+            for fv in disk_versions:
+                for v in history[fv].keys():
+                    if history[fv][v]['time'] > time:
+                        time = history[fv][v]['time']
+                        newestV = fv
+            if newestV is None:
+                raise ExecuteException('',
+                                       'disk %s backup version not exist full backup version. plz check %s' % (
+                                           disk, history_file_path))
+            else:
+                return newestV
 
 def is_disk_backup_exist(domain, pool, disk, version):
     pool_info = get_pool_info_from_k8s(pool)
@@ -1888,20 +1907,18 @@ def get_disk_backup_version(domain, pool, disk):
                 vm_disk_full_versions.add(record[disk]['full'])
 
     history_file = '%s/history.json' % disk_backup_dir
-    if not os.path.exists(history_file):
-        raise ExecuteException('', 'not exist history file %s' % history_file)
-
     disk_versions = []
-    with open(history_file, 'r') as f:
-        history = load(f)
-        logger.debug(dumps(history))
-        for full_version in history.keys():
-            if full_version == 'current':
-                continue
-            if full_version in vm_disk_full_versions:
-                continue
-            for v in history[full_version].keys():
-                disk_versions.append(v)
+    if os.path.exists(history_file):
+        with open(history_file, 'r') as f:
+            history = load(f)
+            logger.debug(dumps(history))
+            for full_version in history.keys():
+                if full_version == 'current':
+                    continue
+                if full_version in vm_disk_full_versions:
+                    continue
+                for v in history[full_version].keys():
+                    disk_versions.append(v)
     return disk_versions
 
 
