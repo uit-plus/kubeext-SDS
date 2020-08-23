@@ -2079,6 +2079,7 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
 
             if chain['checksum'] in disk_checksums.keys():
                 old_to_new[chain['path']] = disk_checksums[chain['checksum']]
+                logger.debug('do not need cp %s ' % disk_checksums[chain['checksum']])
                 continue
 
             backup_file = '%s/%s' % (disk_back_dir, checksums[chain['checksum']])
@@ -2120,6 +2121,10 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
         for file in cp_disks.values():
             runCmd('rm -f %s' % file)
         raise e
+
+    logger.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    logger.debug(dumps(disk_checksums))
+    logger.debug(dumps(chains))
 
     # reconnect snapshot chain
     for chain in chains:
