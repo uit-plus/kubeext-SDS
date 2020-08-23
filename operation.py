@@ -2094,10 +2094,13 @@ def backupVM(params):
 
     data = {
         'domain': params.domain,
-        'disk': params.vol,
         'pool': params.pool,
         'time': time.time()
     }
+    if params.vol:
+        data['disk'] = params.vol
+    else:
+        data['disk'] = ''
     if newestV:
         data['full'] = newestV
     else:
