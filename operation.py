@@ -1697,11 +1697,11 @@ def backupDisk(params):
 
     if params.full:
         full_version = params.version
-        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
+        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None, False)
     else:
         full_version = get_disk_backup_current(params.domain, params.pool, params.vol)
         logger.debug(full_version)
-        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
+        backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None, False)
     backup_helper = K8sHelper('VirtualMachineBackup')
     data = {
         'domain': params.domain,
@@ -1718,7 +1718,7 @@ def backupDisk(params):
     success_print("success backupDisk.", {})
 
 
-def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
+def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup_VM):
     # check vm exist or not
     if not is_vm_exist(domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % domain)
@@ -1809,7 +1809,8 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
         chain['index'] = count + 1
         chain['time'] = time.time()
         history[current_full_version][version] = chain
-        history['current'] = current_full_version
+        if not is_backup_VM:
+            history['current'] = current_full_version
 
         with open(history_file_path, 'w') as f:
             dump(history, f)
@@ -2030,9 +2031,9 @@ def backupVM(params):
         uuid = randomUUID().replace('-', '')
         disk_version[disk] = uuid
         if disk_full_version:
-            backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, disk_full_version[disk])
+            backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, disk_full_version[disk], True)
         else:
-            backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, None)
+            backup_vm_disk(params.domain, params.pool, disk, uuid, True, None, True)
 
     history[params.version] = {}
     for disk in disk_version.keys():
