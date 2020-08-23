@@ -1782,7 +1782,7 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
 
     # backup disk dir
     if full_version:    # vm backup, use vm full version
-        current_full_version = version
+        current_full_version = full_version
     else:
         if is_full:
             current_full_version = version
