@@ -2689,6 +2689,7 @@ def clean_vm_backup(domain, pool, versions):
     pool_info = get_pool_info_from_k8s(pool)
     check_pool_active(pool_info)
 
+    logger.debug('check_pool_active')
     if pool_info['pooltype'] == 'uus':
         raise ExecuteException('', 'disk backup pool can not be uus.')
     if not os.path.exists(pool_info['path']):
