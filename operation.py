@@ -2273,6 +2273,8 @@ def deleteVMBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)
     delete_vm_backup(params.domain, params.pool, params.version)
+    backup_helper = K8sHelper('VirtualMachineBackup')
+    backup_helper.delete(params.version)
     success_print("success deleteVMBackup.", {})
 
 
@@ -2280,6 +2282,8 @@ def deleteVMDiskBackup(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
     delete_disk_backup(params.domain, params.pool, params.vol, params.version)
+    backup_helper = K8sHelper('VirtualMachineBackup')
+    backup_helper.delete(params.version)
     success_print("success deleteVMDiskBackup.", {})
 
 
