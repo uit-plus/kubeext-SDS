@@ -2572,11 +2572,11 @@ def pullRemoteBackup(params):
                 pull_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote, params.port,
                                  params.username, params.password)
                 fin.append(disk)
+            ftp.download_file('/%s/%s.xml' % (params.domain, params.version), backup_dir)
         except ExecuteException, e:
             for disk in fin:
                 delete_disk_backup(params.domain, params.pool, disk, record[disk]['version'])
             raise e
-
 
         history_file = '%s/history.json' % backup_dir
         if os.path.exists(history_file):
