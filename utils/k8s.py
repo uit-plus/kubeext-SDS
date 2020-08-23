@@ -343,7 +343,7 @@ if __name__ == '__main__':
     # }
     backup_helper = K8sHelper('VirtualMachineBackup')
     # backup_helper.create('backup1', 'backup', data)
-    print backup_helper.get('vmbackup2')
+    print backup_helper.add_label('vmbackup2', 'cloudinit')
 
 #     print get_all_node_ip()
 #     get_pools_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev')
