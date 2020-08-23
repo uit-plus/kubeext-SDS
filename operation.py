@@ -1698,8 +1698,20 @@ def backupDisk(params):
     else:
         full_version = get_full_version(params.domain, params.pool, params.vol, params.version)
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, full_version)
+
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    data = {
+        'domain': params.domain,
+        'pool': params.pool,
+        'time': time.time(),
+        'disk': params.vol,
+        'full': full_version
+    }
+    backup_helper.create(params.version, 'backup', data)
     if params.remote:
         push_disk_backup(params.domain, params.pool, params.vol, params.version, params.remote, params.port, params.username, params.password)
+
     success_print("success backupDisk.", {})
 
 
