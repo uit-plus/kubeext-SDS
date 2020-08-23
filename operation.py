@@ -2344,7 +2344,7 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
     ftp.upload_file(tmp_file, disk_backup_dir)
 
     del history[full_version][version]
-    if len(history[full_version].keys) == 0:
+    if len(history[full_version].keys()) == 0:
         del history[full_version]
 
     tmp_file = '/tmp/history.json'
