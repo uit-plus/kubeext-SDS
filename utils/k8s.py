@@ -250,6 +250,20 @@ class K8sHelper(object):
         except Exception:
             error_print(500, 'can not create %s %s on k8s.' % (self.kind, name))
 
+    def add_label(self, name, domain):
+        try:
+            if not self.exist(name):
+                return
+            jsondict = self.get(name)
+            jsondict['metadata']['labels']['domain'] = domain
+            # jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+            # jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+            return client.CustomObjectsApi().replace_namespaced_custom_object(
+                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                plural=resources[self.kind]['plural'], name=name, body=jsondict)
+        except Exception:
+            raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
+
     def update(self, name, key, data):
         try:
             if not self.exist(name):
@@ -323,13 +337,13 @@ def error_print(code, msg, data=None):
         exit(1)
 
 if __name__ == '__main__':
-    data = {
-        'domain': 'cloudinit',
-        'pool': 'migratepoolnodepool22'
-    }
+    # data = {
+    #     'domain': 'cloudinit',
+    #     'pool': 'migratepoolnodepool22'
+    # }
     backup_helper = K8sHelper('VirtualMachineBackup')
-    backup_helper.create('backup1', 'backup', data)
-    print backup_helper.get('backup1')
+    # backup_helper.create('backup1', 'backup', data)
+    print backup_helper.get('vmbackup2')
 
 #     print get_all_node_ip()
 #     get_pools_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev')

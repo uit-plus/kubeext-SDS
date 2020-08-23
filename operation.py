@@ -1710,6 +1710,7 @@ def backupDisk(params):
         'full': full_version
     }
     backup_helper.create(params.version, 'backup', data)
+    backup_helper.add_label(params.version, params.domain)
     if params.remote:
         push_disk_backup(params.domain, params.pool, params.vol, params.version, params.remote, params.port, params.username, params.password)
 
@@ -2122,7 +2123,7 @@ def backupVM(params):
     else:
         data['full'] = params.full
     backup_helper.create(params.version, 'backup', data)
-
+    backup_helper.add_label(params.version, params.domain)
     success_print("success backupVM.", {})
 
 
@@ -2820,6 +2821,7 @@ def scanBackup(params):
                             'time': history[fv][v]['time']
                         }
                         backup_helper.create(v, 'backup', data)
+                        backup_helper.add_label(params.version, params.domain)
     else:
         backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
         if not os.path.exists(backup_dir):
@@ -2844,6 +2846,7 @@ def scanBackup(params):
                         'time': time,
                     }
                     backup_helper.create(v, 'backup', data)
+                    backup_helper.add_label(params.version, params.domain)
     success_print("success scanBackup", {})
 
 def showDiskPool(params):
