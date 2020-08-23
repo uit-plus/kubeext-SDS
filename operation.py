@@ -1694,6 +1694,7 @@ def backupDisk(params):
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
     if params.full:
+        full_version = params.full
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None)
     else:
         full_version = get_full_version(params.domain, params.pool, params.vol, params.version)
@@ -1821,16 +1822,17 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
         # change disk current
         # change_vol_current(disk, ss_path)
         base = DiskImageHelper.get_backing_file(ss_path)
-        if is_vm_active(domain):
-            op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
-                           {})
+        if os.path.exists(ss_path) and base and os.path.exists(base):
+            if is_vm_active(domain):
+                op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
+                               {})
+                op.execute()
+            else:
+                op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
+                op.execute()
+                change_vm_os_disk_file(domain, ss_path, base)
+            op = Operation('rm -f %s' % ss_path, {})
             op.execute()
-        else:
-            op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
-            op.execute()
-            change_vm_os_disk_file(domain, ss_path, base)
-        op = Operation('rm -f %s' % ss_path, {})
-        op.execute()
 
 
 def restore_vm_disk(domain, pool, disk, version, newname, target):
