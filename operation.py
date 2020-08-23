@@ -2393,6 +2393,8 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
         dump(history, f)
     ftp.upload_file(tmp_file, '/%s' % domain)
 
+    ftp.delete_file('/%s/%s.xml' % (domain, version))
+
 def pushVMBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)
@@ -2439,6 +2441,8 @@ def pushVMBackup(params):
                 delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
                                           params.username, params.password)
             raise ExecuteException('', 'can not upload backup record to ftp server.')
+
+        ftp.upload_file('%s/%s.xml' % (backup_dir, params.version), '/%s' % params.domain)
 
         ftp_history[params.version] = history[params.version]
         with open('/tmp/history.json', 'w') as f:
