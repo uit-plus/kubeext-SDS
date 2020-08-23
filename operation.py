@@ -1691,6 +1691,8 @@ def exportVM(params):
 def backupDisk(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
+    logger.debug('params!!!!')
+    logger.debug(params)
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
     if params.full:
@@ -1699,9 +1701,8 @@ def backupDisk(params):
     else:
         full_version = get_disk_backup_current(params.domain, params.pool, params.vol)
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, full_version)
-
     backup_helper = K8sHelper('VirtualMachineBackup')
-
+    logger.debug(full_version)
     data = {
         'domain': params.domain,
         'pool': params.pool,
@@ -1808,8 +1809,6 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
         chain['index'] = count + 1
         chain['time'] = time.time()
         history[current_full_version][version] = chain
-        if 'current' not in history.keys():
-            history['current'] = {}
         history['current'] = current_full_version
 
         with open(history_file_path, 'w') as f:

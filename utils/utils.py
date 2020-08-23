@@ -1802,7 +1802,7 @@ def get_disk_backup_current(domain, pool, disk):
             disk, history_file_path))
     with open(history_file_path, 'r') as f:
         history = load(f)
-        if 'current' not in history.keys() and disk not in history['current'].keys():
+        if 'current' not in history.keys():
             raise ExecuteException('', 'disk %s backup version not exist current full backup version. plz check %s' % (
                 disk, history_file_path))
         return history['current']
