@@ -2015,8 +2015,8 @@ def backupVM(params):
 
     # check domain all disk has full backup
     if not params.full:
-        for disk in disk_full_version.keys():
-            if disk not in disk_tags.keys():
+        for disk in disk_tags.keys():
+            if disk not in disk_full_version.keys():
                 raise ExecuteException('', 'vm %s disk %s may be first attach, plz make full backup firstly.' % (params.domain, disk))
 
     # save vm xml file
