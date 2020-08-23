@@ -2734,7 +2734,7 @@ def cleanBackup(params):
     success_print("success cleanBackup", {})
 
 
-def clean_disk_remote_backup(domain, pool, disk, versions, remote, port, username, password):
+def clean_disk_remote_backup(domain, disk, versions, remote, port, username, password):
     backup_helper = K8sHelper('VirtualMachineBackup')
 
     for version in versions:
@@ -2745,7 +2745,7 @@ def clean_disk_remote_backup(domain, pool, disk, versions, remote, port, usernam
             #     pass
             pass
 
-    disk_versions = get_disk_backup_version(domain, pool, disk)
+    disk_versions = get_remote_disk_backup_version(domain, disk, remote, port, username, password)
 
     for version in disk_versions:
         if version not in versions:
@@ -2778,7 +2778,7 @@ def cleanRemoteBackup(params):
     if params.vol:
         clean_disk_remote_backup(params.domain, params.pool, params.vol, versions, params.remote, params.port, params.username, params.password)
     else:
-        clean_vm_remote_backup(params.domain, params.pool, versions, params.remote, params.port, params.username, params.password)
+        clean_vm_remote_backup(params.domain, versions, params.remote, params.port, params.username, params.password)
 
     success_print("success cleanRemoteBackup", {})
 
@@ -2828,17 +2828,19 @@ def scanBackup(params):
         # check backup version exist or not
         history_file = '%s/history.json' % backup_dir
         with open(history_file, 'r') as f:
-            history = load(history_file)
+            history = load(f)
             for v in history.keys():
                 if not backup_helper.exist(v):
                     time = ''
+                    vm_full = ''
                     for disk in history[v].keys():
                         time = history[v][disk]['time']
+                        vm_full = history[v][disk]['vm_full']
                     data = {
                         'domain': params.domain,
                         'disk': '',
                         'pool': params.pool,
-                        'full': history[v][disk]['vm_full'],
+                        'full': vm_full,
                         'time': time,
                     }
                     backup_helper.create(v, 'backup', data)
