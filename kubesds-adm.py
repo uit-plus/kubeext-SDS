@@ -499,6 +499,14 @@ def deleteCloudInitUserDataImageParser(args):
 def updateOSParser(args):
     execute('updateOS', args)
 
+def cleanBackupParser(args):
+    execute('cleanBackup', args)
+
+def cleanRemoteBackupParser(args):
+    execute('cleanRemoteBackup', args)
+
+def scanBackupParser(args):
+    execute('scanBackup', args)
 
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
@@ -1072,6 +1080,50 @@ parser_update_os.add_argument("--target", required=True, metavar="[VOL]", type=s
 # set default func
 parser_update_os.set_defaults(func=updateOSParser)
 
+# -------------------- add cleanBackup cmd ----------------------------------
+parser_clean_backup = subparsers.add_parser("cleanBackup", help="cleanBackup help")
+parser_clean_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_clean_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_clean_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_clean_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+# set default func
+parser_clean_backup.set_defaults(func=cleanBackupParser)
+
+# -------------------- add cleanBackup cmd ----------------------------------
+parser_clean_remote_backup = subparsers.add_parser("cleanRemoteBackup", help="cleanRemoteBackup help")
+parser_clean_remote_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_clean_remote_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_clean_remote_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+parser_clean_remote_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+                            help="backup version id")
+parser_clean_remote_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_clean_remote_backup.add_argument("--port", required=True, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_clean_remote_backup.add_argument("--username", required=True, metavar="[USERNAME]", type=str,
+                            help="remote server username.")
+parser_clean_remote_backup.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
+                            help="remote server password.")
+# set default func
+parser_clean_remote_backup.set_defaults(func=cleanRemoteBackupParser)
+
+# -------------------- add scanBackup cmd ----------------------------------
+parser_scan_backup = subparsers.add_parser("scanBackup", help="scanBackup help")
+parser_scan_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
+                            help="vm domain to export")
+parser_scan_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
+                            help="vm disk to backup")
+parser_scan_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                            help="backup to store")
+# set default func
+parser_scan_backup.set_defaults(func=scanBackupParser)
 
 try:
     os.putenv('LANG', 'en_US.UTF-8')

@@ -1955,12 +1955,12 @@ def backupVM(params):
         with open(history_file_path, 'r') as f:
             history = load(f)
     disk_full_version = None
+    newestV = None
     if not params.full:
         if len(history.keys()) == 0:
             raise ExecuteException('', 'domain %s not exist full backup version %s in %s. plz check it.' % (
             params.domain, params.version, history_file_path))
         btime = 0.0
-        newestV = None
         for v in history.keys():
             for disk in history[v].keys():
                 if history[v][disk]['time'] > btime:
@@ -2037,6 +2037,10 @@ def backupVM(params):
                 'version': disk_version[disk],
                 'full': disk_version[disk]
             }
+        if newestV:
+            history[params.version][disk]['vm_full'] = newestV
+        else:
+            history[params.version][disk]['vm_full'] = params.full
     with open(history_file_path, 'w') as f:
         dump(history, f)
 
@@ -2086,13 +2090,19 @@ def backupVM(params):
             dump(ftp_history, f)
         ftp.upload_file("/tmp/history.json", '/%s' % params.domain)
 
-    # backup_helper = K8sHelper('VirtualMachineBackup')
-    #
-    # data = {
-    #     'domain': params.domain,
-    #     'pool': params.pool
-    # }
-    # backup_helper.create(params.version, 'backup', data)
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    data = {
+        'domain': params.domain,
+        'disk': params.vol,
+        'pool': params.pool,
+        'time': time.time()
+    }
+    if newestV:
+        data['full'] = newestV
+    else:
+        data['full'] = params.full
+    backup_helper.create(params.version, 'backup', data)
 
     success_print("success backupVM.", {})
 
@@ -2227,40 +2237,42 @@ def delete_disk_backup(domain, pool, disk, version):
     with open(history_file, 'w') as f:
         dump(history, f)
 
-
-def deleteVMBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+def delete_vm_backup(domain, pool, version):
     # default backup path
-    pool_info = get_pool_info_from_k8s(params.pool)
+    pool_info = get_pool_info_from_k8s(pool)
     check_pool_active(pool_info)
 
     if not os.path.exists(pool_info['path']):
-        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (pool, pool_info['path']))
 
-    backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
+    backup_dir = '%s/vmbackup/%s' % (pool_info['path'], domain)
     history_file_path = '%s/history.json' % backup_dir
-    if not is_vm_backup_exist(params.domain, params.pool, params.version):
+    if not is_vm_backup_exist(domain, pool, version):
         raise ExecuteException('', 'domain %s not exist backup version %s in %s. plz check it.' % (
-        params.domain, params.version, history_file_path))
+            domain, version, history_file_path))
 
     disk_version = {}
     with open(history_file_path, 'r') as f:
         history = load(f)
-        record = history[params.version]
+        record = history[version]
         for disk in record.keys():
             disk_version[disk] = record[disk]['version']
     for disk in disk_version.keys():
-        delete_disk_backup(params.domain, params.pool, disk, disk_version[disk])
+        delete_disk_backup(domain, pool, disk, disk_version[disk])
 
-    op = Operation('rm -f %s.xml' % params.version, {})
+    op = Operation('rm -f %s.xml' % version, {})
     op.execute()
-    if history['current'] == params.version:
+    if history['current'] == version:
         del history['current']
-    del history[params.version]
+    del history[version]
 
     with open(history_file_path, 'w') as f:
         dump(history, f)
+
+def deleteVMBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
+    delete_vm_backup(params.domain, params.pool, params.version)
     success_print("success deleteVMBackup.", {})
 
 
@@ -2275,36 +2287,10 @@ def deleteRemoteBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)
     # default backup path
-    ftp = FtpHelper(params.remote, params.port, params.username, params.password)
     if params.vol:
         delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port, params.username, params.password)
     else:
-        history_file = '/%s/history.json' % params.domain
-        history = ftp.get_json_file_data(history_file)
-
-        if not history or params.version not in history.keys():
-            raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
-                params.domain, params.version, history_file))
-        record = history[params.version]
-        for disk in record.keys():
-            if disk == 'current':
-                continue
-            delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
-                                  params.username, params.password)
-
-    if params.vol:
-        clouddisk_backup_dir = '/%s/clouddiskbackup' % params.domain
-        history_file = '%s/%s/history.json' % (clouddisk_backup_dir, params.vol)
-        history = ftp.get_json_file_data(history_file)
-        del history[params.version]
-        tmp_file = '/tmp/history.json'
-        with open(tmp_file, 'w') as f:
-            dump(history, f)
-        ftp.upload_file(tmp_file, '%s/%s' % (clouddisk_backup_dir, params.vol))
-    else:
-        vm_backup_dir = '/%s' % params.domain
-        vm_backup_record_dir = '%s/%s' % (vm_backup_dir, params.version)
-        ftp.delete_dir(vm_backup_record_dir)
+        delete_remote_vm_backup(params.domain, params.version, params.remote, params.port, params.username, params.password)
 
     success_print("success deleteRemoteBackup.", {})
 
@@ -2361,6 +2347,29 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
     with open(tmp_file, 'w') as f:
         dump(history, f)
     ftp.upload_file(tmp_file, backup_dir)
+
+
+def delete_remote_vm_backup(domain, version, remote, port, username, password):
+    ftp = FtpHelper(remote, port, username, password)
+    history_file = '/%s/history.json' % domain
+    history = ftp.get_json_file_data(history_file)
+
+    if not history or version not in history.keys():
+        raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
+            domain, version, history_file))
+    record = history[version]
+    for disk in record.keys():
+        if disk == 'current':
+            continue
+        delete_remote_disk_backup(domain, disk, record[disk]['version'], remote, port,
+                                  username, password)
+    history_file = '/%s/history.json' % domain
+    history = ftp.get_json_file_data(history_file)
+    del history[version]
+    tmp_file = '/tmp/history.json'
+    with open(tmp_file, 'w') as f:
+        dump(history, f)
+    ftp.upload_file(tmp_file, '/%s' % domain)
 
 def pushVMBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
@@ -2612,6 +2621,199 @@ def pull_disk_backup(domain, pool, disk, version, remote, port, username, passwo
         local_checksum[chain['checksum']] = remote_checksum[chain['checksum']]
     with open(local_checksum_file, 'w') as f:
         dump(local_checksum, f)
+
+def clean_disk_backup(domain, pool, disk, versions):
+    # check backup pool path exist or not
+    pool_info = get_pool_info_from_k8s(pool)
+    check_pool_active(pool_info)
+
+    if pool_info['pooltype'] == 'uus':
+        raise ExecuteException('', 'disk backup pool can not be uus.')
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (pool, pool_info['path']))
+
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+    if not os.path.exists(disk_backup_dir):
+        raise ExecuteException('', 'not exist disk %s backup dir %s' % (disk, disk_backup_dir))
+
+    # check backup version exist or not
+    history_file_path = '%s/history.json' % disk_backup_dir
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    for version in versions:
+        if not is_disk_backup_exist(domain, pool, disk, version):
+            try:
+                backup_helper.delete(version)
+            except:
+                pass
+
+    disk_versions = get_disk_backup_version(domain, pool, disk)
+
+    for version in disk_versions:
+        if version not in versions:
+            delete_disk_backup(domain, pool, disk, version)
+            try:
+                backup_helper.delete(version)
+            except:
+                pass
+
+def clean_vm_backup(domain, pool, versions):
+    # check backup pool path exist or not
+    pool_info = get_pool_info_from_k8s(pool)
+    check_pool_active(pool_info)
+
+    if pool_info['pooltype'] == 'uus':
+        raise ExecuteException('', 'disk backup pool can not be uus.')
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (pool, pool_info['path']))
+
+    backup_dir = '%s/vmbackup/%s' % (pool_info['path'], domain)
+    if not os.path.exists(backup_dir):
+        raise ExecuteException('', 'not exist domain %s backup dir %s' % (domain, backup_dir))
+
+    # check backup version exist or not
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    history_file = '%s/history.json' % backup_dir
+    with open(history_file, 'r') as f:
+        history = load(history_file)
+        for v in history.keys():
+            if v not in versions:
+                delete_vm_backup(domain, pool, v)
+                try:
+                    backup_helper.delete(v)
+                except:
+                    pass
+        for v in versions:
+            if v not in history.keys():
+                try:
+                    backup_helper.delete(v)
+                except:
+                    pass
+
+
+def cleanBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
+
+    versions = params.version.split(',')
+    if params.vol:
+        clean_disk_backup(params.domain, params.pool, params.vol, versions)
+    else:
+        clean_vm_backup(params.domain, params.pool, versions)
+
+    success_print("success cleanBackup", {})
+
+
+def clean_disk_remote_backup(domain, pool, disk, versions, remote, port, username, password):
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    for version in versions:
+        if not is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
+            # try:
+            #     backup_helper.delete(version)
+            # except:
+            #     pass
+            pass
+
+    disk_versions = get_disk_backup_version(domain, pool, disk)
+
+    for version in disk_versions:
+        if version not in versions:
+            delete_remote_disk_backup(domain, disk, version, remote, port, username, password)
+            # try:
+            #     backup_helper.delete(version)
+            # except:
+            #     pass
+            pass
+
+
+def clean_vm_remote_backup(domain, versions, remote, port, username, password):
+    ftp = FtpHelper(remote, port, username, password)
+    remote_backup_dir = '/%s/diskbackup/%s' % domain
+    remote_history_file = '%s/history.json' % remote_backup_dir
+    remote_history = ftp.get_json_file_data(remote_history_file)
+    if remote_history is None:
+        remote_history = {}
+
+    for v in remote_history.keys():
+        if v not in versions:
+            delete_remote_vm_backup(domain, v, remote, port, username, password)
+
+
+def cleanRemoteBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
+
+    versions = params.version.split(',')
+    if params.vol:
+        clean_disk_remote_backup(params.domain, params.pool, params.vol, versions, params.remote, params.port, params.username, params.password)
+    else:
+        clean_vm_remote_backup(params.domain, params.pool, versions, params.remote, params.port, params.username, params.password)
+
+    success_print("success cleanRemoteBackup", {})
+
+
+def scanBackup(params):
+    vm_heler = K8sHelper('VirtualMachine')
+    vm_heler.delete_lifecycle(params.domain)
+
+    # check backup pool path exist or not
+    pool_info = get_pool_info_from_k8s(params.pool)
+    check_pool_active(pool_info)
+
+    if pool_info['pooltype'] == 'uus':
+        raise ExecuteException('', 'disk backup pool can not be uus.')
+    if not os.path.exists(pool_info['path']):
+        raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
+
+    backup_helper = K8sHelper('VirtualMachineBackup')
+
+    if params.vol:
+        backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], params.domain, params.vol)
+        if not os.path.exists(backup_dir):
+            raise ExecuteException('', 'not exist domain %s backup dir %s' % (params.domain, backup_dir))
+
+        # check backup version exist or not
+        history_file = '%s/history.json' % backup_dir
+        with open(history_file, 'r') as f:
+            history = load(history_file)
+            disk_full_versions = get_disk_backup_full_version(params.domain, params.pool, params.vol)
+
+            for fv in disk_full_versions:
+                for v in history[fv].keys():
+                    if not backup_helper.exist(v):
+                        data = {
+                            'domain': params.domain,
+                            'disk': params.vol,
+                            'pool': params.pool,
+                            'full': fv,
+                            'time': history[fv][v]['time']
+                        }
+                        backup_helper.create(v, 'backup', data)
+    else:
+        backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
+        if not os.path.exists(backup_dir):
+            raise ExecuteException('', 'not exist domain %s backup dir %s' % (params.domain, backup_dir))
+
+        # check backup version exist or not
+        history_file = '%s/history.json' % backup_dir
+        with open(history_file, 'r') as f:
+            history = load(history_file)
+            for v in history.keys():
+                if not backup_helper.exist(v):
+                    time = ''
+                    for disk in history[v].keys():
+                        time = history[v][disk]['time']
+                    data = {
+                        'domain': params.domain,
+                        'disk': '',
+                        'pool': params.pool,
+                        'full': history[v][disk]['vm_full'],
+                        'time': time,
+                    }
+                    backup_helper.create(v, 'backup', data)
+    success_print("success scanBackup", {})
 
 def showDiskPool(params):
     prepare_info = get_disk_prepare_info_by_path(params.path)

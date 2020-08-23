@@ -1873,6 +1873,92 @@ def get_full_version_by_history(disk, version, history):
             return full_version
     raise ExecuteException('', 'not exist disk %s backup version %s in history %s.' % (disk, version, dumps(history)))
 
+
+def get_disk_backup_version(domain, pool, disk):
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+
+    vm_history_file = '%s/vmbackup/%s/history.json' % (pool_info['path'], domain)
+    with open(vm_history_file, 'r') as f:
+        vm_history = load(f)
+        vm_disk_full_versions = set()
+        for v in vm_history.keys():
+            record = vm_history[v]
+            if disk in record.keys():
+                vm_disk_full_versions.add(record[disk]['full'])
+
+    history_file = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file):
+        raise ExecuteException('', 'not exist history file %s' % history_file)
+
+    disk_versions = []
+    with open(history_file, 'r') as f:
+        history = load(f)
+        logger.debug(dumps(history))
+        for full_version in history.keys():
+            if full_version == 'current':
+                continue
+            if full_version in vm_disk_full_versions:
+                continue
+            for v in history[full_version].keys():
+                disk_versions.append(v)
+    return disk_versions
+
+
+def get_disk_backup_full_version(domain, pool, disk):
+    pool_info = get_pool_info_from_k8s(pool)
+    disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
+
+    vm_history_file = '%s/vmbackup/%s/history.json' % (pool_info['path'], domain)
+    with open(vm_history_file, 'r') as f:
+        vm_history = load(f)
+        vm_disk_full_versions = set()
+        for v in vm_history.keys():
+            record = vm_history[v]
+            if disk in record.keys():
+                vm_disk_full_versions.add(record[disk]['full'])
+
+    history_file = '%s/history.json' % disk_backup_dir
+    if not os.path.exists(history_file):
+        raise ExecuteException('', 'not exist history file %s' % history_file)
+
+    disk_versions = []
+    with open(history_file, 'r') as f:
+        history = load(f)
+        logger.debug(dumps(history))
+        for full_version in history.keys():
+            if full_version == 'current':
+                continue
+            if full_version in vm_disk_full_versions:
+                continue
+            disk_versions.append(full_version)
+    return disk_versions
+
+def get_remote_disk_backup_version(domain, disk, remote, port, username, password):
+    vm_history_file = '/%s/history.json' % domain
+    ftp = FtpHelper(remote, port, username, password)
+    vm_history = ftp.get_json_file_data(vm_history_file)
+    vm_disk_full_versions = set()
+    if vm_history:
+        for v in vm_history.keys():
+            record = vm_history[v]
+            if disk in record.keys():
+                vm_disk_full_versions.add(record[disk]['full'])
+    disk_versions = []
+    disk_backup_dir = '/%s/diskbackup/%s' % (domain, disk)
+    history_file = '%s/history.json' % disk_backup_dir
+    history = ftp.get_json_file_data(history_file)
+    if history:
+        logger.debug(dumps(history))
+        for full_version in history.keys():
+            if full_version == 'current':
+                continue
+            if full_version in vm_disk_full_versions:
+                continue
+            for v in history[full_version].keys():
+                disk_versions.append(v)
+    return disk_versions
+
 def is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
     target_dir = '/%s/diskbackup/%s' % (domain, disk)
     ftp = FtpHelper(remote, port, username, password)
