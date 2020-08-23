@@ -2063,7 +2063,7 @@ def backupVM(params):
                 'full': disk_version[disk]
             }
         if newestV:
-            history[params.version][disk]['vm_full'] = newestV
+            history[params.version][disk]['vm_full'] = history[newestV][disk]['vm_full']
         else:
             history[params.version][disk]['vm_full'] = params.version
     with open(history_file_path, 'w') as f:
