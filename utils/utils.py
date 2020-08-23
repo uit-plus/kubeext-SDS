@@ -2053,27 +2053,47 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
         checksums = load(f)
 
     old_to_new = {}
+    cp_disks = []
     chains = record['chains']
     try:
         # cp all file and make a chain
         # logger.debug(dumps(record))
+
+        disk_checksums = {}
+        for d in os.listdir(target_dir):
+            if d == 'config.json' or d == 'snapshots':
+                continue
+            f = '%s/%s' % (target_dir, d)
+            c = checksum('%s/%s' % (target_dir, d))
+            disk_checksums[c] = f
+        snapshot_dir = '%s/snapshots' % target_dir
+        if os.path.exists(snapshot_dir):
+            for d in os.listdir(snapshot_dir):
+                f = '%s/%s' % (snapshot_dir, d)
+                c = checksum('%s/%s' % (snapshot_dir, d))
+                disk_checksums[c] = f
         for chain in chains:
             # print chain['path']
             if chain['checksum'] not in checksums.keys():
                 raise ExecuteException('', 'can not find disk file backup checksum.')
+
+            if chain['checksum'] in disk_checksums.keys():
+                old_to_new[chain['path']] = disk_checksums[chain['checksum']]
+                continue
+
             backup_file = '%s/%s' % (disk_back_dir, checksums[chain['checksum']])
             if not os.path.exists(backup_file):
                 raise ExecuteException('', 'can not find disk backup file %s.' % backup_file)
             if chain['parent']:
                 new_disk_file = '%s/%s' % (target_dir, os.path.basename(chain['path']))
-                if chain['path'].find(target_dir) < 0 or os.path.exists('%s/%s' % (target_dir, os.path.basename(chain['path']))):
+                if chain['path'].find(target_dir) < 0:
                     uuid = randomUUID().replace('-', '')
                     new_disk_file = '%s/%s' % (target_dir, uuid)
                 old_to_new[chain['path']] = new_disk_file
                 runCmd('cp -f %s %s' % (backup_file, new_disk_file))
+                cp_disks.append(new_disk_file)
             else:
                 # base image
-
                 # if image exist, not cp
                 di_helper = K8sHelper('VirtualMachineDiskImage')
                 image = os.path.basename(chain['path'])
@@ -2083,7 +2103,6 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                         old_to_new[chain['path']] = volume['current']
                         continue
 
-                # cp base image
                 if chain['path'].find('snapshots') >= 0:
                     base_file = '%s/snapshots/%s' % (target_dir, os.path.basename(chain['path']))
                 else:
@@ -2092,12 +2111,13 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                 if not os.path.exists(base_file):
                     old_to_new[chain['path']] = new_disk_file
                     runCmd('cp -f %s %s' % (backup_file, new_disk_file))
+                    cp_disks.append(new_disk_file)
                 else:
                     old_to_new[chain['path']] = base_file
         for df in old_to_new.values():
             runCmd('chmod 666 %s' % df)
     except ExecuteException, e:
-        for file in old_to_new.values():
+        for file in cp_disks.values():
             runCmd('rm -f %s' % file)
         raise e
 
