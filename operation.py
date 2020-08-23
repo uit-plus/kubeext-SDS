@@ -1801,15 +1801,15 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
             with open(history_file_path, 'r') as f:
                 history = load(f)
 
-        if full_version not in history.keys():
-            history[full_version] = {}
+        if current_full_version not in history.keys():
+            history[current_full_version] = {}
 
-        count = len(history[full_version].keys())
+        count = len(history[current_full_version].keys())
 
         chain['index'] = count + 1
         chain['time'] = time.time()
-        history[full_version][version] = chain
-        history['current'] = full_version
+        history[current_full_version][version] = chain
+        history['current'] = current_full_version
 
         with open(history_file_path, 'w') as f:
             dump(history, f)
