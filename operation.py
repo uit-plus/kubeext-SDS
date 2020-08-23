@@ -2056,7 +2056,7 @@ def backupVM(params):
         if newestV:
             history[params.version][disk]['vm_full'] = newestV
         else:
-            history[params.version][disk]['vm_full'] = params.full
+            history[params.version][disk]['vm_full'] = params.version
     with open(history_file_path, 'w') as f:
         dump(history, f)
 
