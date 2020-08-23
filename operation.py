@@ -2088,7 +2088,7 @@ def backupVM(params):
                 push_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote,
                                  params.port, params.username, params.password)
                 fin.append(disk)
-            ftp.upload_file(xml_file, '/%s' % params.version)
+            ftp.upload_file(xml_file, '/%s' % params.domain)
         except Exception, e:
             for disk in fin:
                 delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
