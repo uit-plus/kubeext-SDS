@@ -1929,7 +1929,8 @@ def restoreDisk(params):
     current = restore_vm_disk(params.domain, params.pool, params.vol, params.version, params.newname, params.target)
 
     # attach vm disk
-    attach_vm_disk(params.targetDomain, current)
+    if params.targetDomain:
+        attach_vm_disk(params.targetDomain, current)
     success_print("success restoreDisk.", {})
 
 
