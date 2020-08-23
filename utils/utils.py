@@ -1805,7 +1805,7 @@ def get_disk_backup_current(domain, pool, disk):
         if 'current' not in history.keys() and disk not in history['current'].keys():
             raise ExecuteException('', 'disk %s backup version not exist current full backup version. plz check %s' % (
                 disk, history_file_path))
-        return history['current'][disk]
+        return history['current']
 
 
 def is_disk_backup_exist(domain, pool, disk, version):
