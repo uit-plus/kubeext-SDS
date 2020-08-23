@@ -2170,7 +2170,7 @@ def restoreVM(params):
                     dumps(disk_version), params.domain))
 
     # restore vm disk snapshot chain
-    for disk in vm_disks:
+    for disk in record.keys():
         if not params.all and record[disk]['tag'] != 'vda':
             continue
         disk_info = get_vol_info_from_k8s(disk)
