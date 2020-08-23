@@ -2281,8 +2281,7 @@ def delete_vm_backup(domain, pool, version):
 
     op = Operation('rm -f %s.xml' % version, {})
     op.execute()
-    if history['current'] == version:
-        del history['current']
+
     del history[version]
 
     with open(history_file_path, 'w') as f:
