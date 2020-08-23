@@ -1821,8 +1821,10 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version):
     finally:
         # change disk current
         # change_vol_current(disk, ss_path)
-        base = DiskImageHelper.get_backing_file(ss_path)
-        if os.path.exists(ss_path) and base and os.path.exists(base):
+        base = None
+        if os.path.exists(ss_path):
+            base = DiskImageHelper.get_backing_file(ss_path)
+        if base and os.path.exists(base):
             if is_vm_active(domain):
                 op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
                                {})
