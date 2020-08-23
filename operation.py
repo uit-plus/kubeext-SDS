@@ -2499,6 +2499,8 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
         ftp.download_file(ftp_history_file, '/tmp/history.json')
         with open('/tmp/history.json', 'r') as f:
             ftp_history = load(f)
+            if full_version not in ftp_history:
+                ftp_history[full_version] = {}
             ftp_history[full_version][version] = record
     else:
         ftp_history = {}
