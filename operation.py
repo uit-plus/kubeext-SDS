@@ -1964,26 +1964,6 @@ def backupVM(params):
         raise ExecuteException('', 'domain %s has exist backup version %s in %s. plz check it.' % (
         params.domain, params.version, history_file_path))
 
-    history = {}
-    if os.path.exists(history_file_path):
-        with open(history_file_path, 'r') as f:
-            history = load(f)
-    disk_full_version = None
-    newestV = None
-    if not params.full:
-        if len(history.keys()) == 0:
-            raise ExecuteException('', 'domain %s not exist full backup version %s in %s. plz check it.' % (
-            params.domain, params.version, history_file_path))
-        btime = 0.0
-        for v in history.keys():
-            for disk in history[v].keys():
-                if history[v][disk]['time'] > btime:
-                    btime = history[v][disk]['time']
-                    newestV = v
-        disk_full_version = {}
-        for disk in history[newestV].keys():
-            disk_full_version[disk] = history[newestV][disk]['full']
-
     disk_tags = {}
     disk_specs = get_disks_spec(params.domain)
 
@@ -2011,6 +1991,35 @@ def backupVM(params):
             raise ExecuteException('', 'vm disk dir %s not exist, plz check it.' % disk_dir)
         disk_tags[disk_mn] = disk_specs[disk_path]
 
+    history = {}
+    if os.path.exists(history_file_path):
+        with open(history_file_path, 'r') as f:
+            history = load(f)
+    disk_full_version = None
+    newestV = None
+    if not params.full:
+        if len(history.keys()) == 0:
+            raise ExecuteException('', 'domain %s not exist full backup version %s in %s. plz check it.' % (
+            params.domain, params.version, history_file_path))
+        btime = 0.0
+        for v in history.keys():
+            not_match = False
+            for disk in disk_tags:
+                if disk not in history[v].keys():
+                    not_match = True
+            if not_match:
+                continue
+
+            for disk in history[v].keys():
+                if history[v][disk]['time'] > btime:
+                    btime = history[v][disk]['time']
+                    newestV = v
+        if newestV is None:
+            raise ExecuteException('', 'can not find all disk full backup record, maybe you should make a full backup')
+        disk_full_version = {}
+        for disk in history[newestV].keys():
+            disk_full_version[disk] = history[newestV][disk]['full']
+
     # check domain all disk has full backup
     if not params.full:
         for disk in disk_tags.keys():
@@ -2031,6 +2040,8 @@ def backupVM(params):
         uuid = randomUUID().replace('-', '')
         disk_version[disk] = uuid
         if disk_full_version:
+            logger.debug('disk_full_version')
+            logger.debug(disk_full_version)
             backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, disk_full_version[disk], True)
         else:
             backup_vm_disk(params.domain, params.pool, disk, uuid, True, None, True)
