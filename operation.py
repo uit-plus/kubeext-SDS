@@ -1696,7 +1696,7 @@ def backupDisk(params):
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
     if params.full:
-        full_version = params.full
+        full_version = params.version
         logger.debug(full_version)
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, full_version)
     else:
