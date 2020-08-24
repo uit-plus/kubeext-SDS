@@ -2123,7 +2123,8 @@ def backupVM(params):
         'domain': params.domain,
         'pool': params.pool,
         'time': time.time(),
-        'disk':  ''
+        'disk':  '',
+        'version': params.version
     }
 
 
@@ -2834,7 +2835,8 @@ def scanBackup(params):
                             'disk': params.vol,
                             'pool': params.pool,
                             'full': fv,
-                            'time': history[fv][v]['time']
+                            'time': history[fv][v]['time'],
+                            'version': v
                         }
                         backup_helper.create(v, 'backup', data)
                         backup_helper.add_label(v, params.domain)
@@ -2860,6 +2862,7 @@ def scanBackup(params):
                         'pool': params.pool,
                         'full': vm_full,
                         'time': time,
+                        'version': v
                     }
                     backup_helper.create(v, 'backup', data)
                     backup_helper.add_label(v, params.domain)
