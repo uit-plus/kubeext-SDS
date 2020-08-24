@@ -2859,7 +2859,7 @@ def scanBackup(params):
                         'time': time,
                     }
                     backup_helper.create(v, 'backup', data)
-                    backup_helper.add_label(params.version, params.domain)
+                    backup_helper.add_label(v, params.domain)
     success_print("success scanBackup", {})
 
 def showDiskPool(params):
