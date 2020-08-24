@@ -1927,13 +1927,14 @@ def get_disk_backup_full_version(domain, pool, disk):
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
 
     vm_history_file = '%s/vmbackup/%s/history.json' % (pool_info['path'], domain)
-    with open(vm_history_file, 'r') as f:
-        vm_history = load(f)
-        vm_disk_full_versions = set()
-        for v in vm_history.keys():
-            record = vm_history[v]
-            if disk in record.keys():
-                vm_disk_full_versions.add(record[disk]['full'])
+    vm_disk_full_versions = set()
+    if os.path.exists(vm_history_file):
+        with open(vm_history_file, 'r') as f:
+            vm_history = load(f)
+            for v in vm_history.keys():
+                record = vm_history[v]
+                if disk in record.keys():
+                    vm_disk_full_versions.add(record[disk]['full'])
 
     history_file = '%s/history.json' % disk_backup_dir
     if not os.path.exists(history_file):
