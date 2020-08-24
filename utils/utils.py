@@ -1862,7 +1862,7 @@ def is_remote_vm_backup_exist(domain, version, remote, port, username, password)
     history_file = '%s/history.json' % target_dir
     if ftp.is_exist_dir(target_dir) and ftp.is_exist_file(history_file):
         history = ftp.get_json_file_data(history_file)
-        if version in history.keys():
+        if history and version in history.keys():
             return True
     return False
 

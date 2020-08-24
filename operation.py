@@ -1954,6 +1954,12 @@ def backupVM(params):
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
 
+    if params.remote:
+        if is_remote_vm_backup_exist(params.domain, params.version, params.remote, params.port, params.username,
+                                     params.password):
+            raise ExecuteException('', 'domain %s has exist backup version %s in ftp server. plz check it.' % (
+                params.domain, params.version))
+
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
 
@@ -2069,10 +2075,6 @@ def backupVM(params):
         dump(history, f)
 
     if params.remote:
-        if is_remote_vm_backup_exist(params.domain, params.version, params.remote, params.port, params.username,
-                                     params.password):
-            raise ExecuteException('', 'domain %s has exist backup version %s in ftp server. plz check it.' % (
-                params.domain, params.version))
 
         # history file
         history_file = '%s/history.json' % backup_dir
