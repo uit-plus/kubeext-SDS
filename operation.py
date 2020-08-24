@@ -2717,7 +2717,7 @@ def clean_vm_backup(domain, pool, versions):
 
     history_file = '%s/history.json' % backup_dir
     with open(history_file, 'r') as f:
-        history = load(history_file)
+        history = load(f)
         for v in history.keys():
             if v not in versions:
                 delete_vm_backup(domain, pool, v)
