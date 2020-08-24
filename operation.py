@@ -2820,7 +2820,7 @@ def scanBackup(params):
         # check backup version exist or not
         history_file = '%s/history.json' % backup_dir
         with open(history_file, 'r') as f:
-            history = load(history_file)
+            history = load(f)
             disk_full_versions = get_disk_backup_full_version(params.domain, params.pool, params.vol)
 
             for fv in disk_full_versions:
