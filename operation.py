@@ -2773,7 +2773,7 @@ def clean_disk_remote_backup(domain, disk, versions, remote, port, username, pas
 
 def clean_vm_remote_backup(domain, versions, remote, port, username, password):
     ftp = FtpHelper(remote, port, username, password)
-    remote_backup_dir = '/%s/diskbackup/%s' % domain
+    remote_backup_dir = '/%s' % domain
     remote_history_file = '%s/history.json' % remote_backup_dir
     remote_history = ftp.get_json_file_data(remote_history_file)
     if remote_history is None:
@@ -2788,7 +2788,9 @@ def cleanRemoteBackup(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)
 
-    versions = params.version.split(',')
+    versions = []
+    for v in params.version.split(','):
+        versions.append(v.strip())
     if params.vol:
         clean_disk_remote_backup(params.domain, params.vol, versions, params.remote, params.port, params.username, params.password)
     else:
