@@ -2834,7 +2834,7 @@ def scanBackup(params):
                             'time': history[fv][v]['time']
                         }
                         backup_helper.create(v, 'backup', data)
-                        backup_helper.add_label(params.version, params.domain)
+                        backup_helper.add_label(v, params.domain)
     else:
         backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
         if not os.path.exists(backup_dir):
