@@ -1693,7 +1693,6 @@ def backupDisk(params):
     disk_heler.delete_lifecycle(params.vol)
     logger.debug('params!!!!')
     logger.debug(params)
-    ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
     if params.full:
         full_version = params.version
