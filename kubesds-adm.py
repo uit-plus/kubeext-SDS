@@ -1099,8 +1099,6 @@ parser_clean_remote_backup.add_argument("--domain", required=True, metavar="[DOM
                             help="vm domain to export")
 parser_clean_remote_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
                             help="vm disk to backup")
-parser_clean_remote_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
-                            help="backup to store")
 parser_clean_remote_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
 parser_clean_remote_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
