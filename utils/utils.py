@@ -554,6 +554,7 @@ def get_disks_spec(domain):
     runCmd('rm -f %s' % xmlfile)
     return spec
 
+
 def get_disks_spec_by_xml(xmlfile):
     if xmlfile is None:
         raise ExecuteException('RunCmdError', 'domin xml file is not set. Can not get domain disk spec.')
@@ -1117,21 +1118,28 @@ def modofy_vm_disk_file(xmlfile, source, target):
 
 
 def attach_vm_disk(vm, disk):
-    disk_specs = get_disks_spec(vm)
-    if not os.path.exists(disk):
-        raise ExecuteException('', 'disk file %s not exist.' % disk)
-    if disk in disk_specs.keys():
-        raise ExecuteException('', 'disk file %s has attached in vm %s.' % (disk, vm))
-    tag = None
-    letter_list = list(string.ascii_lowercase)
-    for i in letter_list:
-        if ('vd' + i) not in disk_specs.values():
-            tag = 'vd' + i
-            break
-    disk_info = get_disk_info(disk)
-    runCmd('virsh attach-disk --domain %s --cache none  --config %s --target %s --subdriver %s' % (
-    vm, disk, tag, disk_info['format']))
-
+    time = 4
+    for t in range(time):
+        try:
+            disk_specs = get_disks_spec(vm)
+            if not os.path.exists(disk):
+                raise ExecuteException('', 'disk file %s not exist.' % disk)
+            if disk in disk_specs.keys():
+                raise ExecuteException('', 'disk file %s has attached in vm %s.' % (disk, vm))
+            tag = None
+            letter_list = list(string.ascii_lowercase)
+            for i in letter_list:
+                if ('vd' + i) not in disk_specs.values():
+                    tag = 'vd' + i
+                    break
+            disk_info = get_disk_info(disk)
+            runCmd('virsh attach-disk --domain %s --cache none  --config %s --target %s --subdriver %s' % (
+                vm, disk, tag, disk_info['format']))
+            return
+        except Exception:
+            logger.debug(traceback.format_exc())
+            pass
+    raise ExecuteException('RunCmdError', 'can not attach disk %s to vm %s' % (disk, vm))
 
 def modofy_vm_disks(vm, source_to_target):
     if not vm or not source_to_target:
@@ -1827,6 +1835,7 @@ def get_disk_backup_current(domain, pool, disk):
             else:
                 return newestV
 
+
 def is_disk_backup_exist(domain, pool, disk, version):
     pool_info = get_pool_info_from_k8s(pool)
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
@@ -1952,6 +1961,7 @@ def get_disk_backup_full_version(domain, pool, disk):
             disk_versions.append(full_version)
     return disk_versions
 
+
 def get_remote_disk_backup_version(domain, disk, remote, port, username, password):
     vm_history_file = '/%s/history.json' % domain
     ftp = FtpHelper(remote, port, username, password)
@@ -1976,6 +1986,7 @@ def get_remote_disk_backup_version(domain, disk, remote, port, username, passwor
             for v in history[full_version].keys():
                 disk_versions.append(v)
     return disk_versions
+
 
 def is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
     target_dir = '/%s/diskbackup/%s' % (domain, disk)
