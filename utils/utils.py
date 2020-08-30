@@ -2129,6 +2129,8 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                 image = os.path.basename(chain['path'])
                 if di_helper.exist(image):
                     volume = di_helper.get_data(image, 'volume')
+                    logger.debug('volume')
+                    logger.debug(volume)
                     if volume and isinstance(volume, dict) and os.path.exists(volume['current']) and checksums(volume['current']) == chain['checksum']:
                         old_to_new[chain['path']] = volume['current']
                         continue
