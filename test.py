@@ -1,5 +1,6 @@
 import random
 import shlex
+import string
 import subprocess
 import traceback
 
@@ -26,5 +27,5 @@ def randomUUID():
 
 
 if __name__ == '__main__':
-    for i in range(100):
-        print randomUUID().replace('-', '')
+    letter_list = list(string.ascii_lowercase)
+    print letter_list

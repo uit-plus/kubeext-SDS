@@ -32,6 +32,7 @@ config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
 
 LOG = '/var/log/kubesds.log'
 
+RETRY_TIMES = 5
 
 def set_logger(header, fn):
     logger = logging.getLogger(header)
@@ -188,130 +189,155 @@ class K8sHelper(object):
         self.kind = kind
 
     def exist(self, name):
-        try:
-            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                              version=resources[self.kind]['version'],
-                                                                              namespace='default',
-                                                                              plural=resources[self.kind]['plural'],
-                                                                              name=name)
-            return True
-        except Exception:
-            return False
+        for i in range(RETRY_TIMES):
+            try:
+                jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                                  version=resources[self.kind]['version'],
+                                                                                  namespace='default',
+                                                                                  plural=resources[self.kind]['plural'],
+                                                                                  name=name)
+                return True
+            except ApiException, e:
+                if e.reason == 'Not Found':
+                    return False
+        raise ExecuteException('K8sError', 'can not get %s %s response from k8s.' % (self.kind, name))
 
     def get(self, name):
-        try:
-            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                              version=resources[self.kind]['version'],
-                                                                              namespace='default',
-                                                                              plural=resources[self.kind]['plural'],
-                                                                              name=name)
-            return jsondict
-        except Exception:
-            raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
+        for i in range(RETRY_TIMES):
+            try:
+                jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                                  version=resources[self.kind]['version'],
+                                                                                  namespace='default',
+                                                                                  plural=resources[self.kind]['plural'],
+                                                                                  name=name)
+                return jsondict
+            except Exception:
+                pass
+        raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_data(self, name, key):
-        try:
-            jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                              version=resources[self.kind]['version'],
-                                                                              namespace='default',
-                                                                              plural=resources[self.kind]['plural'],
-                                                                              name=name)
-            if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
-                return jsondict['spec'][key]
-            return None
-        except Exception:
-            raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
+        for i in range(RETRY_TIMES):
+            try:
+                jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
+                                                                                  version=resources[self.kind]['version'],
+                                                                                  namespace='default',
+                                                                                  plural=resources[self.kind]['plural'],
+                                                                                  name=name)
+                if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
+                    return jsondict['spec'][key]
+                return None
+            except Exception:
+                pass
+        raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_create_jsondict(self, name, key, data):
-        hostname = get_hostname_in_lower_case()
-        jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
-                    'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
-                    'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
+        for i in range(RETRY_TIMES):
+            try:
+                hostname = get_hostname_in_lower_case()
+                jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
+                            'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
+                            'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
 
-        jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
-        body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
-        return body
+                jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+                body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+                return body
+            except:
+                pass
+        raise ExecuteException('k8sError', 'can not get %s %s data on k8s.' % (self.kind, name))
+
 
     def create(self, name, key, data):
-        try:
-            if self.exist(name):
-                return
-            hostname = get_hostname_in_lower_case()
-            jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
-                        'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
-                        'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
+        for i in range(RETRY_TIMES):
+            try:
+                if self.exist(name):
+                    return
+                hostname = get_hostname_in_lower_case()
+                jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
+                            'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
+                            'apiVersion': '%s/%s' % (resources[self.kind]['group'], resources[self.kind]['version'])}
 
-            jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
-            body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+                jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+                body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
 
-            return client.CustomObjectsApi().create_namespaced_custom_object(
-                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-                plural=resources[self.kind]['plural'], body=body)
-        except Exception:
-            error_print(500, 'can not create %s %s on k8s.' % (self.kind, name))
+                return client.CustomObjectsApi().create_namespaced_custom_object(
+                    group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                    plural=resources[self.kind]['plural'], body=body)
+            except Exception:
+                pass
+        error_print(500, 'can not create %s %s on k8s.' % (self.kind, name))
 
     def add_label(self, name, domain):
-        try:
-            if not self.exist(name):
-                return
-            jsondict = self.get(name)
-            jsondict['metadata']['labels']['domain'] = domain
-            # jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
-            # jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
-            return client.CustomObjectsApi().replace_namespaced_custom_object(
-                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-                plural=resources[self.kind]['plural'], name=name, body=jsondict)
-        except Exception:
-            raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
-
-    def update(self, name, key, data):
-        try:
-            if not self.exist(name):
-                return
-            jsondict = self.get(name)
-            jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
-            jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
-            return client.CustomObjectsApi().replace_namespaced_custom_object(
-                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-                plural=resources[self.kind]['plural'], name=name, body=jsondict)
-        except Exception:
-            raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
-
-    def updateAll(self, name, jsondict):
-        try:
-            if not self.exist(name):
-                return
-            jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
-            jsondict = deleteLifecycleInJson(jsondict)
-            return client.CustomObjectsApi().replace_namespaced_custom_object(
-                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-                plural=resources[self.kind]['plural'], name=name, body=jsondict)
-        except Exception:
-            raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
-
-    def delete(self, name):
-        try:
-            k8s_logger.debug('deleteVMBackupdebug %s' % name)
-            return client.CustomObjectsApi().delete_namespaced_custom_object(
-                group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
-                plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
-        except ApiException, e:
-            if e.reason == 'Not Found':
-                return
-
-    def delete_lifecycle(self, name):
-        try:
-            if not self.exist(name):
-                return
-            jsondict = self.get(name)
-            if hasLifeCycle(jsondict):
-                jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
-                jsondict = removeLifecycle(jsondict)
+        for i in range(RETRY_TIMES):
+            try:
+                if not self.exist(name):
+                    return
+                jsondict = self.get(name)
+                jsondict['metadata']['labels']['domain'] = domain
+                # jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+                # jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
                 return client.CustomObjectsApi().replace_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                     plural=resources[self.kind]['plural'], name=name, body=jsondict)
-        except Exception:
-            raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
+            except Exception:
+                pass
+        raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
+
+    def update(self, name, key, data):
+        for i in range(RETRY_TIMES):
+            try:
+                if not self.exist(name):
+                    return
+                jsondict = self.get(name)
+                jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+                jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
+                return client.CustomObjectsApi().replace_namespaced_custom_object(
+                    group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                    plural=resources[self.kind]['plural'], name=name, body=jsondict)
+            except Exception:
+                pass
+        raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
+
+    def updateAll(self, name, jsondict):
+        for i in range(RETRY_TIMES):
+            try:
+                if not self.exist(name):
+                    return
+                jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+                jsondict = deleteLifecycleInJson(jsondict)
+                return client.CustomObjectsApi().replace_namespaced_custom_object(
+                    group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                    plural=resources[self.kind]['plural'], name=name, body=jsondict)
+            except Exception:
+                pass
+        raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
+
+    def delete(self, name):
+        for i in range(RETRY_TIMES):
+            try:
+                k8s_logger.debug('deleteVMBackupdebug %s' % name)
+                return client.CustomObjectsApi().delete_namespaced_custom_object(
+                    group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                    plural=resources[self.kind]['plural'], name=name, body=V1DeleteOptions())
+            except ApiException, e:
+                if e.reason == 'Not Found':
+                    return
+        raise ExecuteException('RunCmdError', 'can not delete %s %s on k8s.' % (self.kind, name))
+
+    def delete_lifecycle(self, name):
+        for i in range(RETRY_TIMES):
+            try:
+                if not self.exist(name):
+                    return
+                jsondict = self.get(name)
+                if hasLifeCycle(jsondict):
+                    jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
+                    jsondict = removeLifecycle(jsondict)
+                    return client.CustomObjectsApi().replace_namespaced_custom_object(
+                        group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                        plural=resources[self.kind]['plural'], name=name, body=jsondict)
+            except Exception:
+                pass
+        raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 
     def change_node(self, name, newNodeName):
         if not self.exist(name):
