@@ -335,6 +335,8 @@ class K8sHelper(object):
                     return client.CustomObjectsApi().replace_namespaced_custom_object(
                         group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                         plural=resources[self.kind]['plural'], name=name, body=jsondict)
+                else:
+                    return
             except Exception:
                 pass
         raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))

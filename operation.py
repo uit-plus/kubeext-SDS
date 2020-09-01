@@ -2739,7 +2739,10 @@ def cleanBackup(params):
     pool_heler = K8sHelper('VirtualMachinePool')
     pool_heler.delete_lifecycle(params.pool)
 
-    versions = params.version.split(',')
+    versions = []
+    if params.version:
+        for v in params.version.split(','):
+            versions.append(v.strip())
     logger.debug('versions')
     logger.debug(versions)
     if params.vol:
@@ -2791,8 +2794,9 @@ def cleanRemoteBackup(params):
     pool_heler.delete_lifecycle(params.pool)
 
     versions = []
-    for v in params.version.split(','):
-        versions.append(v.strip())
+    if params.version:
+        for v in params.version.split(','):
+            versions.append(v.strip())
     if params.vol:
         clean_disk_remote_backup(params.domain, params.vol, versions, params.remote, params.port, params.username, params.password)
     else:

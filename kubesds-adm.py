@@ -992,6 +992,8 @@ parser_delete_remote_backup.add_argument("--domain", required=True, metavar="[DO
                             help="vm domain to export")
 parser_delete_remote_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
                             help="vm disk to backup")
+parser_delete_remote_backup.add_argument("--pool", required=False, metavar="[POOL]", type=str,
+                            help="vm pool to backup")
 parser_delete_remote_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
                             help="backup version id")
 parser_delete_remote_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
@@ -1088,8 +1090,10 @@ parser_clean_backup.add_argument("--vol", required=False, metavar="[VOL]", type=
                             help="vm disk to backup")
 parser_clean_backup.add_argument("--pool", required=True, metavar="[POOL]", type=str,
                             help="backup to store")
-parser_clean_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+parser_clean_backup.add_argument("--version", required=False, metavar="[VERSION]", type=str,
                             help="backup version id")
+parser_clean_backup.add_argument("--all", required=False, metavar="[ALL]", type=bool, nargs='?', const=True,
+                            help="full clean")
 # set default func
 parser_clean_backup.set_defaults(func=cleanBackupParser)
 
@@ -1097,10 +1101,14 @@ parser_clean_backup.set_defaults(func=cleanBackupParser)
 parser_clean_remote_backup = subparsers.add_parser("cleanRemoteBackup", help="cleanRemoteBackup help")
 parser_clean_remote_backup.add_argument("--domain", required=True, metavar="[DOMAIN]", type=str,
                             help="vm domain to export")
+parser_clean_remote_backup.add_argument("--pool", required=False, metavar="[POOL]", type=str,
+                            help="vm pool to backup")
 parser_clean_remote_backup.add_argument("--vol", required=False, metavar="[VOL]", type=str,
                             help="vm disk to backup")
-parser_clean_remote_backup.add_argument("--version", required=True, metavar="[VERSION]", type=str,
+parser_clean_remote_backup.add_argument("--version", required=False, metavar="[VERSION]", type=str,
                             help="backup version id")
+parser_clean_remote_backup.add_argument("--all", required=False, metavar="[ALL]", type=bool, nargs='?', const=True,
+                            help="full clean")
 parser_clean_remote_backup.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
                             help="remote server host.")
 parser_clean_remote_backup.add_argument("--port", required=True, metavar="[PORT]", type=str,
