@@ -1932,8 +1932,8 @@ def restore_vm_disk(domain, pool, disk, version, newname, target):
     return current
 
 def restoreDisk(params):
-    disk_heler = K8sHelper('VirtualMachineDisk')
-    disk_heler.delete_lifecycle(params.vol)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
 
     if params.targetDomain:
         if not is_vm_exist(params.targetDomain):
@@ -2138,8 +2138,8 @@ def backupVM(params):
 
 
 def restoreVM(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
     if not params.newname and is_vm_active(params.domain):
         raise ExecuteException('', 'vm %s is still active, plz stop it first.' % params.domain)
 
@@ -2300,8 +2300,8 @@ def delete_vm_backup(domain, pool, version):
         dump(history, f)
 
 def deleteVMBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
     delete_vm_backup(params.domain, params.pool, params.version)
     backup_helper = K8sHelper('VirtualMachineBackup')
     backup_helper.delete(params.version)
@@ -2309,8 +2309,8 @@ def deleteVMBackup(params):
 
 
 def deleteVMDiskBackup(params):
-    disk_heler = K8sHelper('VirtualMachineDisk')
-    disk_heler.delete_lifecycle(params.vol)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
     delete_disk_backup(params.domain, params.pool, params.vol, params.version)
     backup_helper = K8sHelper('VirtualMachineBackup')
     backup_helper.delete(params.version)
@@ -2318,8 +2318,8 @@ def deleteVMDiskBackup(params):
 
 
 def deleteRemoteBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
     # default backup path
     if params.vol:
         delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port, params.username, params.password)
@@ -2410,8 +2410,8 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
     ftp.delete_file('/%s/%s.xml' % (domain, version))
 
 def pushVMBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
 
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
@@ -2555,8 +2555,8 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
 
 
 def pullRemoteBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
     # default backup path
     checksum_to_pull = []
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -2736,8 +2736,8 @@ def clean_vm_backup(domain, pool, versions):
 
 
 def cleanBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
 
     versions = params.version.split(',')
     logger.debug('versions')
@@ -2787,8 +2787,8 @@ def clean_vm_remote_backup(domain, versions, remote, port, username, password):
 
 
 def cleanRemoteBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
 
     versions = []
     for v in params.version.split(','):
@@ -2802,8 +2802,8 @@ def cleanRemoteBackup(params):
 
 
 def scanBackup(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
+    pool_heler = K8sHelper('VirtualMachinePool')
+    pool_heler.delete_lifecycle(params.pool)
 
     # check backup pool path exist or not
     pool_info = get_pool_info_from_k8s(params.pool)
