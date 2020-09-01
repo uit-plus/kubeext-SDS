@@ -1691,6 +1691,10 @@ def exportVM(params):
 def backupDisk(params):
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(params.vol)
+
+    backup_helper = K8sHelper('VirtualMachineBackup')
+    if backup_helper.exist(params.version):
+        raise ExecuteException('', 'backup %s has exist, plz use another version. plz check it.' % params.version)
     logger.debug('params!!!!')
     logger.debug(params)
 
@@ -1701,7 +1705,6 @@ def backupDisk(params):
         full_version = get_disk_backup_current(params.domain, params.pool, params.vol)
         logger.debug(full_version)
         backup_vm_disk(params.domain, params.pool, params.vol, params.version, params.full, None, False)
-    backup_helper = K8sHelper('VirtualMachineBackup')
     data = {
         'domain': params.domain,
         'pool': params.pool,
@@ -1951,6 +1954,9 @@ def backupVM(params):
     vm_heler = K8sHelper('VirtualMachine')
     vm_heler.delete_lifecycle(params.domain)
 
+    backup_helper = K8sHelper('VirtualMachineBackup')
+    if backup_helper.exist(params.version):
+        raise ExecuteException('', 'backup %s has exist, plz use another version. plz check it.' % params.version)
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
 
@@ -2117,7 +2123,6 @@ def backupVM(params):
             dump(ftp_history, f)
         ftp.upload_file("/tmp/history.json", '/%s' % params.domain)
 
-    backup_helper = K8sHelper('VirtualMachineBackup')
 
     data = {
         'domain': params.domain,
