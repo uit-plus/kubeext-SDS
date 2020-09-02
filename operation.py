@@ -2270,7 +2270,7 @@ def delete_disk_backup(domain, pool, disk, version):
         if len(history[full_version].keys()) == 0:
             del history[full_version]
             runCmd('rm -rf %s/%s' % (backup_dir, full_version))
-    if len(history.keys) == 0:
+    if len(history.keys()) == 0:
         runCmd('rm -rf %s' % backup_dir)
     else:
         with open(history_file, 'w') as f:
@@ -2303,7 +2303,7 @@ def delete_vm_backup(domain, pool, version):
     op.execute()
 
     del history[version]
-    if len(history.keys) == 0:
+    if len(history.keys()) == 0:
         runCmd("rm -f %s" % history_file_path)
     else:
         with open(history_file_path, 'w') as f:
