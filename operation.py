@@ -2735,6 +2735,8 @@ def clean_vm_backup(domain, pool, versions):
     backup_helper = K8sHelper('VirtualMachineBackup')
 
     history_file = '%s/history.json' % backup_dir
+    if not os.path.exists(history_file):
+        return
     with open(history_file, 'r') as f:
         history = load(f)
         for v in history.keys():
