@@ -2050,9 +2050,8 @@ def backup_file(file, target_dir):
     logger.debug('%s checksum: %s' % (file, file_checksum))
     history_file = '%s/checksum.json' % target_dir
     backupRecord = None
-    if not os.path.exists(history_file):
-        history = {}
-    else:
+    history = {}
+    if os.path.exists(history_file):
         with open(history_file, 'r') as f:
             history = load(f)
             if file_checksum in history.keys():
