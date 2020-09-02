@@ -2270,8 +2270,11 @@ def delete_disk_backup(domain, pool, disk, version):
         if len(history[full_version].keys()) == 0:
             del history[full_version]
             runCmd('rm -rf %s/%s' % (backup_dir, full_version))
-    with open(history_file, 'w') as f:
-        dump(history, f)
+    if len(history.keys) == 0:
+        runCmd('rm -rf %s' % backup_dir)
+    else:
+        with open(history_file, 'w') as f:
+            dump(history, f)
 
 def delete_vm_backup(domain, pool, version):
     # default backup path
@@ -2300,9 +2303,12 @@ def delete_vm_backup(domain, pool, version):
     op.execute()
 
     del history[version]
+    if len(history.keys) == 0:
+        runCmd("rm -f %s" % history_file_path)
+    else:
+        with open(history_file_path, 'w') as f:
+            dump(history, f)
 
-    with open(history_file_path, 'w') as f:
-        dump(history, f)
 
 def deleteVMBackup(params):
     pool_heler = K8sHelper('VirtualMachinePool')
@@ -2384,10 +2390,13 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
         del history[full_version]
         ftp.delete_dir('%s/%s' % (backup_dir, full_version))
 
-    tmp_file = '/tmp/history.json'
-    with open(tmp_file, 'w') as f:
-        dump(history, f)
-    ftp.upload_file(tmp_file, backup_dir)
+    if len(history.keys()) == 0:
+        ftp.delete_dir(backup_dir)
+    else:
+        tmp_file = '/tmp/history.json'
+        with open(tmp_file, 'w') as f:
+            dump(history, f)
+        ftp.upload_file(tmp_file, backup_dir)
 
 
 def delete_remote_vm_backup(domain, version, remote, port, username, password):
@@ -2407,10 +2416,13 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
     history_file = '/%s/history.json' % domain
     history = ftp.get_json_file_data(history_file)
     del history[version]
-    tmp_file = '/tmp/history.json'
-    with open(tmp_file, 'w') as f:
-        dump(history, f)
-    ftp.upload_file(tmp_file, '/%s' % domain)
+    if len(history.keys()) == 0:
+        ftp.delete_file(history_file)
+    else:
+        tmp_file = '/tmp/history.json'
+        with open(tmp_file, 'w') as f:
+            dump(history, f)
+        ftp.upload_file(tmp_file, '/%s' % domain)
 
     ftp.delete_file('/%s/%s.xml' % (domain, version))
 
