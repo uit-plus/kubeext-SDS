@@ -2270,7 +2270,7 @@ def delete_disk_backup(domain, pool, disk, version):
         if len(history[full_version].keys()) == 0:
             del history[full_version]
             runCmd('rm -rf %s/%s' % (backup_dir, full_version))
-    if len(history.keys()) == 0:
+    if len(history.keys()) == 0 or (len(history.keys()) == 1 and 'current' in history.keys()):
         runCmd('rm -rf %s' % backup_dir)
     else:
         with open(history_file, 'w') as f:
@@ -2390,7 +2390,7 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
         del history[full_version]
         ftp.delete_dir('%s/%s' % (backup_dir, full_version))
 
-    if len(history.keys()) == 0:
+    if len(history.keys()) == 0  or (len(history.keys()) == 1 and 'current' in history.keys()):
         ftp.delete_dir(backup_dir)
     else:
         tmp_file = '/tmp/history.json'
