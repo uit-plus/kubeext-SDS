@@ -2693,7 +2693,7 @@ def clean_disk_backup(domain, pool, disk, versions):
 
     disk_backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
     if not os.path.exists(disk_backup_dir):
-        raise ExecuteException('', 'not exist disk %s backup dir %s' % (disk, disk_backup_dir))
+        return
 
     # check backup version exist or not
     history_file_path = '%s/history.json' % disk_backup_dir
@@ -2729,7 +2729,7 @@ def clean_vm_backup(domain, pool, versions):
 
     backup_dir = '%s/vmbackup/%s' % (pool_info['path'], domain)
     if not os.path.exists(backup_dir):
-        raise ExecuteException('', 'not exist domain %s backup dir %s' % (domain, backup_dir))
+        return
 
     # check backup version exist or not
     backup_helper = K8sHelper('VirtualMachineBackup')
