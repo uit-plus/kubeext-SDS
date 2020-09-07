@@ -757,9 +757,9 @@ def get_IP():
 def get_cstor_pool_info(pool):
     cstor = runCmdWithResult("cstor-cli pool-show --poolname %s" % pool)
     if cstor['result']['code'] != 0:
-        error_print(400, 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
+        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-    return cstor
+    return cstor['data']
 
 
 def get_pool_info(pool_):
@@ -913,9 +913,10 @@ def get_pool_info_to_k8s(type, pool, poolname, content):
     result['content'] = content
     result["pooltype"] = type
     result["pool"] = pool
-    result["free"] = cstor['data']['free']
+    result["free"] = cstor['free']
     result["poolname"] = poolname
-    if is_pool_started(poolname) and cstor['data']['status'] == 'active':
+    result["uuid"] = cstor['uuid']
+    if is_pool_started(poolname) and cstor['status'] == 'active':
         result["state"] = "active"
     else:
         result["state"] = "inactive"
@@ -2224,16 +2225,17 @@ def check_pool_active(info):
             "pooltype": info['pooltype'],
             "pool": info['pool'],
             "poolname": info['poolname'],
-            "capacity": cstor["data"]["total"],
+            "capacity": cstor["total"],
             "autostart": "no",
-            "path": cstor["data"]["url"],
-            "state": cstor["data"]["status"],
-            "uuid": randomUUID(),
+            "path": cstor["url"],
+            "free": cstor["free"],
+            "state": cstor["status"],
+            "uuid": cstor["uuid"],
             "content": 'vmd'
         }
     else:
         result = get_pool_info(info['poolname'])
-        if is_pool_started(info['poolname']) and cstor['data']['status'] == 'active':
+        if is_pool_started(info['poolname']) and cstor['status'] == 'active':
             result['state'] = "active"
         else:
             result['state'] = "inactive"
@@ -2241,6 +2243,9 @@ def check_pool_active(info):
         result["pooltype"] = info["pooltype"]
         result["pool"] = info["pool"]
         result["poolname"] = info["poolname"]
+        result["free"] = cstor["free"]
+        result["uuid"] = cstor["uuid"]
+
 
     # update pool
     if cmp(info, result) != 0:

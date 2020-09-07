@@ -96,7 +96,7 @@ def createPool(params):
             "autostart": "no",
             "path": cstor["data"]["url"],
             "state": cstor["data"]["status"],
-            "uuid": randomUUID(),
+            "uuid": cstor["data"]["uuid"],
             "content": 'vmd'
         }
     else:
@@ -227,6 +227,7 @@ def showPool(params):
         result["pool"] = params.pool
         result["free"] = cstor["free"]
         result["poolname"] = pool_info["poolname"]
+        result["uuid"] = cstor["uuid"]
     else:
         result = {
             "pooltype": params.type,
@@ -237,7 +238,7 @@ def showPool(params):
             "autostart": "no",
             "path": cstor["url"],
             "state": cstor["status"],
-            "uuid": randomUUID(),
+            "uuid": cstor['uuid'],
             "content": 'vmd'
         }
     # update pool
@@ -2903,16 +2904,6 @@ def is_cstor_pool_exist(pool):
     if cstor['result']['code'] != 0:
         return True
     return False
-
-
-def get_cstor_pool_info(pool):
-    op = Operation('cstor-cli pool-show ', {'poolname': pool}, with_result=True)
-    cstor = op.execute()
-    if cstor['result']['code'] != 0:
-        raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
-            cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-    return cstor['data']
-
 
 def prepare_disk_by_metadataname(uuid):
     success = False
