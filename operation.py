@@ -2843,7 +2843,8 @@ def scanBackup(params):
     if params.vol:
         backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], params.domain, params.vol)
         if not os.path.exists(backup_dir):
-            raise ExecuteException('', 'not exist domain %s backup dir %s' % (params.domain, backup_dir))
+            success_print("success scanBackup", {})
+            return
 
         # check backup version exist or not
         history_file = '%s/history.json' % backup_dir
@@ -2867,9 +2868,10 @@ def scanBackup(params):
     else:
         backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
         if not os.path.exists(backup_dir):
-            raise ExecuteException('', 'not exist domain %s backup dir %s' % (params.domain, backup_dir))
+            success_print("success scanBackup", {})
+            return
 
-        # check backup version exist or not
+            # check backup version exist or not
         history_file = '%s/history.json' % backup_dir
         with open(history_file, 'r') as f:
             history = load(f)
