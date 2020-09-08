@@ -1134,8 +1134,12 @@ def attach_vm_disk(vm, disk):
                     tag = 'vd' + i
                     break
             disk_info = get_disk_info(disk)
-            runCmd('virsh attach-disk --domain %s --cache none  --config %s --target %s --subdriver %s' % (
-                vm, disk, tag, disk_info['format']))
+            if is_vm_active(vm):
+                runCmd('virsh attach-disk --domain %s --cache none --live --config %s --target %s --subdriver %s' % (
+                    vm, disk, tag, disk_info['format']))
+            else:
+                runCmd('virsh attach-disk --domain %s --cache none --config %s --target %s --subdriver %s' % (
+                    vm, disk, tag, disk_info['format']))
             return
         except Exception:
             logger.debug(traceback.format_exc())
