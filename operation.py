@@ -2231,12 +2231,14 @@ def delete_disk_backup(domain, pool, disk, version):
 
     backup_dir = '%s/vmbackup/%s/diskbackup/%s' % (pool_info['path'], domain, disk)
     if not os.path.exists(backup_dir):
-        raise ExecuteException('', 'disk %s not has backup %s, location: %s.' % (
-            disk, version, backup_dir))
+        return
+        # raise ExecuteException('', 'disk %s not has backup %s, location: %s.' % (
+        #     disk, version, backup_dir))
 
     history_file = '%s/history.json' % backup_dir
     if not os.path.exists(history_file):
-        raise ExecuteException('', 'can not find disk %s backup record %s' % (disk, version))
+        return
+        # raise ExecuteException('', 'can not find disk %s backup record %s' % (disk, version))
 
     checksum_to_deletes = []
     with open(history_file, 'r') as f:
@@ -2288,8 +2290,9 @@ def delete_vm_backup(domain, pool, version):
     backup_dir = '%s/vmbackup/%s' % (pool_info['path'], domain)
     history_file_path = '%s/history.json' % backup_dir
     if not is_vm_backup_exist(domain, pool, version):
-        raise ExecuteException('', 'domain %s not exist backup version %s in %s. plz check it.' % (
-            domain, version, history_file_path))
+        return
+        # raise ExecuteException('', 'domain %s not exist backup version %s in %s. plz check it.' % (
+        #     domain, version, history_file_path))
 
     disk_version = {}
     with open(history_file_path, 'r') as f:
@@ -2315,8 +2318,11 @@ def deleteVMBackup(params):
     pool_heler = K8sHelper('VirtualMachinePool')
     pool_heler.delete_lifecycle(params.pool)
     delete_vm_backup(params.domain, params.pool, params.version)
-    backup_helper = K8sHelper('VirtualMachineBackup')
-    backup_helper.delete(params.version)
+    try:
+        backup_helper = K8sHelper('VirtualMachineBackup')
+        backup_helper.delete(params.version)
+    except:
+        pass
     success_print("success deleteVMBackup.", {})
 
 
@@ -2324,8 +2330,11 @@ def deleteVMDiskBackup(params):
     pool_heler = K8sHelper('VirtualMachinePool')
     pool_heler.delete_lifecycle(params.pool)
     delete_disk_backup(params.domain, params.pool, params.vol, params.version)
-    backup_helper = K8sHelper('VirtualMachineBackup')
-    backup_helper.delete(params.version)
+    try:
+        backup_helper = K8sHelper('VirtualMachineBackup')
+        backup_helper.delete(params.version)
+    except:
+        pass
     success_print("success deleteVMDiskBackup.", {})
 
 
@@ -2350,13 +2359,15 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
     history_file = '%s/history.json' % backup_dir
     logger.debug('history_file: ' + history_file)
     if not ftp.is_exist_file(history_file):
-        raise ExecuteException('',
-                               'can not find disk %s backup record %s in ftp server' % (disk, version))
+        return
+        # raise ExecuteException('',
+        #                        'can not find disk %s backup record %s in ftp server' % (disk, version))
     history = ftp.get_json_file_data(history_file)
     full_version = get_full_version_by_history(disk, version, history)
     if full_version not in history.keys() or version not in history[full_version].keys():
-        raise ExecuteException('',
-                               'can not find disk %s backup record %s in ftp server' % (disk, version))
+        return
+        # raise ExecuteException('',
+        #                        'can not find disk %s backup record %s in ftp server' % (disk, version))
 
     record = history[full_version][version]
     chains = record['chains']
@@ -2406,8 +2417,9 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
     history = ftp.get_json_file_data(history_file)
 
     if not history or version not in history.keys():
-        raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
-            domain, version, history_file))
+        return
+        # raise ExecuteException('', 'not exist vm %s backup record version %s in %s. ' % (
+        #     domain, version, history_file))
     record = history[version]
     for disk in record.keys():
         if disk == 'current':
@@ -2438,9 +2450,9 @@ def pushVMBackup(params):
         raise ExecuteException('', 'pool %s path %s not exist. plz check it.' % (params.pool, pool_info['path']))
 
     backup_dir = '%s/vmbackup/%s' % (pool_info['path'], params.domain)
-    if is_remote_vm_backup_exist(params.domain, params.version, params.remote, params.port, params.username, params.password):
-        raise ExecuteException('', 'domain %s has exist backup version %s in ftp server. plz check it.' % (
-            params.domain, params.version))
+    # if is_remote_vm_backup_exist(params.domain, params.version, params.remote, params.port, params.username, params.password):
+    #     raise ExecuteException('', 'domain %s has exist backup version %s in ftp server. plz check it.' % (
+    #         params.domain, params.version))
 
     # history file
     history_file = '%s/history.json' % backup_dir
