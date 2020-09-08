@@ -2507,9 +2507,9 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
     if not port or not username or not password:
         raise ExecuteException('', 'ftp port, username, password must be set.')
     ftp = FtpHelper(remote, port, username, password)
-    if is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
-        raise ExecuteException('', 'ftp server has exist vm %s backup record version %s. ' % (
-            domain, version))
+    # if is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
+    #     raise ExecuteException('', 'ftp server has exist vm %s backup record version %s. ' % (
+    #         domain, version))
 
     pool_info = get_pool_info_from_k8s(pool)
     check_pool_active(pool_info)
