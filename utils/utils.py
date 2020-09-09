@@ -2285,8 +2285,11 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
-    for i in range(100):
-        print randomUUID().replace('-', '')
+    pool_helper = K8sHelper('VirtualMachinePool')
+    # pool_info = get_pool_info_to_k8s('nfs', 'migratepoolnodepool22', '170dd9accdd174caced76b0db2223', 'vmd')
+    # pool_helper.update('migratepoolnodepool22', 'pool', pool_info)
+    pool_helper.delete_lifecycle('migratepoolnodepool22')
+
     # print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
     # print get_pools_by_node('vm.node25')
     # print get_pool_info_from_k8s('7daed7737ea0480eb078567febda62ea')

@@ -2170,7 +2170,9 @@ def restoreVM(params):
             disk_version[disk] = record[disk]['version']
 
     disk_specs = get_disks_spec(params.domain)
-
+    pool_info = get_pool_info_from_k8s(params.pool)
+    logger.debug("debugcode")
+    logger.debug(dumps(pool_info))
     # be sure vm still use the disks in the backup record.
     vm_disks = []
     for disk_path in disk_specs.keys():
@@ -2185,14 +2187,18 @@ def restoreVM(params):
             if disk not in vm_disks:
                 raise ExecuteException('', 'some disk in backup %s has not been attached in domain %s.' % (
                     dumps(disk_version), params.domain))
-
+    logger.debug("debugcode")
+    pool_info = get_pool_info_from_k8s(params.pool)
+    logger.debug(dumps(pool_info))
     # restore vm disk snapshot chain
     for disk in record.keys():
         if not params.all and record[disk]['tag'] != 'vda':
             continue
         disk_info = get_vol_info_from_k8s(disk)
         cstor_disk_prepare(disk_info['poolname'], disk, disk_info['uni'])
-
+    logger.debug("debugcode")
+    pool_info = get_pool_info_from_k8s(params.pool)
+    logger.debug(dumps(pool_info))
     # restore vm disk snapshot chain
     disk_currents = {}
     for disk in disk_version.keys():
@@ -2218,7 +2224,9 @@ def restoreVM(params):
                     source_to_target[disk_path] = disk_currents[name]
                     break
         define_and_restore_vm_disks(vm_xml_file, params.newname, source_to_target)
-
+    logger.debug("debugcode")
+    pool_info = get_pool_info_from_k8s(params.pool)
+    logger.debug(dumps(pool_info))
     success_print("success restoreVM.", {})
 
 
