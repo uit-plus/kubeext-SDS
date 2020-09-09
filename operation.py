@@ -2211,7 +2211,10 @@ def restoreVM(params):
         disk_specs = get_disks_spec_by_xml(vm_xml_file)
         for name in disk_version.keys():
             for disk_path in disk_specs.keys():
-                if disk_path.find(name) >= 0:
+                if disk_path.find(name) >= 0 and name in disk_currents.keys():
+                    logger.debug(dumps(disk_currents))
+                    logger.debug("name2215")
+                    logger.debug(name)
                     source_to_target[disk_path] = disk_currents[name]
                     break
         define_and_restore_vm_disks(vm_xml_file, params.newname, source_to_target)
