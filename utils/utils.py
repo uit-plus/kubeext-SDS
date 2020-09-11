@@ -2333,6 +2333,7 @@ if __name__ == '__main__':
     # pool_info = get_pool_info_to_k8s('nfs', 'migratepoolnodepool22', '170dd9accdd174caced76b0db2223', 'vmd')
     # pool_helper.update('migratepoolnodepool22', 'pool', pool_info)
     pool_helper.delete_lifecycle('migratepoolnodepool22')
+    print get_os_disk("cloudinitbackup")
 
     # print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
     # print get_pools_by_node('vm.node25')
