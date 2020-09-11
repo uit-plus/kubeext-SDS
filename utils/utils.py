@@ -576,6 +576,47 @@ def get_disks_spec_by_xml(xmlfile):
                     spec[source_element.get("file")] = target_element.get('dev')
     return spec
 
+def get_os_disk(domain):
+    if not domain:
+        raise ExecuteException('', 'missing parameter: no vm name(%s).' % domain)
+    uuid = randomUUID()
+    runCmd('virsh dumpxml %s > /tmp/%s.xml' % (domain, uuid))
+    xmlfile = '/tmp/%s.xml' % uuid
+    if xmlfile is None:
+        raise ExecuteException('RunCmdError', 'domin xml file is not set. Can not get domain disk spec.')
+
+    tree = ET.parse(xmlfile)
+    os_disk = {}
+    root = tree.getroot()
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element is not None:
+                    target_element = disk.find("target")
+                    runCmd('rm -f %s' % xmlfile)
+                    return target_element.get('dev'), source_element.get("file")
+    raise ExecuteException('RunCmdError', 'cannot indify vm os disk.')
+
+def get_os_disk_by_xml(xmlfile):
+    if xmlfile is None:
+        raise ExecuteException('RunCmdError', 'domin xml file is not set. Can not get domain disk spec.')
+
+    tree = ET.parse(xmlfile)
+    os_disk = {}
+    root = tree.getroot()
+    captionList = root.findall("devices")
+    for caption in captionList:
+        disks = caption.findall("disk")
+        for disk in disks:
+            if 'disk' == disk.attrib['device']:
+                source_element = disk.find("source")
+                if source_element is not None:
+                    target_element = disk.find("target")
+                    return target_element.get('dev'), source_element.get("file")
+    raise ExecuteException('RunCmdError', 'cannot indify vm os disk.')
 
 class CDaemon:
     '''
@@ -1171,6 +1212,8 @@ def modofy_vm_disks(vm, source_to_target):
 
 
 def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
+    logger.debug(xmlfile)
+    logger.debug(source_to_target)
     if not xmlfile or not source_to_target:
         raise ExecuteException('', 'missing parameter: no vm xml file %s or source_to_target.' % xmlfile)
     uuid = randomUUID().replace('-', '')
@@ -2285,6 +2328,7 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
+    print is_vm_exist('dsadada')
     pool_helper = K8sHelper('VirtualMachinePool')
     # pool_info = get_pool_info_to_k8s('nfs', 'migratepoolnodepool22', '170dd9accdd174caced76b0db2223', 'vmd')
     # pool_helper.update('migratepoolnodepool22', 'pool', pool_info)

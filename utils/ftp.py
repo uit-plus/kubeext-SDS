@@ -201,12 +201,12 @@ def get_dir_files(source_file_dir):
 
 
 if __name__ == '__main__':
-    ftp = FtpHelper('172.16.1.214', '21', 'ftpuser', 'ftpuser')
+    ftp = FtpHelper('133.133.135.30', '21', 'ftpuser', 'ftpuser')
     # ftp.set_debuglevel(2)
     # upload_file(ftp, '/tmp/123.json', '/vmbackuptest/clouddiskbackup/vmbackuptestdisk1')
     # print ftp.listdir('/vmbackuptest')
     # ftp.download_file('/vmbackuptest/clouddiskbackup/vmbackuptestdisk1/history.json', '/tmp/123.json')
-    print ftp.get_json_file_data('/vmbackuptest/backup1/history.json')
+    print ftp.get_json_file_data('/cloudinitbackup4/history.json')
     # ftp.makedirs('/test/test1/test2')
     # upload_dir(ftp, '/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackup', '/')
     # upload_file(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/vmtest')

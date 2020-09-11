@@ -348,7 +348,8 @@ def updateOS(params):
     prepare_disk_by_path(params.target)
 
     disks = get_disks_spec(params.domain)
-    if params.source not in disks.keys() or disks[params.source] != 'vda':
+    os_disk_tag, os_disk_path = get_os_disk(params.domain)
+    if params.source not in disks.keys() or disks[params.source] != os_disk_tag:
         raise ExecuteException('', '%s is not in domain %s disks.' % (params.source, params.domain))
 
     if not os.path.exists(params.source):
@@ -2169,7 +2170,10 @@ def restoreVM(params):
         for disk in record.keys():
             disk_version[disk] = record[disk]['version']
 
-    disk_specs = get_disks_spec(params.domain)
+    if is_vm_exist(params.domain):
+        disk_specs = get_disks_spec(params.domain)
+    else:
+        disk_specs = get_disks_spec_by_xml('%s/%s.xml' % (backup_dir, params.version))
     pool_info = get_pool_info_from_k8s(params.pool)
     logger.debug("debugcode")
     logger.debug(dumps(pool_info))
@@ -2190,9 +2194,11 @@ def restoreVM(params):
     logger.debug("debugcode")
     pool_info = get_pool_info_from_k8s(params.pool)
     logger.debug(dumps(pool_info))
+    vm_xml_file = '%s/%s.xml' % (backup_dir, params.version)
+    os_disk_tag, os_disk_path = get_os_disk_by_xml(vm_xml_file)
     # restore vm disk snapshot chain
     for disk in record.keys():
-        if not params.all and record[disk]['tag'] != 'vda':
+        if not params.all and record[disk]['tag'] != os_disk_tag:
             continue
         disk_info = get_vol_info_from_k8s(disk)
         cstor_disk_prepare(disk_info['poolname'], disk, disk_info['uni'])
@@ -2201,8 +2207,9 @@ def restoreVM(params):
     logger.debug(dumps(pool_info))
     # restore vm disk snapshot chain
     disk_currents = {}
+
     for disk in disk_version.keys():
-        if not params.all and record[disk]['tag'] != 'vda':
+        if not params.all and record[disk]['tag'] != os_disk_tag:
             continue
         if params.newname:
             newdisk = randomUUID().replace('-', '')
@@ -2210,16 +2217,18 @@ def restoreVM(params):
         else:
             current = restore_vm_disk(params.domain, params.pool, disk, disk_version[disk], None, None)
         disk_currents[disk] = current
+
     if params.newname:
         # current.
-        vm_xml_file = '%s/%s.xml' % (backup_dir, params.version)
         source_to_target = {}
         disk_specs = get_disks_spec_by_xml(vm_xml_file)
+        logger.debug(disk_version)
+        logger.debug(disk_specs)
+        logger.debug(disk_currents)
         for name in disk_version.keys():
             for disk_path in disk_specs.keys():
                 if disk_path.find(name) >= 0 and name in disk_currents.keys():
                     logger.debug(dumps(disk_currents))
-                    logger.debug("name2215")
                     logger.debug(name)
                     source_to_target[disk_path] = disk_currents[name]
                     break
