@@ -1252,6 +1252,15 @@ def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
     runCmd('virsh define %s' % vm_file)
     runCmd('rm %s' % vm_file)
 
+    try:
+        helper = K8sHelper('VirtualMachine')
+        vm_xml = get_vm_xml(newname)
+        vm_json = toKubeJson(xmlToJson(vm_xml))
+        vm_json = updateDomain(loads(vm_json))
+        helper.create(newname, 'domain', vm_json)
+    except:
+        pass
+
 
 def change_vm_os_disk_file(vm, source, target):
     if not vm or not source or not target:
