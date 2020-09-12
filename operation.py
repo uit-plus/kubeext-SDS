@@ -2212,7 +2212,10 @@ def restoreVM(params):
         if not params.all and record[disk]['tag'] != os_disk_tag:
             continue
         if params.newname:
-            newdisk = randomUUID().replace('-', '')
+            if record[disk]['tag'] == os_disk_tag:
+                newdisk = params.newname
+            else:
+                newdisk = randomUUID().replace('-', '')
             current = restore_vm_disk(params.domain, params.pool, disk, disk_version[disk], newdisk, params.target)
         else:
             current = restore_vm_disk(params.domain, params.pool, disk, disk_version[disk], None, None)
