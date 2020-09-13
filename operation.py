@@ -1529,7 +1529,7 @@ def migrateVMDisk(params):
                 raise ExecuteException('RunCmdError', 'not support migrate disk dev to dev with different poolname.')
             migrateVols.append(vol)
             notReleaseVols.append(prepare_info['disk'])
-            vp['vol'] = vol
+            vp['vol'] = prepare_info['path']
             vp['pool'] = pool
             vps.append(vp)
         else:
