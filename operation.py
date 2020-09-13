@@ -1617,6 +1617,7 @@ def migrateVMDisk(params):
                         migrateDiskFunc(vol, oldPools[vol])
                     except:
                         pass
+                logger.debug(traceback.format_exc())
                 raise e
             op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
             op.execute()
@@ -1634,6 +1635,7 @@ def migrateVMDisk(params):
                         migrateDiskFunc(vol, oldPools[vol])
                     except:
                         pass
+                logger.debug(traceback.format_exc())
                 raise e
             for vol in vmVols:
                 if vol not in notReleaseVols:
