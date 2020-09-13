@@ -1516,6 +1516,7 @@ def migrateVMDisk(params):
             if arg.split('=')[0] == 'pool':
                 pool = arg.split('=')[1]
         if vol and pool:
+            logger.debug('1519: %s' % vol)
             prepare_info = get_disk_prepare_info_by_path(vol)
             source_pool_info = get_pool_info_from_k8s(prepare_info['pool'])
             check_pool_active(source_pool_info)
