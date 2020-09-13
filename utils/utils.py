@@ -513,7 +513,11 @@ def get_all_domain():
     output = runCmdAndGetOutput('virsh list --all')
     lines = output.splitlines()
     domains = []
+    if len(domains) < 2:
+        return domains
     for i in range(2, len(lines)):
+        if len(lines[i].split()) < 3:
+            continue
         domains.append(lines[i].split()[1])
     return domains
 
