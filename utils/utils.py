@@ -509,6 +509,15 @@ def is_vm_exist(domain):
     return False
 
 
+def get_all_domain():
+    output = runCmdAndGetOutput('virsh list --all')
+    lines = output.splitlines()
+    domains = []
+    for i in range(2, len(lines)):
+        domains.append(lines[i].split()[1])
+    return domains
+
+
 def get_volume_size(pool, vol):
     disk_config = get_disk_config(pool, vol)
     disk_info = get_disk_info(disk_config['current'])
@@ -576,6 +585,7 @@ def get_disks_spec_by_xml(xmlfile):
                     spec[source_element.get("file")] = target_element.get('dev')
     return spec
 
+
 def get_os_disk(domain):
     if not domain:
         raise ExecuteException('', 'missing parameter: no vm name(%s).' % domain)
@@ -600,6 +610,7 @@ def get_os_disk(domain):
                     return target_element.get('dev'), source_element.get("file")
     raise ExecuteException('RunCmdError', 'cannot indify vm os disk.')
 
+
 def get_os_disk_by_xml(xmlfile):
     if xmlfile is None:
         raise ExecuteException('RunCmdError', 'domin xml file is not set. Can not get domain disk spec.')
@@ -617,6 +628,7 @@ def get_os_disk_by_xml(xmlfile):
                     target_element = disk.find("target")
                     return target_element.get('dev'), source_element.get("file")
     raise ExecuteException('RunCmdError', 'cannot indify vm os disk.')
+
 
 class CDaemon:
     '''
@@ -1187,6 +1199,7 @@ def attach_vm_disk(vm, disk):
             pass
     raise ExecuteException('RunCmdError', 'can not attach disk %s to vm %s' % (disk, vm))
 
+
 def modofy_vm_disks(vm, source_to_target):
     if not vm or not source_to_target:
         raise ExecuteException('', 'missing parameter: no vm name(%s) or source_to_target.' % vm)
@@ -1260,6 +1273,64 @@ def define_and_restore_vm_disks(xmlfile, newname, source_to_target):
         helper.create(newname, 'domain', vm_json)
     except:
         pass
+
+
+def try_fix_disk_metadata(path):
+    if os.path.basename(os.path.dirname(path)) == 'snapshots':
+        disk = os.path.basename(os.path.dirname(os.path.dirname(path)))
+        disk_dir = os.path.dirname(os.path.dirname(path))
+    else:
+        disk = os.path.basename(os.path.dirname(path))
+        disk_dir = os.path.dirname(path)
+
+    try:
+        vol_info = get_vol_info_from_k8s(disk)
+        pool_info = get_pool_info_from_k8s(vol_info['pool'])
+        if pool_info['pooltype'] == 'uus':
+            return None
+        config_file = '%s/config.json' % disk_dir
+        config = get_disk_config_by_path(config_file)
+
+        domains = get_all_domain()
+        for domain in domains:
+            try:
+                disk_specs = get_disks_spec(domain)
+                for disk_path in disk_specs.keys():
+                    if os.path.basename(os.path.dirname(disk_path)) == disk or os.path.basename(
+                            os.path.dirname(os.path.dirname(disk_path))) == disk:
+                        if config['current'] != disk_path or vol_info['current'] != disk_path:
+                            logger.debug('try_fix_disk_metadata')
+                            logger.debug('domain %s current: %s' % (domain, disk_path))
+                            write_config(disk, disk_dir, disk_path, config['pool'], config['poolname'])
+                            modify_disk_info_in_k8s(config['poolname'], disk)
+                        return disk_path
+            except:
+                pass
+        # not attach to vm, just try to fix disk
+        lists = []
+        for df in os.listdir(disk_dir):
+            if df == 'config.json':
+                continue
+            lists.append('%s/%s' % (disk_dir, df))
+        ss_dir = '%s/snapshots' % disk_dir
+        if os.path.exists(ss_dir):
+            for df in os.listdir(ss_dir):
+                if df == 'config.json':
+                    continue
+                lists.append('%s/%s' % (ss_dir, df))
+        lists.sort(key=lambda x: os.path.getmtime(x))
+        file_new = lists[-1]
+        disk_info = get_disk_info(file_new)
+        if config['current'] != file_new or vol_info['current'] != file_new:
+            logger.debug('try_fix_disk_metadata')
+            logger.debug('current: %s' % file_new)
+            write_config(disk, disk_dir, file_new, config['pool'], config['poolname'])
+            modify_disk_info_in_k8s(config['poolname'], disk)
+        return file_new
+    except:
+        logger.debug(traceback.format_exc())
+
+    return None
 
 
 def change_vm_os_disk_file(vm, source, target):
@@ -2301,7 +2372,6 @@ def check_pool_active(info):
         result["poolname"] = info["poolname"]
         result["free"] = cstor["free"]
         result["uuid"] = cstor["uuid"]
-
 
     # update pool
     if cmp(info, result) != 0:

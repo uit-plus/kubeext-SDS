@@ -2972,6 +2972,14 @@ def prepare_disk_by_metadataname(uuid):
 
 
 def get_disk_prepare_info_by_path(path):
+    logger.debug('get_disk_prepare_info_by_path: %s' % path)
+    try:
+        current = try_fix_disk_metadata(path)
+        if current:
+            path = current
+    except:
+        logger.debug(traceback.format_exc())
+    logger.debug('get_disk_prepare_info_by_path: %s' % path)
     success = False
     if not success:
         output = runCmdAndGetOutput(

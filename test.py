@@ -1,3 +1,4 @@
+import os
 import random
 import shlex
 import string
@@ -27,5 +28,12 @@ def randomUUID():
 
 
 if __name__ == '__main__':
+    path = '.'
+    lists = os.listdir(path)
+    lists.sort(key=lambda x: os.path.getmtime(path + '\\' + x))
+    lists.reverse()
+    for i in range(len(lists)):
+        file_new = os.path.join(path, lists[i])
+        print file_new
     letter_list = list(string.ascii_lowercase)
     print letter_list
