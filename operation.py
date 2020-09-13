@@ -1572,7 +1572,7 @@ def migrateVMDisk(params):
                 prepare_info = prepare_disk_by_path(disk_path)
                 if disk_path not in migrateVols:
                     # remote prepare
-                    remote_prepare_disk_by_path(params.ip, disk_path)
+                    remote_prepare_disk_by_path(params.ip, prepare_info['path'])
             all_jsondicts = []
             logger.debug(specs)
             try:
@@ -1672,7 +1672,7 @@ def exportVM(params):
         disk_info = get_disk_prepare_info_by_path(disk_path)
         pool_info = get_pool_info_from_k8s(disk_info['pool'])
         check_pool_active(pool_info)
-
+        disk_path = disk_info['path']
         if pool_info['pooltype'] == 'localfs':
             if not os.path.exists(disk_path):
                 raise ExecuteException('', 'vm disk file %s not exist, plz check it.' % disk_path)
@@ -3011,6 +3011,7 @@ def get_disk_prepare_info_by_path(path):
     diskinfo['uni'] = columns[2]
     diskinfo['nodeName'] = columns[3]
     diskinfo['pool'] = columns[4]
+    diskinfo['path'] = path
     return diskinfo
 
 
