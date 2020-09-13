@@ -1770,9 +1770,9 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
     uuid = randomUUID().replace('-', '')
     cmd = 'virsh snapshot-create-as --domain %s --name %s --atomic --disk-only --no-metadata ' % (domain, uuid)
 
-    cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
+    cstor_disk_prepare(disk_info['poolname'], disk, disk_info['uni'])
 
-    disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
+    disk_dir = '%s/%s' % (disk_pool_info['path'], disk)
     ss_path = '%s/%s' % (disk_dir, uuid)
     cmd = '%s --diskspec %s,snapshot=external,file=%s,driver=qcow2' % (cmd, disk_specs[vm_disks[disk]], ss_path)
     for disk_path in disk_specs.keys():
@@ -1837,7 +1837,9 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
                 change_vm_os_disk_file(domain, ss_path, base)
             op = Operation('rm -f %s' % ss_path, {})
             op.execute()
-
+            config = get_disk_config(pool, disk)
+            write_config(disk, disk_dir, base, config['pool'], config['poolname'])
+            modify_disk_info_in_k8s(config['poolname'], disk)
 
 def restore_vm_disk(domain, pool, disk, version, newname, target):
     if newname and target is None:

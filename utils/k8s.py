@@ -288,6 +288,9 @@ class K8sHelper(object):
                 if not self.exist(name):
                     return
                 jsondict = self.get(name)
+                if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys() \
+                        and cmp(jsondict['spec'][key], data) == 0:
+                    return
                 jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
                 jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
                 return client.CustomObjectsApi().replace_namespaced_custom_object(
