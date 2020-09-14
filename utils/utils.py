@@ -1311,26 +1311,26 @@ def try_fix_disk_metadata(path):
             except:
                 pass
         # not attach to vm, just try to fix disk
-        lists = []
-        for df in os.listdir(disk_dir):
-            if df == 'config.json':
-                continue
-            lists.append('%s/%s' % (disk_dir, df))
-        ss_dir = '%s/snapshots' % disk_dir
-        if os.path.exists(ss_dir):
-            for df in os.listdir(ss_dir):
-                if df == 'config.json':
-                    continue
-                lists.append('%s/%s' % (ss_dir, df))
-        lists.sort(key=lambda x: os.path.getmtime(x))
-        file_new = lists[-1]
-        disk_info = get_disk_info(file_new)
-        if config['current'] != file_new or vol_info['current'] != file_new:
-            logger.debug('try_fix_disk_metadata')
-            logger.debug('current: %s' % file_new)
-            write_config(disk, disk_dir, file_new, config['pool'], config['poolname'])
-            modify_disk_info_in_k8s(config['poolname'], disk)
-        return file_new
+        # lists = []
+        # for df in os.listdir(disk_dir):
+        #     if df == 'config.json':
+        #         continue
+        #     lists.append('%s/%s' % (disk_dir, df))
+        # ss_dir = '%s/snapshots' % disk_dir
+        # if os.path.exists(ss_dir):
+        #     for df in os.listdir(ss_dir):
+        #         if df == 'config.json':
+        #             continue
+        #         lists.append('%s/%s' % (ss_dir, df))
+        # lists.sort(key=lambda x: os.path.getmtime(x))
+        # file_new = lists[-1]
+        # disk_info = get_disk_info(file_new)
+        # if config['current'] != file_new or vol_info['current'] != file_new:
+        #     logger.debug('try_fix_disk_metadata')
+        #     logger.debug('current: %s' % file_new)
+        #     write_config(disk, disk_dir, file_new, config['pool'], config['poolname'])
+        #     modify_disk_info_in_k8s(config['poolname'], disk)
+        # return file_new
     except:
         logger.debug(traceback.format_exc())
 
