@@ -1840,9 +1840,13 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
                 change_vm_os_disk_file(domain, ss_path, base)
             op = Operation('rm -f %s' % ss_path, {})
             op.execute()
-            config = get_disk_config(pool, disk)
-            write_config(disk, disk_dir, base, config['pool'], config['poolname'])
-            modify_disk_info_in_k8s(config['poolname'], disk)
+            try:
+                pool_info = get_pool_info_from_k8s(pool)
+                config = get_disk_config(pool_info['poolname'], disk)
+                write_config(disk, disk_dir, base, config['pool'], config['poolname'])
+                modify_disk_info_in_k8s(config['poolname'], disk)
+            except:
+                pass
 
 def restore_vm_disk(domain, pool, disk, version, newname, target):
     if newname and target is None:
