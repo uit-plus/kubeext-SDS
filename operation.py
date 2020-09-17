@@ -1986,8 +1986,9 @@ def backupVM(params):
     disk_specs = get_disks_spec(params.domain)
 
     # do vm snapshots
+    os_disk_tag, os_disk_path = get_os_disk(params.domain)
     for disk_path in disk_specs.keys():
-        if not params.all and disk_specs[disk_path] != 'vda':
+        if not params.all and disk_specs[disk_path] != os_disk_tag:
             continue
         if disk_path.find('snapshots') < 0:
             disk_mn = os.path.basename(os.path.dirname(disk_path))
@@ -1998,7 +1999,7 @@ def backupVM(params):
         check_pool_active(pool_info)
 
         if pool_info['pooltype'] == 'uus':
-            if disk_specs[disk_path] == 'vda':
+            if disk_specs[disk_path] == os_disk_tag:
                 raise ExecuteException('', 'uus disk %s is vm os disk, not support backup vm %s' % (
                     disk_path, params.domain))
             else:
@@ -2043,6 +2044,9 @@ def backupVM(params):
         for disk in disk_tags.keys():
             if disk not in disk_full_version.keys():
                 raise ExecuteException('', 'vm %s disk %s may be first attach, plz make full backup firstly.' % (params.domain, disk))
+
+    if not disk_tags:
+        raise ExecuteException('', 'not exist disk need to backup.')
 
     # save vm xml file
     xml_file = '%s/%s.xml' % (backup_dir, params.version)
