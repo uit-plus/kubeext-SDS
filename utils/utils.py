@@ -2157,9 +2157,18 @@ def backup_snapshots_chain(current, backup_path):
 
     # record snapshot chain
     disk_backup_dir = '%s/diskbackup' % backup_path
-    for bf in backup_files:
-        disk_checksum = backup_file(bf, disk_backup_dir)
-        checksums[bf] = disk_checksum
+    backed_disk_file = []
+    try:
+        for bf in backup_files:
+            disk_checksum = backup_file(bf, disk_backup_dir, backed_disk_file)
+            checksums[bf] = disk_checksum
+    except Exception, e:
+        try:
+            for df in backed_disk_file:
+                runCmd('rm -f %s' % df)
+        except:
+            pass
+        raise e
     for bf in backup_files:
         disk_info = get_disk_info(bf)
         record = {}
@@ -2171,10 +2180,10 @@ def backup_snapshots_chain(current, backup_path):
             record['parent'] = ''
         chains.append(record)
     result['chains'] = chains
-    return result
+    return result, backed_disk_file
 
 
-def backup_file(file, target_dir):
+def backup_file(file, target_dir, backed_disk_file):
     # print file
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
@@ -2195,6 +2204,7 @@ def backup_file(file, target_dir):
         if os.path.exists(target):
             uuid = randomUUID().replace('-', '')
             target = '%s/%s' % (target_dir, uuid)
+        backed_disk_file.append(target)
         runCmd('cp -f %s %s' % (file, target))
 
         # dump hisory

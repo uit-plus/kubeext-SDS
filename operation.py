@@ -1798,9 +1798,9 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
     if not os.path.exists(disk_backup_dir):
         os.makedirs(disk_backup_dir)
     backup_dir = '%s/%s' % (disk_backup_dir, current_full_version)
+    backed_disk_file = []
     try:
-        chain = backup_snapshots_chain(ss_path, backup_dir)
-
+        chain, backed_disk_file = backup_snapshots_chain(ss_path, backup_dir)
         # write backup record
         if not os.path.exists(history_file_path):
             history = {}
@@ -1838,9 +1838,13 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
                 op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
                 op.execute()
                 change_vm_os_disk_file(domain, ss_path, base)
-            op = Operation('rm -f %s' % ss_path, {})
-            op.execute()
             try:
+                op = Operation('rm -f %s' % ss_path, {})
+                op.execute()
+                for df in backed_disk_file:
+                    op = Operation('rm -f %s' % df, {})
+                    op.execute()
+
                 pool_info = get_pool_info_from_k8s(pool)
                 config = get_disk_config(pool_info['poolname'], disk)
                 write_config(disk, disk_dir, base, config['pool'], config['poolname'])
@@ -2138,7 +2142,6 @@ def backupVM(params):
             dump(ftp_history, f)
         ftp.upload_file("/tmp/history.json", '/%s' % params.domain)
 
-
     data = {
         'domain': params.domain,
         'pool': params.pool,
@@ -2146,7 +2149,6 @@ def backupVM(params):
         'disk':  '',
         'version': params.version
     }
-
 
     if newestV:
         data['full'] = newestV
@@ -2339,8 +2341,11 @@ def delete_vm_backup(domain, pool, version):
     for disk in disk_version.keys():
         delete_disk_backup(domain, pool, disk, disk_version[disk])
 
-    op = Operation('rm -f %s.xml' % version, {})
-    op.execute()
+    try:
+        op = Operation('rm -f %s/%s.xml' % (backup_dir, version), {})
+        op.execute()
+    except:
+        pass
 
     del history[version]
     if len(history.keys()) == 0:
