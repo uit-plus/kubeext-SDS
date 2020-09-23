@@ -2209,6 +2209,8 @@ def backup_file(file, target_dir, backed_disk_file):
 
         # dump hisory
         history[file_checksum] = os.path.basename(target)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
         with open(history_file, 'w') as f:
             dump(history, f)
     return file_checksum
