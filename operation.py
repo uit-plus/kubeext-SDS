@@ -1822,9 +1822,12 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
         with open(history_file_path, 'w') as f:
             dump(history, f)
     except ExecuteException, e:
-        for df in backed_disk_file:
-            op = Operation('rm -f %s' % df, {})
-            op.execute()
+        try:
+            for df in backed_disk_file:
+                op = Operation('rm -f %s' % df, {})
+                op.execute()
+        except:
+            pass
         raise e
     finally:
         # change disk current
