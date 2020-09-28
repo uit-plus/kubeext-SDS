@@ -1822,6 +1822,9 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
         with open(history_file_path, 'w') as f:
             dump(history, f)
     except ExecuteException, e:
+        for df in backed_disk_file:
+            op = Operation('rm -f %s' % df, {})
+            op.execute()
         raise e
     finally:
         # change disk current
@@ -1841,9 +1844,6 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
             try:
                 op = Operation('rm -f %s' % ss_path, {})
                 op.execute()
-                for df in backed_disk_file:
-                    op = Operation('rm -f %s' % df, {})
-                    op.execute()
 
                 pool_info = get_pool_info_from_k8s(pool)
                 config = get_disk_config(pool_info['poolname'], disk)
