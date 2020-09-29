@@ -1854,6 +1854,7 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
                 modify_disk_info_in_k8s(config['poolname'], disk)
             except:
                 pass
+    return backed_disk_file
 
 def restore_vm_disk(domain, pool, disk, version, newname, target):
     if newname and target is None:
@@ -2068,42 +2069,72 @@ def backupVM(params):
     delete_vm_cdrom_file_in_xml(xml_file)
 
     # backup disk
+    all_backed_disk_file = []
     disk_version = {}
-    for disk in disk_tags.keys():
-        uuid = randomUUID().replace('-', '')
-        disk_version[disk] = uuid
-        if disk_full_version:
-            logger.debug('disk_full_version')
-            logger.debug(disk_full_version)
-            backup_vm_disk(params.domain, params.pool, disk, uuid, params.full, disk_full_version[disk], True)
-        else:
-            backup_vm_disk(params.domain, params.pool, disk, uuid, True, None, True)
+    try:
+        for disk in disk_tags.keys():
+            uuid = randomUUID().replace('-', '')
+            disk_version[disk] = uuid
+            if disk_full_version:
+                logger.debug('disk_full_version')
+                logger.debug(disk_full_version)
+                backed_disk_file = backup_vm_disk(params.domain, params.pool, disk, uuid, params.full,
+                                                  disk_full_version[disk], True)
+            else:
+                backed_disk_file = backup_vm_disk(params.domain, params.pool, disk, uuid, True, None, True)
+            if backed_disk_file and isinstance(backed_disk_file, list):
+                all_backed_disk_file.extend(backed_disk_file)
 
-    history[params.version] = {}
-    for disk in disk_version.keys():
-        if disk_full_version:
-            history[params.version][disk] = {
-                'time': time.time(),
-                'tag': disk_tags[disk],
-                'version': disk_version[disk],
-                'full': disk_full_version[disk]
-            }
-        else:
-            history[params.version][disk] = {
-                'time': time.time(),
-                'tag': disk_tags[disk],
-                'version': disk_version[disk],
-                'full': disk_version[disk]
-            }
-        if newestV:
-            history[params.version][disk]['vm_full'] = history[newestV][disk]['vm_full']
-        else:
-            history[params.version][disk]['vm_full'] = params.version
-    with open(history_file_path, 'w') as f:
-        dump(history, f)
+        history[params.version] = {}
+        for disk in disk_version.keys():
+            if disk_full_version:
+                history[params.version][disk] = {
+                    'time': time.time(),
+                    'tag': disk_tags[disk],
+                    'version': disk_version[disk],
+                    'full': disk_full_version[disk]
+                }
+            else:
+                history[params.version][disk] = {
+                    'time': time.time(),
+                    'tag': disk_tags[disk],
+                    'version': disk_version[disk],
+                    'full': disk_version[disk]
+                }
+            if newestV:
+                history[params.version][disk]['vm_full'] = history[newestV][disk]['vm_full']
+            else:
+                history[params.version][disk]['vm_full'] = params.version
+        with open(history_file_path, 'w') as f:
+            dump(history, f)
+    except Exception, e:
+        try:
+            for disk in disk_version.keys():
+                try:
+                    delete_disk_backup(params.domain, params.pool, disk, disk_version[disk])
+                    logger.debug('backup vm %s fail, delete backuped disk %s version %s' % (params.domain, disk, disk_version[disk]))
+                except:
+                    pass
+        except:
+            pass
+
+        try:
+            del history[params.version]
+            with open(history_file_path, 'w') as f:
+                dump(history, f)
+        except:
+            pass
+        try:
+            logger.debug('all_backed_disk_file: %s' % dumps(all_backed_disk_file))
+            for df in all_backed_disk_file:
+                op = Operation('rm -f %s' % df, {})
+                op.execute()
+        except:
+            pass
+        logger.debug(traceback.format_exc())
+        raise e
 
     if params.remote:
-
         # history file
         history_file = '%s/history.json' % backup_dir
         with open(history_file, 'r') as f:
