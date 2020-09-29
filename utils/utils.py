@@ -2349,7 +2349,7 @@ def check_pool_active(info):
     pool_node_name = get_node_name(pool_helper.get(info['pool']))
     if this_node_name != pool_node_name:
         if info['state'] == 'inactive':
-            error_print(221, 'pool %s is not active, please run "startPool" first' % info['pool'])
+            error_print(220, 'pool %s is not active, please run "startPool" first' % info['pool'])
         else:
             return
 
@@ -2423,12 +2423,13 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
-    print is_vm_exist('dsadada')
-    pool_helper = K8sHelper('VirtualMachinePool')
-    # pool_info = get_pool_info_to_k8s('nfs', 'migratepoolnodepool22', '170dd9accdd174caced76b0db2223', 'vmd')
-    # pool_helper.update('migratepoolnodepool22', 'pool', pool_info)
-    pool_helper.delete_lifecycle('migratepoolnodepool22')
-    print get_os_disk("cloudinitbackup")
+    check_pool_active(get_pool_info_from_k8s('migratenodepool22'))
+    # print is_vm_exist('dsadada')
+    # pool_helper = K8sHelper('VirtualMachinePool')
+    # # pool_info = get_pool_info_to_k8s('nfs', 'migratepoolnodepool22', '170dd9accdd174caced76b0db2223', 'vmd')
+    # # pool_helper.update('migratepoolnodepool22', 'pool', pool_info)
+    # pool_helper.delete_lifecycle('migratepoolnodepool22')
+    # print get_os_disk("cloudinitbackup")
 
     # print checksum('/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackuptestdisk1/vmbackuptestdisk1')
     # print get_pools_by_node('vm.node25')
