@@ -1619,16 +1619,28 @@ def migrateVMDisk(params):
                         pass
                 logger.debug(traceback.format_exc())
                 raise e
-            op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
-            op.execute()
-            op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
-            op.execute()
+
             try:
-                op = Operation('virsh start %s' % params.domain, {}, ip=params.ip, remote=True)
+                try:
+                    delete_vm_cdrom_file_in_xml(xmlfile)
+                except:
+                    pass
+                op = Operation('scp %s root@%s:%s' % (xmlfile, params.ip, xmlfile), {})
                 op.execute()
+                op = Operation('virsh define %s' % xmlfile, {}, ip=params.ip, remote=True)
+                op.execute()
+
+                try:
+                    op = Operation('virsh start %s' % params.domain, {}, ip=params.ip, remote=True)
+                    op.execute()
+                except:
+                    pass
             except ExecuteException, e:
-                op = Operation('virsh undefine %s' % params.domain, {}, ip=params.ip, remote=True)
-                op.execute()
+                try:
+                    op = Operation('virsh undefine %s' % params.domain, {}, ip=params.ip, remote=True)
+                    op.execute()
+                except:
+                    pass
                 for vp in vps:
                     try:
                         vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
