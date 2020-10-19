@@ -157,6 +157,38 @@ def remoteRunCmdWithResult(ip, cmd):
         p.stderr.close()
 
 
+def remoteRunCmdWithOutput(ip, cmd):
+    if not cmd:
+        return
+    cmd = 'ssh root@%s "%s"' % (ip, cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        std_out = p.stdout.readlines()
+        std_err = p.stderr.readlines()
+        if std_out:
+            msg = ''
+            for line in std_out:
+                msg = msg + line
+            return msg
+        if std_err:
+            msg = ''
+            for index, line in enumerate(std_err):
+                if not str.strip(line):
+                    continue
+                if index == len(std_err) - 1:
+                    msg = msg + str.strip(line) + '. ' + '***More details in %s***' % LOG
+                else:
+                    msg = msg + str.strip(line) + ', '
+            logger.debug(cmd)
+            logger.debug(msg)
+            logger.debug(traceback.format_exc())
+            if msg.strip() != '':
+                raise ExecuteException('RunCmdError', msg)
+    finally:
+        p.stdout.close()
+        p.stderr.close()
+
+
 def runCmdAndTransferXmlToJson(cmd):
     xml_str = runCmdAndGetOutput(cmd)
     dic = xmltodict.parse(xml_str, encoding='utf-8')
@@ -1008,6 +1040,19 @@ def get_disk_info_to_k8s(poolname, vol):
     return result
 
 
+def get_remote_node_all_nic_ip(remote):
+    ips = []
+    try:
+        output = remoteRunCmdWithOutput(remote, 'ip address | grep inet')
+        for line in output.splitlines():
+            if len(line.split()) > 1:
+                ip = line.split()[1].split('/')[0]
+                ips.append(ip)
+    except:
+        logger.debug(traceback.format_exc())
+    return ips
+
+
 def get_cstor_disk_info_to_k8s(pool, poolname, vol):
     disk_info_k8s = get_vol_info_from_k8s(vol)
     diskinfo = runCmdWithResult("cstor-cli vdisk-show --poolname %s --name %s" % (poolname, vol))
@@ -1827,9 +1872,10 @@ def get_node_ip_by_node_name(nodeName):
 
 def get_node_name_by_node_ip(ip):
     all_node_ip = get_all_node_ip()
+    nic_ips = get_remote_node_all_nic_ip(ip)
     if all_node_ip:
         for node in all_node_ip:
-            if node['ip'] == ip and node['nodeName'].find("vm.") >= 0:
+            if node['ip'] in nic_ips and node['nodeName'].find("vm.") >= 0:
                 return node['nodeName']
     return None
 
@@ -2423,7 +2469,8 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
-    check_pool_active(get_pool_info_from_k8s('migratenodepool22'))
+    print get_remote_node_all_nic_ip('133.133.135.30')
+    # check_pool_active(get_pool_info_from_k8s('migratenodepool22'))
     # print is_vm_exist('dsadada')
     # pool_helper = K8sHelper('VirtualMachinePool')
     # # pool_info = get_pool_info_to_k8s('nfs', 'migratepoolnodepool22', '170dd9accdd174caced76b0db2223', 'vmd')
