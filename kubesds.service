@@ -22,7 +22,7 @@ After=docker.service
 [Service]
 Type=simple
 Restart=always
-Environment=KUBECONFIG=/etc/kubernetes/admin.conf
+Environment=KUBECONFIG=/root/.kube/config
 ExecStart=/usr/bin/kubesds-ctl.sh start
 ExecStop=/usr/bin/kubesds-ctl.sh stop
 [Install]
