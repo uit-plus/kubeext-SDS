@@ -1530,6 +1530,7 @@ def migrateVMDisk(params):
                 raise ExecuteException('RunCmdError', 'not support migrate disk dev to dev with different poolname.')
             migrateVols.append(vol)
             notReleaseVols.append(prepare_info['disk'])
+            vp['disk'] = prepare_info['disk']
             vp['vol'] = prepare_info['path']
             vp['pool'] = pool
             vps.append(vp)
@@ -1545,7 +1546,7 @@ def migrateVMDisk(params):
     # get disk node label in ip
     node_name = get_node_name_by_node_ip(params.ip)
     logger.debug("node_name: %s" % node_name)
-
+    logger.debug('vps: ' + dumps(vps))
     if params.ip in get_host_IP():
         # not migrate vm, just migrate some disk to other pool
         for disk_path in specs.keys():
@@ -1613,8 +1614,7 @@ def migrateVMDisk(params):
             except ExecuteException, e:
                 for vp in vps:
                     try:
-                        vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                        migrateDiskFunc(vol, oldPools[vol])
+                        migrateDiskFunc(vp['disk'], oldPools[vp['disk']])
                     except:
                         pass
                 logger.debug(traceback.format_exc())
@@ -1643,8 +1643,7 @@ def migrateVMDisk(params):
                     pass
                 for vp in vps:
                     try:
-                        vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-                        migrateDiskFunc(vol, oldPools[vol])
+                        migrateDiskFunc(vp['disk'], oldPools[vp['disk']])
                     except:
                         pass
                 logger.debug(traceback.format_exc())
