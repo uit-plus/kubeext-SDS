@@ -1616,7 +1616,7 @@ def migrateVMDisk(params):
                     try:
                         migrateDiskFunc(vp['disk'], oldPools[vp['disk']])
                     except:
-                        pass
+                        logger.debug(traceback.format_exc())
                 logger.debug(traceback.format_exc())
                 raise e
 
@@ -1645,7 +1645,7 @@ def migrateVMDisk(params):
                     try:
                         migrateDiskFunc(vp['disk'], oldPools[vp['disk']])
                     except:
-                        pass
+                        logger.debug(traceback.format_exc())
                 logger.debug(traceback.format_exc())
                 raise e
             for vol in vmVols:
