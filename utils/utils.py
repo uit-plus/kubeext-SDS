@@ -1603,14 +1603,11 @@ def get_all_node_ip():
         for node in nodes:
             try:
                 node_ip = {}
-                for address in node['status']['addresses']:
-                    if address['type'] == 'InternalIP':
-                        node_ip['ip'] = address['address']
-                        break
+                node_ip['ip'] = node['metadata']['annotations']['THISIP']
                 node_ip['nodeName'] = node['metadata']['name']
                 all_node_ip.append(node_ip)
             except:
-                pass
+                logger.debug(traceback.format_exc())
     except ApiException as e:
         logger.debug("Exception when calling CoreV1Api->list_node: %s\n" % e)
     except Exception as e:
@@ -2469,7 +2466,7 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
-    print get_remote_node_all_nic_ip('133.133.135.30')
+    print get_all_node_ip()
     # check_pool_active(get_pool_info_from_k8s('migratenodepool22'))
     # print is_vm_exist('dsadada')
     # pool_helper = K8sHelper('VirtualMachinePool')
