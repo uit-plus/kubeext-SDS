@@ -1668,9 +1668,6 @@ def migrateVMDisk(params):
 
 
 def exportVM(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
-
     if not is_vm_exist(params.domain):
         raise ExecuteException('', 'domain %s is not exist. plz check it.' % params.domain)
 
@@ -1965,8 +1962,8 @@ def restore_vm_disk(domain, pool, disk, version, newname, target):
     return current
 
 def restoreDisk(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
 
     if params.targetDomain:
         if not is_vm_exist(params.targetDomain):
@@ -1981,9 +1978,6 @@ def restoreDisk(params):
 
 
 def backupVM(params):
-    vm_heler = K8sHelper('VirtualMachine')
-    vm_heler.delete_lifecycle(params.domain)
-
     backup_helper = K8sHelper('VirtualMachineBackup')
     if backup_helper.exist(params.version):
         raise ExecuteException('', 'backup %s has exist, plz use another version. plz check it.' % params.version)
@@ -2205,8 +2199,8 @@ def backupVM(params):
 
 
 def restoreVM(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
     if not params.newname and is_vm_active(params.domain):
         raise ExecuteException('', 'vm %s is still active, plz stop it first.' % params.domain)
 
@@ -2401,8 +2395,8 @@ def delete_vm_backup(domain, pool, version):
 
 
 def deleteVMBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
     delete_vm_backup(params.domain, params.pool, params.version)
     try:
         backup_helper = K8sHelper('VirtualMachineBackup')
@@ -2413,8 +2407,8 @@ def deleteVMBackup(params):
 
 
 def deleteVMDiskBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
     delete_disk_backup(params.domain, params.pool, params.vol, params.version)
     try:
         backup_helper = K8sHelper('VirtualMachineBackup')
@@ -2425,8 +2419,8 @@ def deleteVMDiskBackup(params):
 
 
 def deleteRemoteBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
     # default backup path
     if params.vol:
         delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port, params.username, params.password)
@@ -2526,8 +2520,8 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
     ftp.delete_file('/%s/%s.xml' % (domain, version))
 
 def pushVMBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
 
     pool_info = get_pool_info_from_k8s(params.pool)
     check_pool_active(pool_info)
@@ -2671,8 +2665,8 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
 
 
 def pullRemoteBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
     # default backup path
     checksum_to_pull = []
     pool_info = get_pool_info_from_k8s(params.pool)
@@ -2854,8 +2848,8 @@ def clean_vm_backup(domain, pool, versions):
 
 
 def cleanBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
 
     versions = []
     if params.version:
@@ -2908,8 +2902,8 @@ def clean_vm_remote_backup(domain, versions, remote, port, username, password):
 
 
 def cleanRemoteBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
 
     versions = []
     if params.version:
@@ -2924,8 +2918,8 @@ def cleanRemoteBackup(params):
 
 
 def scanBackup(params):
-    pool_heler = K8sHelper('VirtualMachinePool')
-    pool_heler.delete_lifecycle(params.pool)
+    # pool_heler = K8sHelper('VirtualMachinePool')
+    # pool_heler.delete_lifecycle(params.pool)
 
     # check backup pool path exist or not
     pool_info = get_pool_info_from_k8s(params.pool)

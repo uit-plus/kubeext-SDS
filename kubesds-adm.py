@@ -440,12 +440,22 @@ def modifyVMParser(args):
     execute('modifyVM', args)
 
 def exportVMParser(args):
-    execute('exportVM', args)
+    try:
+        execute('exportVM', args)
+        vm_heler = K8sHelper('VirtualMachine')
+        vm_heler.delete_lifecycle(args.domain)
+    except Exception, e:
+        raise e
 
 def backupVMParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
     check_pool_active(pool_info)
-    execute('backupVM', args)
+    try:
+        execute('backupVM', args)
+        vm_heler = K8sHelper('VirtualMachine')
+        vm_heler.delete_lifecycle(args.domain)
+    except Exception, e:
+        raise e
 
 def restoreVMParser(args):
     pool_info = get_pool_info_from_k8s(args.pool)
