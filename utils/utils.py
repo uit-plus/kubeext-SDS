@@ -2322,7 +2322,7 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                             volume['current']) == chain['checksum']:
                         old_to_new[chain['path']] = volume['current']
                         continue
-
+                logger.debug('base image: start cp')
                 if chain['path'].find('snapshots') >= 0:
                     base_file = '%s/snapshots/%s' % (target_dir, os.path.basename(chain['path']))
                 else:
@@ -2333,7 +2333,13 @@ def restore_snapshots_chain(disk_back_dir, record, target_dir):
                     runCmd('cp -f %s %s' % (backup_file, new_disk_file))
                     cp_disks.append(new_disk_file)
                 else:
-                    old_to_new[chain['path']] = base_file
+                    base_image_checksum = checksum(base_file)
+                    if base_image_checksum == chain['checksum']:
+                        old_to_new[chain['path']] = base_file
+                    else:
+                        old_to_new[chain['path']] = new_disk_file
+                        runCmd('cp -f %s %s' % (backup_file, new_disk_file))
+                        cp_disks.append(new_disk_file)
         for df in old_to_new.values():
             runCmd('chmod 666 %s' % df)
     except ExecuteException, e:
@@ -2466,7 +2472,9 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
-    print get_all_node_ip()
+    print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/vmbackup/wintest/diskbackup/backuptest1/44ec55a677c84c02b67517562e9ae2fe/diskbackup/backuptest1')
+    print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/wintest/wintest')
+    # print get_all_node_ip()
     # check_pool_active(get_pool_info_from_k8s('migratenodepool22'))
     # print is_vm_exist('dsadada')
     # pool_helper = K8sHelper('VirtualMachinePool')
