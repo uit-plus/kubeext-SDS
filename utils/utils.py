@@ -1481,12 +1481,19 @@ def is_vm_disk_driver_cache_none(vm):
                     return False
     return True
 
+def remote_start_pool(ip, pool):
+    pool_info = get_pool_info_from_k8s(pool)
+    remoteRunCmd(ip, 'kubesds-adm startPool --type %s --pool %s' % (pool_info['pooltype'], pool))
 
-def poolActive(poolname):
+def pool_active(pool):
+    pool_info = get_pool_info_from_k8s(pool)
+    poolname = pool_info['poolname']
     cstor = runCmdWithResult('cstor-cli pool-active --poolname %s' % poolname)
     if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
+    if poolname['pooltype'] != 'vdiskfs':
+        return
 
     # make other vdiskfs pool inactive
     pool_path = '%s/%s' % (cstor['data']['mountpath'], poolname)

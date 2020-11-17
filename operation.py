@@ -172,7 +172,7 @@ def startPool(params):
     poolname = pool_info['poolname']
     if params.type != "uus":
         if pool_info['pooltype'] == 'vdiskfs':
-            poolActive(pool_info['poolname'])
+            pool_active(pool_info['pool'])
         if not is_pool_started(pool_info['poolname']):
             op1 = Operation("virsh pool-start", {"pool": poolname})
             op1.execute()
@@ -1249,7 +1249,7 @@ def changeDiskPool(params):
             logger.debug("targetPool is %s." % targetPool)
             if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
                 if pool_info['pooltype'] == 'vdiskfs':
-                    poolActive(pool_info['poolname'])
+                    pool_active(pool_info['pool'])
                 config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
                 write_config(config['name'], config['dir'], config['current'], targetPool, config['poolname'])
                 jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
@@ -1272,12 +1272,11 @@ def migrateDiskFunc(sourceVol, targetPool):
     source_pool_info = get_pool_info_from_k8s(disk_info['pool'])
     check_pool_active(source_pool_info)
     pool_info = get_pool_info_from_k8s(targetPool)
-    check_pool_active(pool_info)
-
     logger.debug(disk_info)
     logger.debug(pool_info)
     if disk_info['pool'] == pool_info['pool']:
-        raise ExecuteException('RunCmdError', 'can not migrate disk to its pool.')
+        logger.debug('disk %s has been in pool %s' % (sourceVol, targetPool))
+        return
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(sourceVol)
     pool_helper = K8sHelper('VirtualMachinePool')
@@ -1287,6 +1286,9 @@ def migrateDiskFunc(sourceVol, targetPool):
         raise ExecuteException('RunCmdError', 'disk is not in this node.')
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
+        ip = get_node_ip_by_node_name(pool_node_name)
+        if disk_node_name != pool_node_name:
+            remote_start_pool(ip, targetPool)
         if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:  # file to file
             source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], sourceVol)
             if pool_node_name == disk_node_name:
@@ -1304,7 +1306,7 @@ def migrateDiskFunc(sourceVol, targetPool):
                     # just change pool, label and nodename
                     config = get_disk_config(pool_info['poolname'], sourceVol)
                     write_config(sourceVol, config['dir'], config['current'], targetPool, pool_info['poolname'])
-                    ip = get_node_ip_by_node_name(pool_node_name)
+
                     disk_info = get_vol_info_from_k8s(sourceVol)
                     remote_cstor_disk_prepare(ip, pool_info['poolname'], sourceVol, disk_info['uni'])
                     jsondicts = get_disk_jsondict(targetPool, sourceVol)
@@ -1497,12 +1499,10 @@ def migrateVMDisk(params):
 
     # prepare all disk
     specs = get_disks_spec(params.domain)
-    oldPools = {}
     vmVols = []
     for disk_path in specs.keys():
         prepare_info = get_disk_prepare_info_by_path(disk_path)
         vmVols.append(prepare_info['disk'])
-        oldPools[prepare_info['disk']] = prepare_info['pool']
     vps = []
     migrateVols = []
     notReleaseVols = []
@@ -1533,6 +1533,7 @@ def migrateVMDisk(params):
             vp['disk'] = prepare_info['disk']
             vp['vol'] = prepare_info['path']
             vp['pool'] = pool
+            vp['oldpool'] = prepare_info['pool']
             vps.append(vp)
         else:
             raise ExecuteException('RunCmdError', 'migratedisks param is illegal.')
@@ -1553,13 +1554,28 @@ def migrateVMDisk(params):
             # prepare
             prepare_info = prepare_disk_by_path(disk_path)
         logger.debug(specs)
-        for vp in vps:
-            vol = get_disk_prepare_info_by_path(vp['vol'])['disk']
-            logger.debug('migrate disk %s to %s.' % (vol, vp['pool']))
-            migrateDiskFunc(vol, vp['pool'])
-            disk_info = get_vol_info_from_k8s(vol)
-            if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
-                raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
+        try:
+            for vp in vps:
+                vol = vp['disk']
+                logger.debug('migrate disk %s to %s.' % (vol, vp['pool']))
+                migrateDiskFunc(vol, vp['pool'])
+                disk_info = get_vol_info_from_k8s(vol)
+                if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
+                    raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
+        except Exception, e:
+            for vp in vps:
+                try:
+                    vol = vp['disk']
+                    logger.debug('error occur, migrate disk %s to %s.' % (vol, vp['oldpool']))
+                    disk_info = get_vol_info_from_k8s(vol)
+                    if disk_info['pool'] != vp['oldpool']:
+                        migrateDiskFunc(vol, vp['oldpool'])
+                        disk_info = get_vol_info_from_k8s(vol)
+                        if not modofy_vm_disk_file(xmlfile, vp['vol'], disk_info['current']):
+                            raise ExecuteException('RunCmdError', 'Can not change vm disk file.')
+                except:
+                    pass
+            raise e
 
         op = Operation('virsh define %s' % xmlfile, {})
         op.execute()
@@ -1614,7 +1630,7 @@ def migrateVMDisk(params):
             except ExecuteException, e:
                 for vp in vps:
                     try:
-                        migrateDiskFunc(vp['disk'], oldPools[vp['disk']])
+                        migrateDiskFunc(vp['disk'], vp['oldpool'])
                     except:
                         logger.debug(traceback.format_exc())
                 logger.debug(traceback.format_exc())
@@ -1643,7 +1659,7 @@ def migrateVMDisk(params):
                     pass
                 for vp in vps:
                     try:
-                        migrateDiskFunc(vp['disk'], oldPools[vp['disk']])
+                        migrateDiskFunc(vp['disk'], vp['oldpool'])
                     except:
                         logger.debug(traceback.format_exc())
                 logger.debug(traceback.format_exc())
@@ -1728,7 +1744,8 @@ def backupDisk(params):
     backup_helper.create(params.version, 'backup', data)
     backup_helper.add_label(params.version, params.domain)
     if params.remote:
-        push_disk_backup(params.domain, params.pool, params.vol, params.version, params.remote, params.port, params.username, params.password)
+        push_disk_backup(params.domain, params.pool, params.vol, params.version, params.remote, params.port,
+                         params.username, params.password)
 
     success_print("success backupDisk.", {})
 
@@ -1796,7 +1813,7 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
     op.execute()
 
     # backup disk dir
-    if full_version:    # vm backup, use vm full version
+    if full_version:  # vm backup, use vm full version
         current_full_version = full_version
     else:
         if is_full:
@@ -1845,8 +1862,9 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
             base = DiskImageHelper.get_backing_file(ss_path)
         if base and os.path.exists(base):
             if is_vm_active(domain):
-                op = Operation('virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
-                               {})
+                op = Operation(
+                    'virsh blockcommit --domain %s %s --base %s --pivot --active' % (domain, disk_tag[disk], base),
+                    {})
                 op.execute()
             else:
                 op = Operation('qemu-img commit -b %s %s' % (base, ss_path), {})
@@ -1863,6 +1881,7 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
             except:
                 pass
     return backed_disk_file
+
 
 def restore_vm_disk(domain, pool, disk, version, newname, target):
     if newname and target is None:
@@ -1961,6 +1980,7 @@ def restore_vm_disk(domain, pool, disk, version, newname, target):
 
     return current
 
+
 def restoreDisk(params):
     # pool_heler = K8sHelper('VirtualMachinePool')
     # pool_heler.delete_lifecycle(params.pool)
@@ -1997,7 +2017,7 @@ def backupVM(params):
     history_file_path = '%s/history.json' % backup_dir
     if is_vm_backup_exist(params.domain, params.pool, params.version):
         raise ExecuteException('', 'domain %s has exist backup version %s in %s. plz check it.' % (
-        params.domain, params.version, history_file_path))
+            params.domain, params.version, history_file_path))
 
     disk_tags = {}
     disk_specs = get_disks_spec(params.domain)
@@ -2036,7 +2056,7 @@ def backupVM(params):
     if not params.full:
         if len(history.keys()) == 0:
             raise ExecuteException('', 'domain %s not exist full backup version %s in %s. plz check it.' % (
-            params.domain, params.version, history_file_path))
+                params.domain, params.version, history_file_path))
         btime = 0.0
         for v in history.keys():
             not_match = False
@@ -2060,7 +2080,8 @@ def backupVM(params):
     if not params.full:
         for disk in disk_tags.keys():
             if disk not in disk_full_version.keys():
-                raise ExecuteException('', 'vm %s disk %s may be first attach, plz make full backup firstly.' % (params.domain, disk))
+                raise ExecuteException('', 'vm %s disk %s may be first attach, plz make full backup firstly.' % (
+                params.domain, disk))
 
     if not disk_tags:
         raise ExecuteException('', 'not exist disk need to backup.')
@@ -2117,7 +2138,8 @@ def backupVM(params):
             for disk in disk_version.keys():
                 try:
                     delete_disk_backup(params.domain, params.pool, disk, disk_version[disk])
-                    logger.debug('backup vm %s fail, delete backuped disk %s version %s' % (params.domain, disk, disk_version[disk]))
+                    logger.debug('backup vm %s fail, delete backuped disk %s version %s' % (
+                    params.domain, disk, disk_version[disk]))
                 except:
                     pass
         except:
@@ -2185,7 +2207,7 @@ def backupVM(params):
         'domain': params.domain,
         'pool': params.pool,
         'time': time.time(),
-        'disk':  '',
+        'disk': '',
         'version': params.version
     }
 
@@ -2356,6 +2378,7 @@ def delete_disk_backup(domain, pool, disk, version):
         with open(history_file, 'w') as f:
             dump(history, f)
 
+
 def delete_vm_backup(domain, pool, version):
     # default backup path
     pool_info = get_pool_info_from_k8s(pool)
@@ -2423,9 +2446,11 @@ def deleteRemoteBackup(params):
     # pool_heler.delete_lifecycle(params.pool)
     # default backup path
     if params.vol:
-        delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port, params.username, params.password)
+        delete_remote_disk_backup(params.domain, params.vol, params.version, params.remote, params.port,
+                                  params.username, params.password)
     else:
-        delete_remote_vm_backup(params.domain, params.version, params.remote, params.port, params.username, params.password)
+        delete_remote_vm_backup(params.domain, params.version, params.remote, params.port, params.username,
+                                params.password)
 
     success_print("success deleteRemoteBackup.", {})
 
@@ -2482,7 +2507,7 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
         del history[full_version]
         ftp.delete_dir('%s/%s' % (backup_dir, full_version))
 
-    if len(history.keys()) == 0  or (len(history.keys()) == 1 and 'current' in history.keys()):
+    if len(history.keys()) == 0 or (len(history.keys()) == 1 and 'current' in history.keys()):
         ftp.delete_dir(backup_dir)
     else:
         tmp_file = '/tmp/history.json'
@@ -2519,6 +2544,7 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
 
     ftp.delete_file('/%s/%s.xml' % (domain, version))
 
+
 def pushVMBackup(params):
     # pool_heler = K8sHelper('VirtualMachinePool')
     # pool_heler.delete_lifecycle(params.pool)
@@ -2544,7 +2570,7 @@ def pushVMBackup(params):
     ftp_history_file = '/%s/history.json' % params.domain
 
     if ftp.is_exist_file(ftp_history_file):
-       ftp_history = ftp.get_json_file_data(ftp_history_file)
+        ftp_history = ftp.get_json_file_data(ftp_history_file)
     else:
         ftp_history = {}
 
@@ -2681,8 +2707,10 @@ def pullRemoteBackup(params):
         pull_disk_backup(params.domain, params.pool, params.vol, params.version, params.remote, params.port,
                          params.username, params.password)
     else:
-        if not is_remote_vm_backup_exist(params.domain, params.version, params.remote, params.port, params.username, params.password):
-            raise ExecuteException('', 'can not find vm backup record %s in ftp server %s.' % (params.version, params.remote))
+        if not is_remote_vm_backup_exist(params.domain, params.version, params.remote, params.port, params.username,
+                                         params.password):
+            raise ExecuteException('', 'can not find vm backup record %s in ftp server %s.' % (
+            params.version, params.remote))
 
         ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
@@ -2696,7 +2724,8 @@ def pullRemoteBackup(params):
                 pull_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote, params.port,
                                  params.username, params.password)
                 fin.append(disk)
-            ftp.download_file('/%s/%s.xml' % (params.domain, params.version), '%s/%s.xml' % (backup_dir, params.version))
+            ftp.download_file('/%s/%s.xml' % (params.domain, params.version),
+                              '%s/%s.xml' % (backup_dir, params.version))
         except ExecuteException, e:
             for disk in fin:
                 delete_disk_backup(params.domain, params.pool, disk, record[disk]['version'])
@@ -2774,6 +2803,7 @@ def pull_disk_backup(domain, pool, disk, version, remote, port, username, passwo
     with open(local_checksum_file, 'w') as f:
         dump(local_checksum, f)
 
+
 def clean_disk_backup(domain, pool, disk, versions):
     # check backup pool path exist or not
     pool_info = get_pool_info_from_k8s(pool)
@@ -2808,6 +2838,7 @@ def clean_disk_backup(domain, pool, disk, versions):
                 backup_helper.delete(version)
             except:
                 pass
+
 
 def clean_vm_backup(domain, pool, versions):
     # check backup pool path exist or not
@@ -2910,7 +2941,8 @@ def cleanRemoteBackup(params):
         for v in params.version.split(','):
             versions.append(v.strip())
     if params.vol:
-        clean_disk_remote_backup(params.domain, params.vol, versions, params.remote, params.port, params.username, params.password)
+        clean_disk_remote_backup(params.domain, params.vol, versions, params.remote, params.port, params.username,
+                                 params.password)
     else:
         clean_vm_remote_backup(params.domain, versions, params.remote, params.port, params.username, params.password)
 
@@ -2986,6 +3018,7 @@ def scanBackup(params):
                     backup_helper.add_label(v, params.domain)
     success_print("success scanBackup", {})
 
+
 def showDiskPool(params):
     prepare_info = get_disk_prepare_info_by_path(params.path)
     pool_info = get_pool_info_from_k8s(prepare_info['pool'])
@@ -2998,6 +3031,7 @@ def is_cstor_pool_exist(pool):
     if cstor['result']['code'] != 0:
         return True
     return False
+
 
 def prepare_disk_by_metadataname(uuid):
     success = False

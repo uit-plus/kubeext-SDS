@@ -20,7 +20,7 @@ sys.path.append('%s/' % os.path.dirname(os.path.realpath(__file__)))
 
 from utils import logger
 from utils.utils import CDaemon, singleton, runCmdWithResult, runCmdAndGetOutput, runCmd, runCmdAndTransferXmlToJson, \
-    runCmdAndSplitKvToJson, get_pools_by_node, get_pool_info_from_k8s, poolActive
+    runCmdAndSplitKvToJson, get_pools_by_node, get_pool_info_from_k8s, pool_active
 
 import cmdcall_pb2, cmdcall_pb2_grpc  # 刚刚生产的两个文件
 
@@ -171,7 +171,7 @@ def run_server():
             pool_info = get_pool_info_from_k8s(pool['pool'])
             if pool_info['pooltype'] == 'vdiskfs':
                 if pool_info['state'] == 'active':
-                    poolActive(pool_info['poolname'])
+                    pool_active(pool_info['pool'])
             else:
                 op = Operation('cstor-cli pool-active ', {'poolname': pool['poolname']}, with_result=True)
                 cstor = op.execute()
