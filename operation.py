@@ -1286,8 +1286,8 @@ def migrateDiskFunc(sourceVol, targetPool):
         raise ExecuteException('RunCmdError', 'disk is not in this node.')
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
-        ip = get_node_ip_by_node_name(pool_node_name)
         if disk_node_name != pool_node_name:
+            ip = get_node_ip_by_node_name(pool_node_name)
             remote_start_pool(ip, targetPool)
         if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:  # file to file
             source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], sourceVol)
@@ -1306,7 +1306,7 @@ def migrateDiskFunc(sourceVol, targetPool):
                     # just change pool, label and nodename
                     config = get_disk_config(pool_info['poolname'], sourceVol)
                     write_config(sourceVol, config['dir'], config['current'], targetPool, pool_info['poolname'])
-
+                    ip = get_node_ip_by_node_name(pool_node_name)
                     disk_info = get_vol_info_from_k8s(sourceVol)
                     remote_cstor_disk_prepare(ip, pool_info['poolname'], sourceVol, disk_info['uni'])
                     jsondicts = get_disk_jsondict(targetPool, sourceVol)
