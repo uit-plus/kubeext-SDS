@@ -1305,7 +1305,7 @@ def migrateDiskFunc(sourceVol, targetPool):
                     op = Operation('rm -rf %s' % source_dir, {})
                     op.execute()
             else:
-                if pool_info['pooltype'] in ['nfs', 'glusterfs'] and disk_info['poolname'] == pool_info['poolname']:
+                if pool_info['pooltype'] in ['nfs', 'glusterfs', 'vdiskfs'] and disk_info['poolname'] == pool_info['poolname']:
                     # just change pool, label and nodename
                     config = get_disk_config(pool_info['poolname'], sourceVol)
                     write_config(sourceVol, config['dir'], config['current'], targetPool, pool_info['poolname'])
