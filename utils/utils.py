@@ -1492,7 +1492,7 @@ def pool_active(pool):
     if cstor['result']['code'] != 0 or cstor['data']['status'] != 'active':
         raise ExecuteException('', 'cstor raise exception: cstor error code: %d, msg: %s, obj: %s' % (
             cstor['result']['code'], cstor['result']['msg'], cstor['obj']))
-    if poolname['pooltype'] != 'vdiskfs':
+    if pool_info['pooltype'] != 'vdiskfs':
         return
 
     # make other vdiskfs pool inactive

@@ -1270,13 +1270,12 @@ def migrateDiskFunc(sourceVol, targetPool):
     # prepare disk
     prepareInfo = cstor_disk_prepare(disk_info['poolname'], sourceVol, disk_info['uni'])
     source_pool_info = get_pool_info_from_k8s(disk_info['pool'])
-    check_pool_active(source_pool_info)
     pool_info = get_pool_info_from_k8s(targetPool)
     logger.debug(disk_info)
     logger.debug(pool_info)
-    if disk_info['pool'] == pool_info['pool']:
-        logger.debug('disk %s has been in pool %s' % (sourceVol, targetPool))
-        return
+
+    if source_pool_info['poolname'] != pool_info['poolname']:
+        check_pool_active(source_pool_info)
     disk_heler = K8sHelper('VirtualMachineDisk')
     disk_heler.delete_lifecycle(sourceVol)
     pool_helper = K8sHelper('VirtualMachinePool')
@@ -1284,11 +1283,16 @@ def migrateDiskFunc(sourceVol, targetPool):
     disk_node_name = get_node_name(disk_heler.get(sourceVol))
     if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
         raise ExecuteException('RunCmdError', 'disk is not in this node.')
+
+    if disk_node_name != pool_node_name:
+        ip = get_node_ip_by_node_name(pool_node_name)
+        remote_start_pool(ip, targetPool)
+    # same pool ignore
+    if disk_info['pool'] == pool_info['pool']:
+        logger.debug('disk %s has been in pool %s' % (sourceVol, targetPool))
+        return
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
-        if disk_node_name != pool_node_name:
-            ip = get_node_ip_by_node_name(pool_node_name)
-            remote_start_pool(ip, targetPool)
         if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:  # file to file
             source_dir = '%s/%s' % (get_pool_info(disk_info['poolname'])['path'], sourceVol)
             if pool_node_name == disk_node_name:
@@ -1519,9 +1523,11 @@ def migrateVMDisk(params):
             logger.debug('1519: %s' % vol)
             prepare_info = get_disk_prepare_info_by_path(vol)
             source_pool_info = get_pool_info_from_k8s(prepare_info['pool'])
-            check_pool_active(source_pool_info)
+            # ignore
+            if prepare_info['pool'] == pool:
+                continue
             target_pool_info = get_pool_info_from_k8s(pool)
-            check_pool_active(target_pool_info)
+            # check_pool_active(target_pool_info)
             if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs'] and target_pool_info[
                 'pooltype'] == 'uus':
                 raise ExecuteException('RunCmdError', 'not support migrate disk file to dev.')
