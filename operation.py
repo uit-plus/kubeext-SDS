@@ -1307,7 +1307,7 @@ def migrateDiskFunc(sourceVol, targetPool):
             else:
                 if pool_info['pooltype'] in ['nfs', 'glusterfs', 'vdiskfs'] and disk_info['poolname'] == pool_info['poolname']:
                     # just change pool, label and nodename
-                    if pool_info['type'] == 'vdiskfs':
+                    if pool_info['pooltype'] == 'vdiskfs':
                         try:
                             ip = get_node_ip_by_node_name(pool_node_name)
                             remote_start_pool(ip, targetPool)
