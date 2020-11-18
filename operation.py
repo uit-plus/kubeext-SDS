@@ -1307,13 +1307,20 @@ def migrateDiskFunc(sourceVol, targetPool):
             else:
                 if pool_info['pooltype'] in ['nfs', 'glusterfs', 'vdiskfs'] and disk_info['poolname'] == pool_info['poolname']:
                     # just change pool, label and nodename
-                    config = get_disk_config(pool_info['poolname'], sourceVol)
-                    write_config(sourceVol, config['dir'], config['current'], targetPool, pool_info['poolname'])
-                    ip = get_node_ip_by_node_name(pool_node_name)
-                    disk_info = get_vol_info_from_k8s(sourceVol)
-                    remote_cstor_disk_prepare(ip, pool_info['poolname'], sourceVol, disk_info['uni'])
-                    jsondicts = get_disk_jsondict(targetPool, sourceVol)
-                    apply_all_jsondict(jsondicts)
+                    if pool_info['type'] == 'vdiskfs':
+                        try:
+                            ip = get_node_ip_by_node_name(pool_node_name)
+                            remote_start_pool(ip, targetPool)
+                        except:
+                            pass
+                    else:
+                        config = get_disk_config(pool_info['poolname'], sourceVol)
+                        write_config(sourceVol, config['dir'], config['current'], targetPool, pool_info['poolname'])
+                        ip = get_node_ip_by_node_name(pool_node_name)
+                        disk_info = get_vol_info_from_k8s(sourceVol)
+                        remote_cstor_disk_prepare(ip, pool_info['poolname'], sourceVol, disk_info['uni'])
+                        jsondicts = get_disk_jsondict(targetPool, sourceVol)
+                        apply_all_jsondict(jsondicts)
                 else:
                     # scp
                     ip = get_node_ip_by_node_name(pool_node_name)
