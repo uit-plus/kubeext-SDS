@@ -1281,9 +1281,6 @@ def migrateDiskFunc(sourceVol, targetPool):
     pool_helper = K8sHelper('VirtualMachinePool')
     pool_node_name = get_node_name(pool_helper.get(targetPool))
     disk_node_name = get_node_name(disk_heler.get(sourceVol))
-    if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
-        raise ExecuteException('RunCmdError', 'disk is not in this node.')
-
     if disk_node_name != pool_node_name:
         ip = get_node_ip_by_node_name(pool_node_name)
         remote_start_pool(ip, targetPool)
@@ -1291,6 +1288,8 @@ def migrateDiskFunc(sourceVol, targetPool):
     if disk_info['pool'] == pool_info['pool']:
         logger.debug('disk %s has been in pool %s' % (sourceVol, targetPool))
         return
+    if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
+        raise ExecuteException('RunCmdError', 'disk is not in this node.')
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
         if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:  # file to file
