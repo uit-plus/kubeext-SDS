@@ -1564,7 +1564,7 @@ def migrateVMDisk(params):
         # not migrate vm, just migrate some disk to other pool
         for disk_path in specs.keys():
             # prepare
-            prepare_info = prepare_disk_by_path(disk_path)
+            prepare_info = get_disk_prepare_info_by_path(disk_path)
         logger.debug(specs)
         try:
             for vp in vps:
@@ -1599,7 +1599,7 @@ def migrateVMDisk(params):
         if node_name:
             for disk_path in specs.keys():
                 # prepare
-                prepare_info = prepare_disk_by_path(disk_path)
+                prepare_info = get_disk_prepare_info_by_path(disk_path)
                 if disk_path not in migrateVols:
                     # remote prepare
                     remote_prepare_disk_by_path(params.ip, prepare_info['path'])
