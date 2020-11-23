@@ -1597,12 +1597,12 @@ def migrateVMDisk(params):
     else:
         # migrate vm to another node
         if node_name:
-            for disk_path in specs.keys():
-                # prepare
-                prepare_info = get_disk_prepare_info_by_path(disk_path)
-                if disk_path not in migrateVols:
-                    # remote prepare
-                    remote_prepare_disk_by_path(params.ip, prepare_info['path'])
+            # for disk_path in specs.keys():
+            #     # prepare
+            #     prepare_info = get_disk_prepare_info_by_path(disk_path)
+                # if disk_path not in migrateVols:
+                #     # remote prepare
+                #     remote_prepare_disk_by_path(params.ip, prepare_info['path'])
             all_jsondicts = []
             logger.debug(specs)
             try:
@@ -1621,6 +1621,7 @@ def migrateVMDisk(params):
                         if targetPool:
                             logger.debug("targetPool is %s." % targetPool)
                             if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
+                                prepare_disk_by_path(prepare_info['path'])
                                 config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
                                 write_config(config['name'], config['dir'], config['current'], targetPool,
                                              config['poolname'])
@@ -1629,6 +1630,7 @@ def migrateVMDisk(params):
                             else:
                                 jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
                                 all_jsondicts.extend(jsondicts)
+                        remote_prepare_disk_by_path(params.ip, prepare_info['path'])
                     else:
                         logger.debug(vps)
                         logger.debug('migrate disks')
