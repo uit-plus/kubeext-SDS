@@ -1514,6 +1514,8 @@ def pool_active(pool):
     # change all disk and snapshot to this node
     all_disk = get_pool_all_disk(poolname)
     if all_disk:
+        logger.debug("all_disk")
+        logger.debug(dumps(all_disk))
         disk_helper = K8sHelper('VirtualMachineDisk')
         for disk in all_disk:
             disk_helper.change_node(disk['disk'], node_name)
