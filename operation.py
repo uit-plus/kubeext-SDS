@@ -1646,6 +1646,7 @@ def migrateVMDisk(params):
             except ExecuteException, e:
                 for vp in vps:
                     try:
+                        pool_active(vp['oldpool'])
                         migrateDiskFunc(vp['disk'], vp['oldpool'])
                     except:
                         logger.debug(traceback.format_exc())
