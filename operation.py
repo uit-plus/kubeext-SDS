@@ -1618,6 +1618,7 @@ def migrateVMDisk(params):
                         for pool in pools:
                             if pool['host'] == node_name:
                                 targetPool = pool['pool']
+                                remote_start_pool(params.ip, targetPool)
                         if targetPool:
                             logger.debug("targetPool is %s." % targetPool)
                             if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
