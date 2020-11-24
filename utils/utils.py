@@ -1516,25 +1516,23 @@ def pool_active(pool):
     if all_disk:
         disk_helper = K8sHelper('VirtualMachineDisk')
         for disk in all_disk:
-            if disk['host'] != node_name:
-                disk_helper.change_node(disk['disk'], node_name)
-                volume = disk_helper.get_data(disk['disk'], 'volume')
-                volume['pool'] = pool
-                disk_helper.update(disk['disk'], 'volume', volume)
+            disk_helper.change_node(disk['disk'], node_name)
+            volume = disk_helper.get_data(disk['disk'], 'volume')
+            volume['pool'] = pool
+            disk_helper.update(disk['disk'], 'volume', volume)
 
-                config = get_disk_config(pool_info['poolname'], disk['disk'])
-                write_config(config['name'], config['dir'], config['current'], pool,
-                             config['poolname'])
+            config = get_disk_config(pool_info['poolname'], disk['disk'])
+            write_config(config['name'], config['dir'], config['current'], pool,
+                         config['poolname'])
 
         all_ss = get_pool_all_ss(poolname)
         if all_ss:
             ss_helper = K8sHelper('VirtualMachineDiskSnapshot')
             for ss in all_ss:
-                if ss['host'] != node_name:
-                    ss_helper.change_node(ss['ss'], node_name)
-                    volume = ss_helper.get_data(ss['ss'], 'volume')
-                    volume['pool'] = pool
-                    disk_helper.update(ss['ss'], 'volume', volume)
+                ss_helper.change_node(ss['ss'], node_name)
+                volume = ss_helper.get_data(ss['ss'], 'volume')
+                volume['pool'] = pool
+                disk_helper.update(ss['ss'], 'volume', volume)
 
 
 def get_pool_all_disk(poolname):
