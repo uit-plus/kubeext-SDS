@@ -1630,6 +1630,8 @@ def migrateVMDisk(params):
                             else:
                                 jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
                                 all_jsondicts.extend(jsondicts)
+                        else:
+                            raise ExecuteException('', 'can not find pool has same poolname %s on %s' % (pool_info['poolname'], params.ip))
                         remote_prepare_disk_by_path(params.ip, prepare_info['path'])
                     else:
                         logger.debug(vps)
