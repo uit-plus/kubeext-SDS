@@ -1500,16 +1500,16 @@ def pool_active(pool):
     pools = get_pools_by_path(pool_path)
     node_name = get_hostname_in_lower_case()
     poolHelper = K8sHelper('VirtualMachinePool')
-    for pool in pools:
-        if pool['host'] != node_name:
-            pinfo = get_pool_info_from_k8s(pool['pool'])
+    for vmp in pools:
+        if vmp['host'] != node_name:
+            pinfo = get_pool_info_from_k8s(vmp['pool'])
             pinfo['state'] = 'inactive'
-            poolHelper.update(pool['pool'], 'pool', pinfo)
+            poolHelper.update(vmp['pool'], 'pool', pinfo)
         else:
-            pinfo = get_pool_info_from_k8s(pool['pool'])
+            pinfo = get_pool_info_from_k8s(vmp['pool'])
             if pinfo['state'] != 'active':
                 pinfo['state'] = 'active'
-                poolHelper.update(pool['pool'], 'pool', pinfo)
+                poolHelper.update(vmp['pool'], 'pool', pinfo)
 
     # change all disk and snapshot to this node
     all_disk = get_pool_all_disk(poolname)
