@@ -1515,6 +1515,7 @@ def pool_active(pool):
     all_disk = get_pool_all_disk(poolname)
     if all_disk:
         logger.debug("all_disk")
+        logger.debug(pool)
         logger.debug(dumps(all_disk))
         disk_helper = K8sHelper('VirtualMachineDisk')
         for disk in all_disk:
