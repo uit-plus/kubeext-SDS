@@ -3087,6 +3087,28 @@ def get_disk_prepare_info_by_path(path):
             path = current
     except:
         logger.debug(traceback.format_exc())
+    if os.path.basename(os.path.dirname(path)) == 'snapshots':
+        disk = os.path.basename(os.path.dirname(os.path.dirname(path)))
+    else:
+        disk = os.path.basename(os.path.dirname(path))
+    try:
+        volume = get_vol_info_from_k8s(disk)
+        disk_helper = K8sHelper('VirtualMachineDisk')
+        diskinfo = {}
+        diskinfo['poolname'] = volume['poolname']
+        diskinfo['disk'] = disk
+        diskinfo['uni'] = volume['uni']
+        jsondict = disk_helper.get(disk)
+        spec = get_spec(jsondict)
+        if spec:
+            nodeName = spec.get('nodeName')
+            if nodeName:
+                diskinfo['nodeName'] = nodeName
+        diskinfo['pool'] = volume['pool']
+        diskinfo['path'] = volume['current']
+        return diskinfo
+    except:
+        pass
     logger.debug('get_disk_prepare_info_by_path: %s' % path)
     success = False
     if not success:
