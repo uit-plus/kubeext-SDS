@@ -1512,6 +1512,7 @@ def pool_active(pool):
                 poolHelper.update(pool['pool'], 'pool', pool_info)
 
     # change all disk and snapshot to this node
+    pool_info = get_pool_info_from_k8s(pool)
     all_disk = get_pool_all_disk(poolname)
     if all_disk:
         disk_helper = K8sHelper('VirtualMachineDisk')
@@ -1521,6 +1522,10 @@ def pool_active(pool):
                 volume = disk_helper.get_data(disk['disk'], 'volume')
                 volume['pool'] = pool
                 disk_helper.update(disk['disk'], 'volume', volume)
+
+                config = get_disk_config(pool_info['poolname'], disk['disk'])
+                write_config(config['name'], config['dir'], config['current'], pool,
+                             config['poolname'])
 
         all_ss = get_pool_all_ss(poolname)
         if all_ss:
