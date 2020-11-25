@@ -191,6 +191,7 @@ class K8sHelper(object):
     def exist(self, name):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
                                                                                   version=resources[self.kind]['version'],
                                                                                   namespace='default',
@@ -209,6 +210,7 @@ class K8sHelper(object):
     def get(self, name):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
                                                                                   version=resources[self.kind]['version'],
                                                                                   namespace='default',
@@ -224,6 +226,7 @@ class K8sHelper(object):
     def get_data(self, name, key):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
                                                                                   version=resources[self.kind]['version'],
                                                                                   namespace='default',
@@ -241,6 +244,7 @@ class K8sHelper(object):
     def get_create_jsondict(self, name, key, data):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 hostname = get_hostname_in_lower_case()
                 jsondict = {'spec': {'volume': {}, 'nodeName': hostname, 'status': {}},
                             'kind': self.kind, 'metadata': {'labels': {'host': hostname}, 'name': name},
@@ -259,6 +263,7 @@ class K8sHelper(object):
     def create(self, name, key, data):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 if self.exist(name):
                     return
                 hostname = get_hostname_in_lower_case()
@@ -281,6 +286,7 @@ class K8sHelper(object):
     def add_label(self, name, domain):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 if not self.exist(name):
                     return
                 jsondict = self.get(name)
@@ -299,6 +305,7 @@ class K8sHelper(object):
     def update(self, name, key, data):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 if not self.exist(name):
                     return
                 jsondict = self.get(name)
@@ -319,6 +326,7 @@ class K8sHelper(object):
     def updateAll(self, name, jsondict):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 if not self.exist(name):
                     return
                 jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
@@ -335,6 +343,7 @@ class K8sHelper(object):
     def delete(self, name):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 k8s_logger.debug('deleteVMBackupdebug %s' % name)
                 return client.CustomObjectsApi().delete_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
@@ -351,6 +360,7 @@ class K8sHelper(object):
     def delete_lifecycle(self, name):
         for i in range(RETRY_TIMES):
             try:
+                config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 if not self.exist(name):
                     return
                 jsondict = self.get(name)
