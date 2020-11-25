@@ -890,44 +890,28 @@ def cstor_pool_active(poolname):
 def get_pool_info_from_k8s(pool):
     if not pool:
         raise ExecuteException('', 'missing parameter: no pool name.')
-    result = runCmdWithResult('kubectl get vmp -o json %s' % pool)
-    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'pool' in result['spec'].keys():
-        pool_info = result['spec']['pool']
-        # # try make pool active
-        # pool_helper = K8sHelper('VirtualMachinePool')
-        # this_node_name = get_hostname_in_lower_case()
-        # pool_node_name = get_node_name(pool_helper.get(pool))
-        # if this_node_name == pool_node_name and pool_info['state'] == 'active':
-        #     cstor_pool_active(pool_info['poolname'])
-        #     if pool_info['pooltype'] != 'uus':
-        #         runCmd('virsh pool-start %s' % pool_info['poolname'])
-        return pool_info
-    raise ExecuteException('', 'can not get pool info from k8s')
-
+    poolHelper = K8sHelper('VirtualMachinePool')
+    return poolHelper.get_data(pool, 'pool')
 
 def get_image_info_from_k8s(image):
     if not image:
         raise ExecuteException('', 'missing parameter: no image name.')
-    result = runCmdWithResult('kubectl get vmdi -o json %s' % image)
-    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
-        return result['spec']['volume']
-    raise ExecuteException('', 'can not get vol info from k8s')
+    image_helper = K8sHelper('VirtualMachineDiskImage')
+    return image_helper.get_data(image, 'volume')
 
 
 def get_vol_info_from_k8s(vol):
     if not vol:
         raise ExecuteException('', 'missing parameter: no disk name.')
-    result = runCmdWithResult('kubectl get vmd -o json %s' % vol)
-    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
-        return result['spec']['volume']
-    raise ExecuteException('', 'can not get vol info from k8s')
+    helper = K8sHelper('VirtualMachineDisk')
+    return helper.get_data(vol, 'volume')
 
 
 def get_snapshot_info_from_k8s(snapshot):
-    result = runCmdWithResult('kubectl get vmdsn -o json %s' % snapshot)
-    if 'spec' in result.keys() and isinstance(result['spec'], dict) and 'volume' in result['spec'].keys():
-        return result['spec']['volume']
-    raise ExecuteException('', 'can not get snapshot info from k8s')
+    if not snapshot:
+        raise ExecuteException('', 'missing parameter: no disk name.')
+    helper = K8sHelper('VirtualMachineDiskSnapshot')
+    return helper.get_data(snapshot, 'volume')
 
 
 def get_disk_config(pool, vol):
@@ -1539,8 +1523,14 @@ def pool_active(pool):
 
 
 def get_pool_all_disk(poolname):
-    output = runCmdAndGetOutput(
-        'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
     disks = []
     if output:
         for line in output.splitlines():
@@ -1554,8 +1544,14 @@ def get_pool_all_disk(poolname):
 
 
 def get_pool_all_ss(poolname):
-    output = runCmdAndGetOutput(
-        'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
     disks = []
     if output:
         for line in output.splitlines():
@@ -1569,8 +1565,15 @@ def get_pool_all_ss(poolname):
 
 
 def get_pools_by_node(node_name):
-    output = runCmdAndGetOutput(
-        'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
+
     pools = []
     if output:
         for line in output.splitlines():
@@ -1584,8 +1587,14 @@ def get_pools_by_node(node_name):
 
 
 def get_pools_by_path(path):
-    output = runCmdAndGetOutput(
-        'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.path==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % path)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.path==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % path)
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
     pools = []
     if output:
         for line in output.splitlines():
@@ -1599,8 +1608,14 @@ def get_pools_by_path(path):
 
 
 def get_pools_by_poolname(poolname):
-    output = runCmdAndGetOutput(
-        'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % poolname)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % poolname)
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
     pools = []
     if output:
         for line in output.splitlines():
@@ -1844,14 +1859,16 @@ def apply_all_jsondict(jsondicts):
             f.write(result)
             if i != len(jsondicts) - 1:
                 f.write('---\n')
-    try:
-        runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
-    except ExecuteException, e:
-        logger.debug(e.message)
-        if e.message.find('Warning') >= 0:
-            pass
-        else:
-            raise e
+    for i in range(30):
+        try:
+            runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
+            break
+        except ExecuteException, e:
+            logger.debug(e.message)
+            if e.message.find('Warning') >= 0 or e.message.find('failed to open a connection to the hypervisor software') >= 0:
+                pass
+            else:
+                raise e
     try:
         runCmd('rm -f /tmp/%s.yaml' % filename)
     except ExecuteException:
@@ -1869,7 +1886,17 @@ def create_all_jsondict(jsondicts):
             f.write(result)
             if i != len(jsondicts) - 1:
                 f.write('---\n')
-    runCmd('kubectl create -f /tmp/%s.yaml' % filename)
+    for i in range(30):
+        try:
+            runCmd('kubectl create -f /tmp/%s.yaml' % filename)
+            break
+        except ExecuteException, e:
+            logger.debug(e.message)
+            if e.message.find('Warning') >= 0 or e.message.find(
+                    'failed to open a connection to the hypervisor software') >= 0:
+                pass
+            else:
+                raise e
     try:
         runCmd('rm -f /tmp/%s.yaml' % filename)
     except ExecuteException:

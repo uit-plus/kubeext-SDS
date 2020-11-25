@@ -32,7 +32,7 @@ config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
 
 LOG = '/var/log/kubesds.log'
 
-RETRY_TIMES = 5
+RETRY_TIMES = 30
 
 def set_logger(header, fn):
     logger = logging.getLogger(header)
@@ -200,6 +200,10 @@ class K8sHelper(object):
             except ApiException, e:
                 if e.reason == 'Not Found':
                     return False
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('K8sError', 'can not get %s %s response from k8s.' % (self.kind, name))
 
     def get(self, name):
@@ -211,8 +215,10 @@ class K8sHelper(object):
                                                                                   plural=resources[self.kind]['plural'],
                                                                                   name=name)
                 return jsondict
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_data(self, name, key):
@@ -226,8 +232,10 @@ class K8sHelper(object):
                 if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
                     return jsondict['spec'][key]
                 return None
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_create_jsondict(self, name, key, data):
@@ -241,8 +249,10 @@ class K8sHelper(object):
                 jsondict = updateJsonRemoveLifecycle(jsondict, {key: data})
                 body = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
                 return body
-            except:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('k8sError', 'can not get %s %s data on k8s.' % (self.kind, name))
 
 
@@ -262,8 +272,10 @@ class K8sHelper(object):
                 return client.CustomObjectsApi().create_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                     plural=resources[self.kind]['plural'], body=body)
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         error_print(500, 'can not create %s %s on k8s.' % (self.kind, name))
 
     def add_label(self, name, domain):
@@ -278,8 +290,10 @@ class K8sHelper(object):
                 return client.CustomObjectsApi().replace_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                     plural=resources[self.kind]['plural'], name=name, body=jsondict)
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def update(self, name, key, data):
@@ -296,8 +310,10 @@ class K8sHelper(object):
                 return client.CustomObjectsApi().replace_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                     plural=resources[self.kind]['plural'], name=name, body=jsondict)
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def updateAll(self, name, jsondict):
@@ -310,8 +326,10 @@ class K8sHelper(object):
                 return client.CustomObjectsApi().replace_namespaced_custom_object(
                     group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
                     plural=resources[self.kind]['plural'], name=name, body=jsondict)
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def delete(self, name):
@@ -324,6 +342,10 @@ class K8sHelper(object):
             except ApiException, e:
                 if e.reason == 'Not Found':
                     return
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not delete %s %s on k8s.' % (self.kind, name))
 
     def delete_lifecycle(self, name):
@@ -340,8 +362,10 @@ class K8sHelper(object):
                         plural=resources[self.kind]['plural'], name=name, body=jsondict)
                 else:
                     return
-            except Exception:
-                pass
+            except Exception, e:
+                if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
+                        'ApiException') != -1:
+                    config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 
     def change_node(self, name, newNodeName):

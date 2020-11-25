@@ -3054,8 +3054,15 @@ def is_cstor_pool_exist(pool):
 
 def prepare_disk_by_metadataname(uuid):
     success = False
-    output = runCmdAndGetOutput(
-        'kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
+            break
+        except Exception, e:
+            pass
+
     if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
         success = True
     if not success:
@@ -3113,21 +3120,26 @@ def get_disk_prepare_info_by_path(path):
         pass
     logger.debug('get_disk_prepare_info_by_path: %s' % path)
     success = False
-    if not success:
-        output = runCmdAndGetOutput(
-            'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
-            success = True
-    if not success:
-        output = runCmdAndGetOutput(
-            'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
-            success = True
-    if not success:
-        output = runCmdAndGetOutput(
-            'kubectl get vmdi -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
-        if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
-            success = True
+    for i in range(30):
+        try:
+            if not success:
+                output = runCmdAndGetOutput(
+                    'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
+                if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
+                    success = True
+            if not success:
+                output = runCmdAndGetOutput(
+                    'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
+                if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
+                    success = True
+            if not success:
+                output = runCmdAndGetOutput(
+                    'kubectl get vmdi -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
+                if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
+                    success = True
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
     if not success:
         raise ExecuteException('', 'can not get right disk info from k8s by path: %s. less info' % path)
     lines = output.splitlines()
@@ -3167,8 +3179,14 @@ def remote_prepare_disk_by_path(ip, path):
 
 def release_disk_by_metadataname(uuid):
     success = False
-    output = runCmdAndGetOutput(
-        'kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
+    output = None
+    for i in range(30):
+        try:
+            output = runCmdAndGetOutput(
+                'kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
+            break
+        except Exception:
+            logger.debug(traceback.format_exc())
     if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 4:
         success = True
     if not success:
