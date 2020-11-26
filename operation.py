@@ -747,8 +747,8 @@ def createDiskFromImage(params):
         config = get_disk_config_by_path('%s/config.json' % source_disk_dir)
         disk_info = get_disk_info(config['current'])
         op = Operation(
-            'qemu-img create -f %s -b %s -F %s %s' %
-            (disk_info['format'], config['current'], disk_info['format'], dest), {})
+            'qemu-img create -f qcow2 -b %s -F %s %s' %
+            (config['current'], disk_info['format'], dest), {})
         op.execute()
 
     write_config(params.name, dest_dir, dest, params.targetPool, poolname)
