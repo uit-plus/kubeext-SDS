@@ -906,6 +906,18 @@ def get_vol_info_from_k8s(vol):
     helper = K8sHelper('VirtualMachineDisk')
     return helper.get_data(vol, 'volume')
 
+def try_get_diskmn_by_path(disk_path):
+    if disk_path.find('snapshots') >= 0:
+        disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
+    else:
+        try:
+            # uus
+            vol_info = get_vol_info_from_k8s(os.path.basename(disk_path))
+            disk_mn = os.path.basename(disk_path)
+        except:
+            disk_mn = os.path.basename(os.path.dirname(disk_path))
+    vol_info = get_vol_info_from_k8s(disk_mn)
+    return disk_mn
 
 def get_snapshot_info_from_k8s(snapshot):
     if not snapshot:
@@ -1313,8 +1325,14 @@ def try_fix_disk_metadata(path):
         disk = os.path.basename(os.path.dirname(os.path.dirname(path)))
         disk_dir = os.path.dirname(os.path.dirname(path))
     else:
-        disk = os.path.basename(os.path.dirname(path))
-        disk_dir = os.path.dirname(path)
+        try:
+            vol_info = get_vol_info_from_k8s(os.path.basename(path))
+            pool_info = get_pool_info_from_k8s(vol_info['pool'])
+            if pool_info['pooltype'] == 'uus':
+                return path
+        except:
+            disk = os.path.basename(os.path.dirname(path))
+            disk_dir = os.path.dirname(path)
 
     try:
         vol_info = get_vol_info_from_k8s(disk)

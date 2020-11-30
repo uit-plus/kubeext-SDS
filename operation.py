@@ -1794,10 +1794,7 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
     vm_disks = {}
     disk_tag = {}
     for disk_path in disk_specs.keys():
-        if disk_path.find('snapshots') < 0:
-            disk_mn = os.path.basename(os.path.dirname(disk_path))
-        else:
-            disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
+        disk_mn = try_get_diskmn_by_path(disk_path)
         vm_disks[disk_mn] = disk_path
         disk_tag[disk_mn] = disk_specs[disk_path]
     if disk not in vm_disks.keys():
@@ -1971,10 +1968,7 @@ def restore_vm_disk(domain, pool, disk, version, newname, target):
         disk_specs = get_disks_spec(domain)
         vm_disks = {}
         for disk_path in disk_specs.keys():
-            if disk_path.find('snapshots') < 0:
-                disk_mn = os.path.basename(os.path.dirname(disk_path))
-            else:
-                disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
+            disk_mn = try_get_diskmn_by_path(disk_path)
             vm_disks[disk_mn] = disk_path
         if disk not in vm_disks.keys():
             raise ExecuteException('', 'domain not attach diak %s, can find disk %s used by domain %s xml.' % (
@@ -2046,10 +2040,7 @@ def backupVM(params):
     for disk_path in disk_specs.keys():
         if not params.all and disk_specs[disk_path] != os_disk_tag:
             continue
-        if disk_path.find('snapshots') < 0:
-            disk_mn = os.path.basename(os.path.dirname(disk_path))
-        else:
-            disk_mn = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
+        disk_mn = try_get_diskmn_by_path(disk_path)
         disk_info = get_vol_info_from_k8s(disk_mn)
         pool_info = get_pool_info_from_k8s(disk_info['pool'])
         check_pool_active(pool_info)
@@ -2275,10 +2266,7 @@ def restoreVM(params):
     # be sure vm still use the disks in the backup record.
     vm_disks = []
     for disk_path in disk_specs.keys():
-        if disk_path.find('snapshots') >= 0:
-            vm_disk = os.path.basename(os.path.dirname(os.path.dirname(disk_path)))
-        else:
-            vm_disk = os.path.basename(os.path.dirname(disk_path))
+        vm_disk = try_get_diskmn_by_path(disk_path)
         vm_disks.append(vm_disk)
 
     if params.all:
@@ -3096,10 +3084,7 @@ def get_disk_prepare_info_by_path(path):
             path = current
     except:
         logger.debug(traceback.format_exc())
-    if os.path.basename(os.path.dirname(path)) == 'snapshots':
-        disk = os.path.basename(os.path.dirname(os.path.dirname(path)))
-    else:
-        disk = os.path.basename(os.path.dirname(path))
+    disk = try_get_diskmn_by_path(path)
     try:
         volume = get_vol_info_from_k8s(disk)
         disk_helper = K8sHelper('VirtualMachineDisk')
