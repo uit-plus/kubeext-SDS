@@ -723,8 +723,14 @@ def createDiskFromImage(params):
 
     if params.full_copy:
         try:
-            op = Operation('cp -f %s %s' % (params.source, dest), {})
-            op.execute()
+            source_info = get_disk_info(params.source)
+            if source_info['format'] != 'qcow2':
+                op = Operation(
+                    'qemu-img convert -f %s %s -O qcow2 %s' % (source_info['format'], params.source, dest), {})
+                op.execute()
+            else:
+                op = Operation('cp -f %s %s' % (params.source, dest), {})
+                op.execute()
         except:
             if os.path.exists(dest_dir):
                 op = Operation('rm -rf %s' % dest_dir, {})
@@ -732,8 +738,10 @@ def createDiskFromImage(params):
             raise Exception('Copy %s to %s failed!' % (params.source, dest))
 
         try:
-            op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
-            op.execute()
+            dest_info = get_disk_info(dest)
+            if dest_info['format'] == 'qcow2':
+                op = Operation('qemu-img rebase -f qcow2 %s -b "" -u' % (dest), {})
+                op.execute()
         except:
             if os.path.exists(dest_dir):
                 op = Operation('rm -rf %s' % dest_dir, {})
