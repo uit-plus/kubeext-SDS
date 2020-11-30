@@ -1786,8 +1786,8 @@ def backup_vm_disk(domain, pool, disk, version, is_full, full_version, is_backup
     disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
     check_pool_active(disk_pool_info)
 
-    if disk_pool_info['pooltype'] == 'uus':
-        raise ExecuteException('', 'disk %s is uus type, not support backup.' % disk)
+    # if disk_pool_info['pooltype'] == 'uus':
+    #     raise ExecuteException('', 'disk %s is uus type, not support backup.' % disk)
 
     # check backup pool path exist or not
     pool_info = get_pool_info_from_k8s(pool)
