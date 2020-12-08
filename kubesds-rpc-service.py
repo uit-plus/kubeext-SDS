@@ -193,8 +193,10 @@ def run_server():
 
 def keep_alive():
     server = run_server()
-    while True:
-        time.sleep(5)
+    server.wait_for_termination()
+    # while True:
+    #     time.sleep(5)
+
     # while True:
     #     output = None
     #     try:
