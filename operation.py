@@ -2050,17 +2050,17 @@ def backupVM(params):
             continue
         disk_mn = try_get_diskmn_by_path(disk_path)
         disk_info = get_vol_info_from_k8s(disk_mn)
-        pool_info = get_pool_info_from_k8s(disk_info['pool'])
-        check_pool_active(pool_info)
+        disk_pool_info = get_pool_info_from_k8s(disk_info['pool'])
+        check_pool_active(disk_pool_info)
 
-        if pool_info['pooltype'] == 'uus':
-            if disk_specs[disk_path] == os_disk_tag:
-                raise ExecuteException('', 'uus disk %s is vm os disk, not support backup vm %s' % (
-                    disk_path, params.domain))
-            else:
-                continue
+        # if disk_pool_info['pooltype'] == 'uus':
+        #     if disk_specs[disk_path] == os_disk_tag:
+        #         raise ExecuteException('', 'uus disk %s is vm os disk, not support backup vm %s' % (
+        #             disk_path, params.domain))
+        #     else:
+        #         continue
         cstor_disk_prepare(disk_info['poolname'], disk_info['disk'], disk_info['uni'])
-        disk_dir = '%s/%s' % (pool_info['path'], disk_info['disk'])
+        disk_dir = '%s/%s' % (disk_pool_info['path'], disk_info['disk'])
         if not os.path.exists(disk_dir):
             raise ExecuteException('', 'vm disk dir %s not exist, plz check it.' % disk_dir)
         disk_tags[disk_mn] = disk_specs[disk_path]
