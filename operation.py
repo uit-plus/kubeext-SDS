@@ -94,7 +94,7 @@ def createPool(params):
             "capacity": cstor["data"]["total"],
             "free": cstor["data"]["free"],
             "autostart": "no",
-            "path": cstor["data"]["url"],
+            "path": cstor["data"]["mountpath"],
             "state": cstor["data"]["status"],
             "uuid": cstor["data"]["uuid"],
             "content": 'vmd'
