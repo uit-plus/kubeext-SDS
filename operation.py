@@ -236,7 +236,7 @@ def showPool(params):
             "capacity": cstor["total"],
             "free": cstor["free"],
             "autostart": "no",
-            "path": cstor["url"],
+            "path": cstor["mountpath"],
             "state": cstor["status"],
             "uuid": cstor['uuid'],
             "content": 'vmd'

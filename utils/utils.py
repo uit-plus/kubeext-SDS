@@ -2482,7 +2482,7 @@ def check_pool_active(info):
             "poolname": info['poolname'],
             "capacity": cstor["total"],
             "autostart": "no",
-            "path": cstor["url"],
+            "path": cstor["mountpath"],
             "free": cstor["free"],
             "state": cstor["status"],
             "uuid": cstor["uuid"],
