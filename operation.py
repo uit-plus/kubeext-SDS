@@ -3034,6 +3034,20 @@ def scanBackup(params):
     success_print("success scanBackup", {})
 
 
+def deleteRemoteBackupServer(params):
+    logger.debug("delete remote backup server. %s %s" % (params.remote, params.port))
+    ftp = FtpHelper(params.remote, params.port, params.username, params.password)
+    dirs = ftp.listdir("/")
+    for dir in dirs:
+        full_dir = "/%s" % dir
+        if ftp.is_exist_dir(full_dir):
+            logger.debug("delete dir %s" % full_dir)
+            ftp.delete_dir(full_dir)
+
+    success_print("success delete remote backup server.", {})
+
+
+
 def showDiskPool(params):
     prepare_info = get_disk_prepare_info_by_path(params.path)
     pool_info = get_pool_info_from_k8s(prepare_info['pool'])
@@ -3206,6 +3220,7 @@ def release_disk_by_path(path):
     uni = diskinfo['uni']
 
     cstor_release_disk(pool, disk, uni)
+
 
 
 if __name__ == '__main__':

@@ -518,6 +518,9 @@ def cleanRemoteBackupParser(args):
 def scanBackupParser(args):
     execute('scanBackup', args)
 
+def deleteRemoteBackupServerParser(args):
+    execute('deleteRemoteBackupServer', args)
+
 # --------------------------- cmd line parser ---------------------------------------
 parser = argparse.ArgumentParser(prog="kubesds-adm", description="All storage adaptation tools")
 
@@ -1140,6 +1143,19 @@ parser_scan_backup.add_argument("--pool", required=True, metavar="[POOL]", type=
                             help="backup to store")
 # set default func
 parser_scan_backup.set_defaults(func=scanBackupParser)
+
+# -------------------- add deleteRemoteBackupServer cmd ----------------------------------
+parser_delete_remote_backup_server = subparsers.add_parser("deleteRemoteBackupServer", help="deleteRemoteBackupServer help")
+parser_delete_remote_backup_server.add_argument("--remote", required=True, metavar="[REMOTE]", type=str,
+                            help="remote server host.")
+parser_delete_remote_backup_server.add_argument("--port", required=True, metavar="[PORT]", type=str,
+                            help="remote server port.")
+parser_delete_remote_backup_server.add_argument("--username", required=True, metavar="[USERNAME]", type=str,
+                            help="remote server username.")
+parser_delete_remote_backup_server.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
+                            help="remote server password.")
+# set default func
+parser_delete_remote_backup_server.set_defaults(func=deleteRemoteBackupServerParser)
 
 try:
     os.putenv('LANG', 'en_US.UTF-8')
