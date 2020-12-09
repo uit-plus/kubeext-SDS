@@ -1154,6 +1154,8 @@ parser_delete_remote_backup_server.add_argument("--username", required=True, met
                             help="remote server username.")
 parser_delete_remote_backup_server.add_argument("--password", required=True, metavar="[PASSWORD]", type=str,
                             help="remote server password.")
+parser_delete_remote_backup_server.add_argument("--pool", required=True, metavar="[POOL]", type=str,
+                                help="storage pool to use")
 # set default func
 parser_delete_remote_backup_server.set_defaults(func=deleteRemoteBackupServerParser)
 
