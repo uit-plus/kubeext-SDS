@@ -2187,7 +2187,7 @@ def backupVM(params):
 
         ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
-        ftp_history_file = '/%s/history.json' % params.domain
+        ftp_history_file = '/vmbackup/%s/history.json' % params.domain
 
         if ftp.is_exist_file(ftp_history_file):
             ftp_history = ftp.get_json_file_data(ftp_history_file)
@@ -2202,7 +2202,7 @@ def backupVM(params):
                 push_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote,
                                  params.port, params.username, params.password)
                 fin.append(disk)
-            ftp.upload_file(xml_file, '/%s' % params.domain)
+            ftp.upload_file(xml_file, '/vmbackup/%s' % params.domain)
         except Exception, e:
             for disk in fin:
                 delete_remote_disk_backup(params.domain, disk, record[disk]['version'], params.remote, params.port,
@@ -2219,7 +2219,7 @@ def backupVM(params):
         ftp_history[params.version] = history[params.version]
         with open('/tmp/history.json', 'w') as f:
             dump(ftp_history, f)
-        ftp.upload_file("/tmp/history.json", '/%s' % params.domain)
+        ftp.upload_file("/tmp/history.json", '/vmbackup/%s' % params.domain)
 
     data = {
         'domain': params.domain,
@@ -2475,7 +2475,7 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
         raise ExecuteException('', 'ftp port, username, password must be set.')
     ftp = FtpHelper(remote, port, username, password)
 
-    backup_dir = '/%s/diskbackup/%s' % (domain, disk)
+    backup_dir = '/vmbackup/%s/diskbackup/%s' % (domain, disk)
     history_file = '%s/history.json' % backup_dir
     logger.debug('history_file: ' + history_file)
     if not ftp.is_exist_file(history_file):
@@ -2533,7 +2533,7 @@ def delete_remote_disk_backup(domain, disk, version, remote, port, username, pas
 
 def delete_remote_vm_backup(domain, version, remote, port, username, password):
     ftp = FtpHelper(remote, port, username, password)
-    history_file = '/%s/history.json' % domain
+    history_file = '/vmbackup/%s/history.json' % domain
     history = ftp.get_json_file_data(history_file)
 
     if not history or version not in history.keys():
@@ -2546,7 +2546,7 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
             continue
         delete_remote_disk_backup(domain, disk, record[disk]['version'], remote, port,
                                   username, password)
-    history_file = '/%s/history.json' % domain
+    history_file = '/vmbackup/%s/history.json' % domain
     history = ftp.get_json_file_data(history_file)
     del history[version]
     if len(history.keys()) == 0:
@@ -2555,9 +2555,9 @@ def delete_remote_vm_backup(domain, version, remote, port, username, password):
         tmp_file = '/tmp/history.json'
         with open(tmp_file, 'w') as f:
             dump(history, f)
-        ftp.upload_file(tmp_file, '/%s' % domain)
+        ftp.upload_file(tmp_file, '/vmbackup/%s' % domain)
 
-    ftp.delete_file('/%s/%s.xml' % (domain, version))
+    ftp.delete_file('/vmbackup/%s/%s.xml' % (domain, version))
 
 
 def pushVMBackup(params):
@@ -2582,7 +2582,7 @@ def pushVMBackup(params):
 
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
-    ftp_history_file = '/%s/history.json' % params.domain
+    ftp_history_file = '/vmbackup/%s/history.json' % params.domain
 
     if ftp.is_exist_file(ftp_history_file):
         ftp_history = ftp.get_json_file_data(ftp_history_file)
@@ -2607,12 +2607,12 @@ def pushVMBackup(params):
                                           params.username, params.password)
             raise ExecuteException('', 'can not upload backup record to ftp server.')
 
-        ftp.upload_file('%s/%s.xml' % (backup_dir, params.version), '/%s' % params.domain)
+        ftp.upload_file('%s/%s.xml' % (backup_dir, params.version), '/vmbackup/%s' % params.domain)
 
         ftp_history[params.version] = history[params.version]
         with open('/tmp/history.json', 'w') as f:
             dump(ftp_history, f)
-        ftp.upload_file("/tmp/history.json", '/%s' % params.domain)
+        ftp.upload_file("/tmp/history.json", '/vmbackup/%s' % params.domain)
     success_print("success pushVMBackup.", {})
 
 
@@ -2660,7 +2660,7 @@ def push_disk_backup(domain, pool, disk, version, remote, port, username, passwo
         raise ExecuteException('', 'can not get domain %s right backup record version %s in %s. ' % (
             domain, version, history_file))
 
-    remote_disk_dir = '/%s/diskbackup/%s' % (domain, disk)
+    remote_disk_dir = '/vmbackup/%s/diskbackup/%s' % (domain, disk)
 
     # history file
     ftp_history_file = '%s/history.json' % remote_disk_dir
@@ -2729,7 +2729,7 @@ def pullRemoteBackup(params):
 
         ftp = FtpHelper(params.remote, params.port, params.username, params.password)
 
-        ftp_history_file = '/%s/history.json' % params.domain
+        ftp_history_file = '/vmbackup/%s/history.json' % params.domain
 
         ftp_history = ftp.get_json_file_data(ftp_history_file)
         record = ftp_history[params.version]
@@ -2739,7 +2739,7 @@ def pullRemoteBackup(params):
                 pull_disk_backup(params.domain, params.pool, disk, record[disk]['version'], params.remote, params.port,
                                  params.username, params.password)
                 fin.append(disk)
-            ftp.download_file('/%s/%s.xml' % (params.domain, params.version),
+            ftp.download_file('/vmbackup/%s/%s.xml' % (params.domain, params.version),
                               '%s/%s.xml' % (backup_dir, params.version))
         except ExecuteException, e:
             for disk in fin:
@@ -2763,7 +2763,7 @@ def pullRemoteBackup(params):
 def pull_disk_backup(domain, pool, disk, version, remote, port, username, password):
     # default backup path
     ftp = FtpHelper(remote, port, username, password)
-    remote_backup_dir = '/%s/diskbackup/%s' % (domain, disk)
+    remote_backup_dir = '/vmbackup/%s/diskbackup/%s' % (domain, disk)
     remote_history_file = '%s/history.json' % remote_backup_dir
     remote_history = ftp.get_json_file_data(remote_history_file)
 
@@ -2936,7 +2936,7 @@ def clean_disk_remote_backup(domain, disk, versions, remote, port, username, pas
 
 def clean_vm_remote_backup(domain, versions, remote, port, username, password):
     ftp = FtpHelper(remote, port, username, password)
-    remote_backup_dir = '/%s' % domain
+    remote_backup_dir = '/vmbackup/%s' % domain
     remote_history_file = '%s/history.json' % remote_backup_dir
     remote_history = ftp.get_json_file_data(remote_history_file)
     if remote_history is None:
@@ -3037,9 +3037,9 @@ def scanBackup(params):
 def deleteRemoteBackupServer(params):
     logger.debug("delete remote backup server. %s %s" % (params.remote, params.port))
     ftp = FtpHelper(params.remote, params.port, params.username, params.password)
-    dirs = ftp.listdir("/")
+    dirs = ftp.listdir("/vmbackup")
     for dir in dirs:
-        full_dir = "/%s" % dir
+        full_dir = "/vmbackup/%s" % dir
         if ftp.is_exist_dir(full_dir):
             logger.debug("delete dir %s" % full_dir)
             ftp.delete_dir(full_dir)

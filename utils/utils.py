@@ -2104,7 +2104,7 @@ def is_vm_backup_exist(domain, pool, version):
 
 
 def is_remote_vm_backup_exist(domain, version, remote, port, username, password):
-    target_dir = '/%s' % domain
+    target_dir = '/vmbackup/%s' % domain
     ftp = FtpHelper(remote, port, username, password)
     history_file = '%s/history.json' % target_dir
     if ftp.is_exist_dir(target_dir) and ftp.is_exist_file(history_file):
@@ -2202,7 +2202,7 @@ def get_disk_backup_full_version(domain, pool, disk):
 
 
 def get_remote_disk_backup_version(domain, disk, remote, port, username, password):
-    vm_history_file = '/%s/history.json' % domain
+    vm_history_file = '/vmbackup/%s/history.json' % domain
     ftp = FtpHelper(remote, port, username, password)
     vm_history = ftp.get_json_file_data(vm_history_file)
     vm_disk_full_versions = set()
@@ -2212,7 +2212,7 @@ def get_remote_disk_backup_version(domain, disk, remote, port, username, passwor
             if disk in record.keys():
                 vm_disk_full_versions.add(record[disk]['full'])
     disk_versions = []
-    disk_backup_dir = '/%s/diskbackup/%s' % (domain, disk)
+    disk_backup_dir = '/vmbackup/%s/diskbackup/%s' % (domain, disk)
     history_file = '%s/history.json' % disk_backup_dir
     history = ftp.get_json_file_data(history_file)
     if history:
@@ -2228,7 +2228,7 @@ def get_remote_disk_backup_version(domain, disk, remote, port, username, passwor
 
 
 def is_remote_disk_backup_exist(domain, disk, version, remote, port, username, password):
-    target_dir = '/%s/diskbackup/%s' % (domain, disk)
+    target_dir = '/vmbackup/%s/diskbackup/%s' % (domain, disk)
     ftp = FtpHelper(remote, port, username, password)
     if ftp.is_exist_dir(target_dir) and ftp.is_exist_file('%s/history.json' % target_dir):
         history = ftp.get_json_file_data('%s/history.json' % target_dir)
