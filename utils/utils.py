@@ -1327,13 +1327,12 @@ def try_fix_disk_metadata(path):
     else:
         disk = os.path.basename(os.path.dirname(path))
         disk_dir = os.path.dirname(path)
-        vol_info = get_vol_info_from_k8s(disk)
-        pool_info = get_pool_info_from_k8s(vol_info['pool'])
-        if pool_info['pooltype'] == 'uus':
-            return path
+
+    vol_info = get_vol_info_from_k8s(disk)
+    pool_info = get_pool_info_from_k8s(vol_info['pool'])
+    if pool_info['pooltype'] == 'uus':
+        return path
     try:
-        vol_info = get_vol_info_from_k8s(disk)
-        pool_info = get_pool_info_from_k8s(vol_info['pool'])
         if pool_info['pooltype'] == 'uus':
             return None
         config_file = '%s/config.json' % disk_dir
