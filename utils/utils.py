@@ -1331,10 +1331,8 @@ def try_fix_disk_metadata(path):
     vol_info = get_vol_info_from_k8s(disk)
     pool_info = get_pool_info_from_k8s(vol_info['pool'])
     if pool_info['pooltype'] == 'uus':
-        return path
+        return None
     try:
-        if pool_info['pooltype'] == 'uus':
-            return None
         config_file = '%s/config.json' % disk_dir
         config = get_disk_config_by_path(config_file)
 
