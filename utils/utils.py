@@ -1325,15 +1325,12 @@ def try_fix_disk_metadata(path):
         disk = os.path.basename(os.path.dirname(os.path.dirname(path)))
         disk_dir = os.path.dirname(os.path.dirname(path))
     else:
-        try:
-            vol_info = get_vol_info_from_k8s(os.path.basename(path))
-            pool_info = get_pool_info_from_k8s(vol_info['pool'])
-            if pool_info['pooltype'] == 'uus':
-                return path
-        except:
-            disk = os.path.basename(os.path.dirname(path))
-            disk_dir = os.path.dirname(path)
-
+        disk = os.path.basename(os.path.dirname(path))
+        disk_dir = os.path.dirname(path)
+        vol_info = get_vol_info_from_k8s(disk)
+        pool_info = get_pool_info_from_k8s(vol_info['pool'])
+        if pool_info['pooltype'] == 'uus':
+            return path
     try:
         vol_info = get_vol_info_from_k8s(disk)
         pool_info = get_pool_info_from_k8s(vol_info['pool'])
