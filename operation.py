@@ -203,8 +203,9 @@ def stopPool(params):
     if params.type != "uus":
         pool_info = get_pool_info_from_k8s(params.pool)
         poolname = pool_info['poolname']
-        op1 = Operation("virsh pool-destroy", {"pool": poolname})
-        op1.execute()
+        if is_pool_started(poolname):
+            op1 = Operation("virsh pool-destroy", {"pool": poolname})
+            op1.execute()
 
         pool_info["state"] = "inactive"
         success_print("stop pool %s successful." % poolname, pool_info)
