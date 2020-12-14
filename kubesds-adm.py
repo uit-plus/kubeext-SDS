@@ -56,7 +56,11 @@ def check_pool_type(args):
             return
         if not hasattr(args, 'pool'):
             return
+        if args is None:
+            return
         pool_info = get_pool_info_from_k8s(args.pool)
+        if pool_info is None:
+            error_print(202, "check_pool_type, cannot get pool info from k8s.")
         if pool_info['pooltype'] == args.type:
             return
         else:

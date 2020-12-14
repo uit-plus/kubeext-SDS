@@ -891,7 +891,10 @@ def get_pool_info_from_k8s(pool):
     if not pool:
         raise ExecuteException('', 'missing parameter: no pool name.')
     poolHelper = K8sHelper('VirtualMachinePool')
-    return poolHelper.get_data(pool, 'pool')
+    pool_info = poolHelper.get_data(pool, 'pool')
+    if pool_info == None:
+        raise ExecuteException('', 'can not get pool info %s from k8s' % pool)
+    return pool_info
 
 def get_image_info_from_k8s(image):
     if not image:
@@ -904,7 +907,10 @@ def get_vol_info_from_k8s(vol):
     if not vol:
         raise ExecuteException('', 'missing parameter: no disk name.')
     helper = K8sHelper('VirtualMachineDisk')
-    return helper.get_data(vol, 'volume')
+    vol_info = helper.get_data(vol, 'volume')
+    if vol_info == None:
+        raise ExecuteException('', 'can not get disk info %s from k8s' % vol)
+    return vol_info
 
 def try_get_diskmn_by_path(disk_path):
     if disk_path.find('snapshots') >= 0:
@@ -923,7 +929,10 @@ def get_snapshot_info_from_k8s(snapshot):
     if not snapshot:
         raise ExecuteException('', 'missing parameter: no disk name.')
     helper = K8sHelper('VirtualMachineDiskSnapshot')
-    return helper.get_data(snapshot, 'volume')
+    ss_info = helper.get_data(snapshot, 'volume')
+    if ss_info == None:
+        raise ExecuteException('', 'can not get snapshot info %s from k8s' % snapshot)
+    return ss_info
 
 
 def get_disk_config(pool, vol):
