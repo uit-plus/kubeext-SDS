@@ -2538,6 +2538,7 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
+    print is_pool_started
     print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/vmbackup/wintest/diskbackup/backuptest1/44ec55a677c84c02b67517562e9ae2fe/diskbackup/backuptest1')
     print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/wintest/wintest')
     # print get_all_node_ip()

@@ -203,7 +203,7 @@ def stopPool(params):
     if params.type != "uus":
         pool_info = get_pool_info_from_k8s(params.pool)
         poolname = pool_info['poolname']
-        if is_pool_started(poolname):
+        if is_pool_exists(poolname) and is_pool_started(poolname):
             op1 = Operation("virsh pool-destroy", {"pool": poolname})
             op1.execute()
 
