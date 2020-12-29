@@ -1754,6 +1754,9 @@ def get_disk_jsondict(pool, disk):
                 nodeName = spec.get('nodeName')
                 if nodeName:
                     spec['nodeName'] = pool_node_name
+                # disk_dir = '%s/%s' % (pool_info['path'], disk)
+                # config = get_disk_config(pool, disk)
+                # write_config(disk, disk_dir, config['current'], pool, config['poolname'])
                 disk_info = get_disk_info_to_k8s(pool_info['poolname'], disk)
                 spec['volume'] = disk_info
                 logger.debug(disk_jsondict)

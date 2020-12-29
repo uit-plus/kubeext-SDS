@@ -1249,7 +1249,8 @@ def changeDiskPool(params):
         # check_pool_active(pool_info)
 
         pools = get_pools_by_path(pool_info['path'])
-
+        logger.debug("pools: %s" % dumps(pools))
+        logger.debug("node_name: %s" % node_name)
         # change disk node label in k8s.
         targetPool = None
         for pool in pools:
@@ -1257,9 +1258,10 @@ def changeDiskPool(params):
                 targetPool = pool['pool']
         if targetPool:
             logger.debug("targetPool is %s." % targetPool)
+            pool_active(pool_info['pool'])
             if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
-                if pool_info['pooltype'] == 'vdiskfs':
-                    pool_active(pool_info['pool'])
+                # if pool_info['pooltype'] == 'vdiskfs':
+                #     pool_active(pool_info['pool'])
                 config = get_disk_config(pool_info['poolname'], prepare_info['disk'])
                 write_config(config['name'], config['dir'], config['current'], targetPool, config['poolname'])
                 jsondicts = get_disk_jsondict(targetPool, prepare_info['disk'])
