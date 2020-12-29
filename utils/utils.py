@@ -486,6 +486,40 @@ def rpcCallAndTransferKvToJson(cmd):
         logger.debug(traceback.format_exc())
         raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
 
+def rpcCallAndGetOutput(cmd):
+    logger.debug(cmd)
+    try:
+        host = get_docker0_IP()
+        channel = grpc.insecure_channel("{0}:{1}".format(host, DEFAULT_PORT))
+        client = cmdcall_pb2_grpc.CmdCallStub(channel)
+        # ideally, you should have try catch block here too
+        response = client.CallAndGetOutput(cmdcall_pb2.CallRequest(cmd=cmd))
+        result = loads(str(response.json))
+        if result['result']['code'] != 0:
+            raise ExecuteException('rpc call %s error' % cmd, result['result']['msg'])
+        return result['result']['msg']
+    except grpc.RpcError, e:
+        logger.debug(traceback.format_exc())
+        # ouch!
+        # lets print the gRPC error message
+        # which is "Length of `Name` cannot be more than 10 characters"
+        logger.debug(e.details())
+        # lets access the error code, which is `INVALID_ARGUMENT`
+        # `type` of `status_code` is `grpc.StatusCode`
+        status_code = e.code()
+        # should print `INVALID_ARGUMENT`
+        logger.debug(status_code.name)
+        # should print `(3, 'invalid argument')`
+        logger.debug(status_code.value)
+        # want to do some specific action based on the error?
+        if grpc.StatusCode.INVALID_ARGUMENT == status_code:
+            # do your stuff here
+            pass
+        raise ExecuteException('RunCmdError', "Cmd: %s failed!" % cmd)
+    except Exception:
+        logger.debug(traceback.format_exc())
+        raise ExecuteException('RunCmdError', 'can not parse rpc response to json.')
+
 
 def randomUUID():
     u = [random.randint(0, 255) for ignore in range(0, 16)]
@@ -1547,7 +1581,7 @@ def get_pool_all_disk(poolname):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
             break
         except Exception:
@@ -1568,7 +1602,7 @@ def get_pool_all_ss(poolname):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % poolname)
             break
         except Exception:
@@ -1589,7 +1623,7 @@ def get_pools_by_node(node_name):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmp -o=jsonpath="{range .items[?(.metadata.labels.host==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.spec.pool.poolname}{\\"\\t\\"}{.metadata.labels.host}{\\"\\n\\"}{end}"' % node_name)
             break
         except Exception:
@@ -1611,7 +1645,7 @@ def get_pools_by_path(path):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.path==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % path)
             break
         except Exception:
@@ -1632,7 +1666,7 @@ def get_pools_by_poolname(poolname):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmp -o=jsonpath="{range .items[?(@.spec.pool.poolname==\\"%s\\")]}{.metadata.name}{\\"\\t\\"}{.metadata.labels.host}{\\"\\t\\"}{.spec.pool.path}{\\"\\n\\"}{end}"' % poolname)
             break
         except Exception:
@@ -1885,7 +1919,9 @@ def apply_all_jsondict(jsondicts):
                 f.write('---\n')
     for i in range(30):
         try:
-            runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
+            result = rpcCall('kubectl apply -f /tmp/%s.yaml' % filename)
+            if result['result'] != 0:
+                raise ExecuteException('RunCmdError', result['result']['msg'])
             break
         except ExecuteException, e:
             logger.debug(e.message)
@@ -1912,7 +1948,9 @@ def create_all_jsondict(jsondicts):
                 f.write('---\n')
     for i in range(30):
         try:
-            runCmd('kubectl create -f /tmp/%s.yaml' % filename)
+            result = rpcCall('kubectl create -f /tmp/%s.yaml' % filename)
+            if result['result'] != 0:
+                raise ExecuteException('RunCmdError', result['result']['msg'])
             break
         except ExecuteException, e:
             logger.debug(e.message)
@@ -2541,9 +2579,10 @@ def error_print(code, msg, data=None):
 
 
 if __name__ == '__main__':
-    print is_pool_started("170dd9accdd174caced76b0db2230")
-    print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/vmbackup/wintest/diskbackup/backuptest1/44ec55a677c84c02b67517562e9ae2fe/diskbackup/backuptest1')
-    print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/wintest/wintest')
+    print rpcCallAndGetOutput('ls /root')
+    # print is_pool_started("170dd9accdd174caced76b0db2230")
+    # print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/vmbackup/wintest/diskbackup/backuptest1/44ec55a677c84c02b67517562e9ae2fe/diskbackup/backuptest1')
+    # print checksum('/var/lib/libvirt/cstor/170dd9accdd174caced76b0db2230/170dd9accdd174caced76b0db2230/wintest/wintest')
     # print get_all_node_ip()
     # check_pool_active(get_pool_info_from_k8s('migratenodepool22'))
     # print is_vm_exist('dsadada')

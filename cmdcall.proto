@@ -1,3 +1,6 @@
+    // protobuf 3.11.4
+    //
+
     syntax = "proto3";
 
     package cmdcall;
@@ -6,6 +9,7 @@
         rpc CallWithResult (CallRequest) returns (CallResponse) {}
         rpc CallAndTransferXmlToJson (CallRequest) returns (CallResponse) {}
         rpc CallAndSplitKVToJson (CallRequest) returns (CallResponse) {}
+        rpc CallAndGetOutput (CallRequest) returns (CallResponse) {}
     }
 
     message CallRequest {

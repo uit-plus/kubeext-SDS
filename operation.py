@@ -3070,7 +3070,7 @@ def prepare_disk_by_metadataname(uuid):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
             break
         except Exception, e:
@@ -3133,17 +3133,17 @@ def get_disk_prepare_info_by_path(path):
     for i in range(30):
         try:
             if not success:
-                output = runCmdAndGetOutput(
+                output = rpcCallAndGetOutput(
                     'kubectl get vmd -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
                 if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
                     success = True
             if not success:
-                output = runCmdAndGetOutput(
+                output = rpcCallAndGetOutput(
                     'kubectl get vmdsn -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
                 if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
                     success = True
             if not success:
-                output = runCmdAndGetOutput(
+                output = rpcCallAndGetOutput(
                     'kubectl get vmdi -o=jsonpath="{range .items[?(@.spec.volume.filename==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\t\\"}{.spec.volume.pool}{\\"\\n\\"}{end}"' % path)
                 if output and len(output.splitlines()) == 1 and len(output.splitlines()[0].split()) == 5:
                     success = True
@@ -3192,7 +3192,7 @@ def release_disk_by_metadataname(uuid):
     output = None
     for i in range(30):
         try:
-            output = runCmdAndGetOutput(
+            output = rpcCallAndGetOutput(
                 'kubectl get vmd -o=jsonpath="{range .items[?(@.metadata.name==\\"%s\\")]}{.spec.volume.poolname}{\\"\\t\\"}{.spec.volume.disk}{\\"\\t\\"}{.spec.volume.uni}{\\"\\t\\"}{.spec.nodeName}{\\"\\n\\"}{end}"' % uuid)
             break
         except Exception:

@@ -32,7 +32,7 @@ DEFAULT_PORT = '19999'
 
 
 class Operation(object):
-    def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False):
+    def __init__(self, cmd, params, with_result=False, xml_to_json=False, kv_to_json=False, output=False):
         if cmd is None or cmd == "":
             raise Exception("plz give me right cmd.")
         if not isinstance(params, dict):
@@ -44,6 +44,7 @@ class Operation(object):
         self.with_result = with_result
         self.xml_to_json = xml_to_json
         self.kv_to_json = kv_to_json
+        self.output = output
 
     def get_cmd(self):
         cmd = self.cmd
@@ -61,6 +62,8 @@ class Operation(object):
             return runCmdAndTransferXmlToJson(cmd)
         elif self.kv_to_json:
             return runCmdAndSplitKvToJson(cmd)
+        elif self.output:
+            return runCmdAndGetOutput(cmd)
         else:
             return runCmd(cmd)
 
@@ -135,6 +138,24 @@ class CmdCallServicer(cmdcall_pb2_grpc.CmdCallServicer):
             logger.debug(request)
             logger.debug(result)
             return cmdcall_pb2.CallResponse(json=dumps(result))
+        except ExecuteException, e:
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(
+                json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % e.message}, 'data': {}}))
+        except Exception:
+            logger.debug(traceback.format_exc())
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 1, 'msg': 'call cmd failure %s' % traceback.format_exc()}, 'data': {}}))
+
+    def CallAndGetOutput(self, request, context):
+        try:
+            cmd = str(request.cmd)
+            logger.debug(cmd)
+
+            op = Operation(cmd, {}, output=True)
+            result = op.execute()
+            logger.debug(request)
+            logger.debug(result)
+            return cmdcall_pb2.CallResponse(json=dumps({'result': {'code': 0, 'msg': result}, 'data': {}}))
         except ExecuteException, e:
             logger.debug(traceback.format_exc())
             return cmdcall_pb2.CallResponse(
