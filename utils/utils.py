@@ -385,6 +385,7 @@ def rpcCall(cmd):
 
     if jsondict['result']['code'] != 0:
         raise ExecuteException('RunCmdError', jsondict['result']['msg'])
+    return jsondict
 
 
 def rpcCallWithResult(cmd):
