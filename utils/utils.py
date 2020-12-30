@@ -1920,10 +1920,7 @@ def apply_all_jsondict(jsondicts):
                 f.write('---\n')
     for i in range(30):
         try:
-            result = rpcCall('kubectl apply -f /tmp/%s.yaml' % filename)
-            if result['result'] != 0:
-                raise ExecuteException('RunCmdError', result['result']['msg'])
-            break
+            runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
         except ExecuteException, e:
             logger.debug(e.message)
             if e.message.find('Warning') >= 0 or e.message.find('failed to open a connection to the hypervisor software') >= 0:
@@ -1949,9 +1946,9 @@ def create_all_jsondict(jsondicts):
                 f.write('---\n')
     for i in range(30):
         try:
-            result = rpcCall('kubectl create -f /tmp/%s.yaml' % filename)
-            if result['result'] != 0:
-                raise ExecuteException('RunCmdError', result['result']['msg'])
+            runCmd('kubectl create -f /tmp/%s.yaml' % filename)
+            # if result['result'] != 0:
+            #     raise ExecuteException('RunCmdError', result['result']['msg'])
             break
         except ExecuteException, e:
             logger.debug(e.message)
