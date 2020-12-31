@@ -178,6 +178,35 @@ def changeNode(jsondict, newNodeName):
                 spec['nodeName'] = newNodeName
     return jsondict
 
+
+def replaceData(jsondict):
+    all_kind = {'VirtualMachine': 'domain',
+                'VirtualMachinePool': 'pool',
+                'VirtualMachineDisk': 'volume',
+                'VirtualMachineDiskImage': 'volume',
+                'VirtualMachineDiskSnapshot': 'volume',
+                'VirtualMachineBackup': 'backup'}
+
+
+    mkind = jsondict['kind']
+    mn = jsondict['metadata']['name']
+    k8s = K8sHelper(mkind)
+    current = k8s.get(mn)
+
+    host = jsondict['metadata']['labels']['host']
+    # nodename = jsondicts[i]['metadata']['labels']['host']
+    k8s.change_node(current, host)
+
+
+    if jsondict:
+        key = all_kind[mkind]
+        if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
+            data = jsondict['spec'][key]
+            if current:
+                current['spec'][key] = data
+
+    return current
+
 def get_node_name(jsondict):
     if jsondict:
         return jsondict['metadata']['labels']['host']

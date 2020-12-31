@@ -26,7 +26,8 @@ import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle, get_hostname_in_lower_case, get_node_name
+from k8s import K8sHelper, addPowerStatusMessage, updateJsonRemoveLifecycle, get_hostname_in_lower_case, get_node_name, \
+    replaceData
 from arraylist import vmArray
 from ftp import FtpHelper
 
@@ -1912,25 +1913,26 @@ def apply_all_jsondict(jsondicts):
     logger.debug(jsondicts)
     filename = randomUUID()
     logger.debug(filename)
-    with open('/tmp/%s.yaml' % filename, 'w') as f:
-        for i in range(len(jsondicts)):
-            result = yaml.safe_dump(jsondicts[i])
-            f.write(result)
-            if i != len(jsondicts) - 1:
-                f.write('---\n')
     for i in range(30):
+        with open('/tmp/%s.yaml' % filename, 'w') as f:
+            for i in range(len(jsondicts)):
+                current_jsondict = replaceData(jsondicts[i])
+                result = yaml.safe_dump(current_jsondict)
+                f.write(result)
+                if i != len(jsondicts) - 1:
+                    f.write('---\n')
         try:
             runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
+            try:
+                runCmd('rm -f /tmp/%s.yaml' % filename)
+            except ExecuteException:
+                pass
+            return
         except ExecuteException, e:
             logger.debug(e.message)
             if e.message.find('Warning') >= 0 or e.message.find('failed to open a connection to the hypervisor software') >= 0:
                 pass
-            else:
-                raise e
-    try:
-        runCmd('rm -f /tmp/%s.yaml' % filename)
-    except ExecuteException:
-        pass
+    raise ExecuteException('RunCmdError', 'can not apply jsondict %s on k8s.' % dumps(jsondicts))
 
 
 def create_all_jsondict(jsondicts):
@@ -1949,18 +1951,18 @@ def create_all_jsondict(jsondicts):
             runCmd('kubectl create -f /tmp/%s.yaml' % filename)
             # if result['result'] != 0:
             #     raise ExecuteException('RunCmdError', result['result']['msg'])
-            break
+            try:
+                runCmd('rm -f /tmp/%s.yaml' % filename)
+            except ExecuteException:
+                pass
+            return
         except ExecuteException, e:
             logger.debug(e.message)
             if e.message.find('Warning') >= 0 or e.message.find(
                     'failed to open a connection to the hypervisor software') >= 0:
                 pass
-            else:
-                raise e
-    try:
-        runCmd('rm -f /tmp/%s.yaml' % filename)
-    except ExecuteException:
-        pass
+    raise ExecuteException('RunCmdError', 'can not apply jsondict %s on k8s.' % dumps(jsondicts))
+
 
 
 def get_node_ip_by_node_name(nodeName):
