@@ -1300,8 +1300,8 @@ def migrateDiskFunc(sourceVol, targetPool):
     if disk_info['pool'] == pool_info['pool']:
         logger.debug('disk %s has been in pool %s' % (sourceVol, targetPool))
         return
-    if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
-        raise ExecuteException('RunCmdError', 'disk is not in this node.')
+    # if source_pool_info['pooltype'] != 'uus' and disk_node_name != get_hostname_in_lower_case():
+    #     raise ExecuteException('RunCmdError', 'disk is not in this node.')
     logger.debug(pool_info['pooltype'])
     if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:
         if source_pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', "vdiskfs"]:  # file to file
