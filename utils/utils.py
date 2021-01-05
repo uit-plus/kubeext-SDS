@@ -1386,11 +1386,11 @@ def try_fix_disk_metadata(path):
                 try:
                     pool_active(pool_info['pool'])
                     break
-                except:
+                except ExecuteException, e:
                     if i < RETRY_TIMES - 1:
                         pass
                     else:
-                        return None
+                        raise e
 
         config = get_disk_config_by_path(config_file)
 
