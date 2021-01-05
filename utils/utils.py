@@ -1384,7 +1384,7 @@ def try_fix_disk_metadata(path):
             RETRY_TIMES = 4
             for i in range(RETRY_TIMES):
                 try:
-                    cstor_pool_active(pool_info['poolname'])
+                    pool_active(pool_info['pool'])
                     break
                 except:
                     if i < RETRY_TIMES - 1:
