@@ -52,6 +52,8 @@ DEFAULT_PORT = '19999'
 def runCmdWithResult(cmd):
     if not cmd:
         return
+    logger.debug(cmd)
+
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         std_out = p.stdout.readlines()
@@ -106,6 +108,8 @@ def runCmdWithResult(cmd):
 def remoteRunCmdWithResult(ip, cmd):
     if not cmd:
         return
+    logger.debug(cmd)
+
     cmd = 'ssh root@%s "%s"' % (ip, cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -161,6 +165,8 @@ def remoteRunCmdWithResult(ip, cmd):
 def remoteRunCmdWithOutput(ip, cmd):
     if not cmd:
         return
+    logger.debug(cmd)
+
     cmd = 'ssh root@%s "%s"' % (ip, cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -234,9 +240,10 @@ def runCmdAndSplitKvToJson(cmd):
 
 
 def runCmdAndGetOutput(cmd):
-    logger.debug(cmd)
     if not cmd:
         return
+    logger.debug(cmd)
+
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         std_out = p.stdout.readlines()
