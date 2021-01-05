@@ -1781,7 +1781,6 @@ def get_disk_jsondict(pool, disk):
         if pool_info['pooltype'] in ['localfs', 'nfs', 'glusterfs', 'vdiskfs']:
             disk_jsondict = disk_helper.get(disk)
             # update disk jsondict
-            logger.debug(disk_jsondict)
             disk_jsondict['metadata']['labels']['host'] = pool_node_name
 
             spec = get_spec(disk_jsondict)
@@ -1922,11 +1921,12 @@ def apply_all_jsondict(jsondicts):
                 if i != len(jsondicts) - 1:
                     f.write('---\n')
         try:
+            logger.debug("jsondicts: /tmp/%s.yaml" % filename)
             runCmd('kubectl apply -f /tmp/%s.yaml' % filename)
-            try:
-                runCmd('rm -f /tmp/%s.yaml' % filename)
-            except ExecuteException:
-                pass
+            # try:
+            #     runCmd('rm -f /tmp/%s.yaml' % filename)
+            # except ExecuteException:
+            #     pass
             return
         except ExecuteException, e:
             logger.debug(e.message)
