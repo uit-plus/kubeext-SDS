@@ -1387,6 +1387,7 @@ def try_fix_disk_metadata(path):
         return None
     try:
         config_file = '%s/config.json' % disk_dir
+        logger.debug("config_file: %s" % config_file)
         if not os.path.exists(config_file):
             RETRY_TIMES = 4
             for i in range(RETRY_TIMES):
