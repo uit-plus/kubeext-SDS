@@ -195,7 +195,7 @@ def replaceData(jsondict):
 
     host = jsondict['metadata']['labels']['host']
     # nodename = jsondicts[i]['metadata']['labels']['host']
-    k8s.change_node(current, host)
+    changeNode(current, host)
 
 
     if jsondict:
