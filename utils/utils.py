@@ -1864,8 +1864,23 @@ def get_disk_jsondict(pool, disk):
     return jsondicts
 
 def modifyDiskAndSs(pool, disk):
-    all_jsondicts = get_disk_jsondict(pool, disk)
-    apply_all_jsondict(all_jsondicts)
+    # get disk node label in ip
+    node_name = get_hostname_in_lower_case()
+    # node_name = get_node_name_by_node_ip(params.ip)
+    logger.debug("node_name: %s" % node_name)
+
+    pool_info = get_pool_info_from_k8s(pool)
+    pools = get_pools_by_path(pool_info['path'])
+    logger.debug("pools: %s" % dumps(pools))
+    logger.debug("node_name: %s" % node_name)
+    # change disk node label in k8s.
+    targetPool = None
+    for pool in pools:
+        if pool['host'] == node_name:
+            targetPool = pool['pool']
+    if targetPool:
+        all_jsondicts = get_disk_jsondict(targetPool, disk)
+        apply_all_jsondict(all_jsondicts)
 
 
 def rebase_snapshot_with_config(pool, vol):
