@@ -1390,7 +1390,7 @@ def try_fix_disk_metadata(path):
                     if i < RETRY_TIMES - 1:
                         pass
                     else:
-                        raise e
+                        error_print(101, "pool %s can not be active" % pool_info['pool'])
 
         config = get_disk_config_by_path(config_file)
 
