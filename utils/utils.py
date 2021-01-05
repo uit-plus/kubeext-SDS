@@ -906,6 +906,7 @@ def get_pool_info(pool_):
     return result
 
 
+
 def modify_disk_info_in_k8s(poolname, vol):
     helper = K8sHelper("VirtualMachineDisk")
     helper.update(vol, "volume", get_disk_info_to_k8s(poolname, vol))
@@ -1379,6 +1380,18 @@ def try_fix_disk_metadata(path):
         return None
     try:
         config_file = '%s/config.json' % disk_dir
+        if not os.path.exists(config_file):
+            RETRY_TIMES = 4
+            for i in range(RETRY_TIMES):
+                try:
+                    cstor_pool_active(pool_info['poolname'])
+                    break
+                except:
+                    if i < RETRY_TIMES - 1:
+                        pass
+                    else:
+                        return None
+
         config = get_disk_config_by_path(config_file)
 
         domains = get_all_domain()
@@ -1392,7 +1405,7 @@ def try_fix_disk_metadata(path):
                             logger.debug('try_fix_disk_metadata')
                             logger.debug('domain %s current: %s' % (domain, disk_path))
                             write_config(disk, disk_dir, disk_path, config['pool'], config['poolname'])
-                            modify_disk_info_in_k8s(config['poolname'], disk)
+                            modifyDiskAndSs(config['pool'], disk)
                         return disk_path
             except:
                 pass
@@ -1849,6 +1862,10 @@ def get_disk_jsondict(pool, disk):
         #         pass
 
     return jsondicts
+
+def modifyDiskAndSs(pool, disk):
+    all_jsondicts = get_disk_jsondict(pool, disk)
+    apply_all_jsondict(all_jsondicts)
 
 
 def rebase_snapshot_with_config(pool, vol):
