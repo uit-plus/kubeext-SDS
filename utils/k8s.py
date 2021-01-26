@@ -1,4 +1,5 @@
 import socket
+import time
 from json import dumps
 
 from kubernetes import client, config
@@ -33,7 +34,7 @@ config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
 
 LOG = '/var/log/kubesds.log'
 
-RETRY_TIMES = 30
+RETRY_TIMES = 10
 
 
 def set_logger(header, fn):
@@ -240,6 +241,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('K8sError', 'can not get %s %s response from k8s.' % (self.kind, name))
 
     def get(self, name):
@@ -257,6 +259,8 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
+
         raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_data(self, name, key):
@@ -276,6 +280,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('RunCmdError', 'can not get %s %s on k8s.' % (self.kind, name))
 
     def get_create_jsondict(self, name, key, data):
@@ -294,6 +299,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('k8sError', 'can not get %s %s data on k8s.' % (self.kind, name))
 
     def create(self, name, key, data):
@@ -317,6 +323,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         error_print(500, 'can not create %s %s on k8s.' % (self.kind, name))
 
     def add_label(self, name, domain):
@@ -336,6 +343,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def update(self, name, key, data):
@@ -357,6 +365,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def updateAll(self, name, jsondict):
@@ -374,6 +383,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('RunCmdError', 'can not modify %s %s on k8s.' % (self.kind, name))
 
     def delete(self, name):
@@ -391,6 +401,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('RunCmdError', 'can not delete %s %s on k8s.' % (self.kind, name))
 
     def delete_lifecycle(self, name):
@@ -413,6 +424,7 @@ class K8sHelper(object):
                 if repr(e).find('Connection refused') != -1 or repr(e).find('No route to host') != -1 or repr(e).find(
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
+                time.sleep(3)
         raise ExecuteException('RunCmdError', 'can not delete lifecycle %s %s on k8s.' % (self.kind, name))
 
     def change_node(self, name, newNodeName):

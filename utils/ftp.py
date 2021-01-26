@@ -4,7 +4,8 @@ import traceback
 from ftplib import FTP, error_perm
 from json import load
 
-from exception import ExecuteException
+from utils.exception import ExecuteException
+
 
 class FtpHelper(object):
     def __init__(self, host, port, username, password):
@@ -206,7 +207,7 @@ if __name__ == '__main__':
     # upload_file(ftp, '/tmp/123.json', '/vmbackuptest/clouddiskbackup/vmbackuptestdisk1')
     # print ftp.listdir('/vmbackuptest')
     # ftp.download_file('/vmbackuptest/clouddiskbackup/vmbackuptestdisk1/history.json', '/tmp/123.json')
-    print ftp.get_json_file_data('/cloudinitbackup4/history.json')
+    print(ftp.get_json_file_data('/cloudinitbackup4/history.json'))
     # ftp.makedirs('/test/test1/test2')
     # upload_dir(ftp, '/var/lib/libvirt/cstor/a639873f92a24a9ab840492f0e538f2b/a639873f92a24a9ab840492f0e538f2b/vmbackup', '/')
     # upload_file(ftp, ['/root/vmtest/vmtest.xml', '/root/vmtest/1.qcow2', '/root/vmtest/2.qcow2', '/root/vmtest/3.qcow2'], '/vmtest')
