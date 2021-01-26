@@ -1,6 +1,6 @@
     // protobuf 3.11.4
     //
-
+    // protoc --python_out=. cmdcall.proto
     syntax = "proto3";
 
     package cmdcall;

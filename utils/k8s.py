@@ -16,8 +16,9 @@ from exception import ExecuteException
 
 
 class parser(ConfigParser.ConfigParser):
-    def __init__(self,defaults=None):
-        ConfigParser.ConfigParser.__init__(self,defaults=None)
+    def __init__(self, defaults=None):
+        ConfigParser.ConfigParser.__init__(self, defaults=None)
+
     def optionxform(self, optionstr):
         return optionstr
 
@@ -33,6 +34,7 @@ config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
 LOG = '/var/log/kubesds.log'
 
 RETRY_TIMES = 30
+
 
 def set_logger(header, fn):
     logger = logging.getLogger(header)
@@ -52,10 +54,12 @@ def set_logger(header, fn):
     logger.addHandler(handler2)
     return logger
 
+
 k8s_logger = set_logger(os.path.basename(__file__), LOG)
 
 resources = {}
-for kind in ['VirtualMachine', 'VirtualMachinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage', 'VirtualMachineDiskSnapshot', 'VirtualMachineBackup']:
+for kind in ['VirtualMachine', 'VirtualMachinePool', 'VirtualMachineDisk', 'VirtualMachineDiskImage',
+             'VirtualMachineDiskSnapshot', 'VirtualMachineBackup']:
     resource = {}
     for key in ['version', 'group', 'plural']:
         resource[key] = config_raw.get(kind, key)
@@ -136,6 +140,7 @@ def updateJsonRemoveLifecycle(jsondict, body):
             spec.update(body)
     return jsondict
 
+
 def hasLifeCycle(jsondict):
     if jsondict:
         spec = get_spec(jsondict)
@@ -144,6 +149,7 @@ def hasLifeCycle(jsondict):
             if lifecycle:
                 return True
     return False
+
 
 def removeLifecycle(jsondict):
     if jsondict:
@@ -187,7 +193,6 @@ def replaceData(jsondict):
                 'VirtualMachineDiskSnapshot': 'volume',
                 'VirtualMachineBackup': 'backup'}
 
-
     mkind = jsondict['kind']
     mn = jsondict['metadata']['name']
     k8s = K8sHelper(mkind)
@@ -197,7 +202,6 @@ def replaceData(jsondict):
     # nodename = jsondicts[i]['metadata']['labels']['host']
     changeNode(current, host)
 
-
     if jsondict:
         key = all_kind[mkind]
         if 'spec' in jsondict.keys() and isinstance(jsondict['spec'], dict) and key in jsondict['spec'].keys():
@@ -206,6 +210,7 @@ def replaceData(jsondict):
                 current['spec'][key] = data
 
     return current
+
 
 def get_node_name(jsondict):
     if jsondict:
@@ -222,7 +227,8 @@ class K8sHelper(object):
             try:
                 config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                                  version=resources[self.kind]['version'],
+                                                                                  version=resources[self.kind][
+                                                                                      'version'],
                                                                                   namespace='default',
                                                                                   plural=resources[self.kind]['plural'],
                                                                                   name=name)
@@ -241,7 +247,8 @@ class K8sHelper(object):
             try:
                 config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                                  version=resources[self.kind]['version'],
+                                                                                  version=resources[self.kind][
+                                                                                      'version'],
                                                                                   namespace='default',
                                                                                   plural=resources[self.kind]['plural'],
                                                                                   name=name)
@@ -257,7 +264,8 @@ class K8sHelper(object):
             try:
                 config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
                 jsondict = client.CustomObjectsApi().get_namespaced_custom_object(group=resources[self.kind]['group'],
-                                                                                  version=resources[self.kind]['version'],
+                                                                                  version=resources[self.kind][
+                                                                                      'version'],
                                                                                   namespace='default',
                                                                                   plural=resources[self.kind]['plural'],
                                                                                   name=name)
@@ -287,7 +295,6 @@ class K8sHelper(object):
                         'ApiException') != -1:
                     config.load_kube_config(config_file=config_raw.get('Kubernetes', 'token_file'))
         raise ExecuteException('k8sError', 'can not get %s %s data on k8s.' % (self.kind, name))
-
 
     def create(self, name, key, data):
         for i in range(RETRY_TIMES):
@@ -397,7 +404,8 @@ class K8sHelper(object):
                     jsondict = addPowerStatusMessage(jsondict, 'Ready', 'The resource is ready.')
                     jsondict = removeLifecycle(jsondict)
                     return client.CustomObjectsApi().replace_namespaced_custom_object(
-                        group=resources[self.kind]['group'], version=resources[self.kind]['version'], namespace='default',
+                        group=resources[self.kind]['group'], version=resources[self.kind]['version'],
+                        namespace='default',
                         plural=resources[self.kind]['plural'], name=name, body=jsondict)
                 else:
                     return
@@ -430,6 +438,7 @@ def error_print(code, msg, data=None):
         print dumps({"result": {"code": code, "msg": msg}, "data": data})
         exit(1)
 
+
 if __name__ == '__main__':
     # data = {
     #     'domain': 'cloudinit',
@@ -441,10 +450,10 @@ if __name__ == '__main__':
 
 #     print get_all_node_ip()
 #     get_pools_by_path('/var/lib/libvirt/cstor/1709accf174vccaced76b0dbfccdev/1709accf174vccaced76b0dbfccdev')
-    # k8s = K8sHelper('VirtualMachineDisk')
-    # disk1 = k8s.get('disk33333clone')
-    # print dumps(disk1)
-    # k8s.delete('disk33333clone1')
-    # k8s.create('disk33333clone1', 'volume', disk1['spec']['volume'])
-    # disk1['spec']['volume']['filename'] = 'lalalalalalala'
-    # k8s.update('disk33333clone1', 'volume', disk1['spec']['volume'])
+# k8s = K8sHelper('VirtualMachineDisk')
+# disk1 = k8s.get('disk33333clone')
+# print dumps(disk1)
+# k8s.delete('disk33333clone1')
+# k8s.create('disk33333clone1', 'volume', disk1['spec']['volume'])
+# disk1['spec']['volume']['filename'] = 'lalalalalalala'
+# k8s.update('disk33333clone1', 'volume', disk1['spec']['volume'])
