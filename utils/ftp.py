@@ -4,8 +4,7 @@ import traceback
 from ftplib import FTP, error_perm
 from json import load
 
-from utils.exception import ExecuteException
-
+from exception import ExecuteException
 
 class FtpHelper(object):
     def __init__(self, host, port, username, password):

@@ -17,9 +17,8 @@ from exception import ExecuteException
 
 
 class parser(ConfigParser.ConfigParser):
-    def __init__(self, defaults=None):
-        ConfigParser.ConfigParser.__init__(self, defaults=None)
-
+    def __init__(self,defaults=None):
+        ConfigParser.ConfigParser.__init__(self,defaults=None)
     def optionxform(self, optionstr):
         return optionstr
 
